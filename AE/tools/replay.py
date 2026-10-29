@@ -93,6 +93,7 @@ async def main():
         page = await browser.new_page(viewport={"width": 1920, "height": 1080})
         js_errors = []
         page.on("pageerror", lambda e: js_errors.append(str(e)))
+        page.on("console", lambda m: js_errors.append(m.text) if m.type == "error" and m.text.startswith("hudUpdate") else None)
         await page.goto(pathlib.Path(a.hud).resolve().as_uri())
         await page.wait_for_timeout(400)
         await page.evaluate("document.documentElement.style.background = '#3d3a30'")

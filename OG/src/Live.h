@@ -28,6 +28,7 @@ struct Raw {
 
 // Fields worth reading every tick: heading, magazine, aim state.
 Json ReadFast(Raw& raw);
+Json ReadVitals(Raw& raw);
 // Everything else Stage 1 sends: vitals, level, location, combat, weapon, grenade, context.
 Json ReadSlow(Raw& raw);
 // Consumable effects on the player (food, drinks, chems, meds), one entry per item, longest timer wins.

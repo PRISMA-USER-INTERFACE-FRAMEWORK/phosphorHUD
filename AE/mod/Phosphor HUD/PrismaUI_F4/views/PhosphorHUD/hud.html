@@ -1186,6 +1186,7 @@ hudUpdate('{"paused":true}')       // freeze timers while menus are open
   }
   /* show the layer from fraction lo to hi (0..1, clockwise from the top) */
   function setRing(g, lo, hi){
+    if (g._lo === lo && g._hi === hi) return; g._lo = lo; g._hi = hi;
     var p = g.getAttribute("data-ring").split(",").map(Number), cx = p[0], r = p[1], n = p[2], gap = p[3];
     var paths = g.children, step = 360/n, a = lo*360, b = hi*360;
     for (var k = 0; k < n; k++){
@@ -1224,12 +1225,12 @@ hudUpdate('{"paused":true}')       // freeze timers while menus are open
     if (c.v !== null && frac < c.v){
       var g = c.ghost; setRing(g, 0, c.v);
       clearTimeout(g._t); g._t = setTimeout(function(){ setRing(g, 0, frac); }, 450);
-    } else setRing(c.ghost, 0, frac);
+    } else if (frac !== c.v) setRing(c.ghost, 0, frac);
     c.v = frac;
     /* inner core: the icon empties from the top as the value drops */
     var f = clamp(fill === undefined ? 1 : fill, 0, 1), h = 26*f;
-    c.clip.setAttribute("y", (-1 + 26 - h).toFixed(2)); c.clip.setAttribute("height", h.toFixed(2));
-    if (num !== undefined) c.num.textContent = num;
+    if (c.fillH !== h){ c.fillH = h; c.clip.setAttribute("y", (-1 + 26 - h).toFixed(2)); c.clip.setAttribute("height", h.toFixed(2)); }
+    if (num !== undefined && c.num.textContent !== String(num)) c.num.textContent = num;
   }
   function renderVitals(){
     var radFrac = clamp(S.rads/1000, 0, 1);
@@ -1268,6 +1269,7 @@ hudUpdate('{"paused":true}')       // freeze timers while menus are open
     clearTimeout(coresTimer);
     coresTimer = setTimeout(layoutCores, 500);   /* after the rings' .45 s width transitions settle */
   }
+  var visKey = null;
   function renderVitalVisibility(){
     var dynamic = S.settings.hideFullVitals;
     var hpCap = S.hpMax * (1 - clamp(S.rads/1000, 0, 1));
@@ -1280,7 +1282,8 @@ hudUpdate('{"paused":true}')       // freeze timers while menus are open
     cores.ap.el.classList.toggle("vital-hidden", hideAP);
     cores.rad.el.classList.toggle("vital-hidden", hideRad);
     $("cores").classList.toggle("vitals-empty", hideHP && hideAP && hideRad);
-    layoutCoresSoon();
+    var key = [hideHP, hideAP, hideRad].join();
+    if (key !== visKey){ visKey = key; layoutCoresSoon(); }
   }
   function renderFortify(){
     cores.hp.el.classList.toggle("fortified", hasEffect("buffout"));
@@ -1362,8 +1365,8 @@ hudUpdate('{"paused":true}')       // freeze timers while menus are open
     var gained = to - from;
     $("luNum").textContent = to;
     var sub = gained > 1 ? "Levels " + (from + 1) + "–" + to + " · " : "";
-    sub += "<b>+" + perks + " perk point" + (perks === 1 ? "" : "s") + "</b>";
-    if (skills) sub += " · <b>+" + skills + " skill points</b>";
+    sub += "<b>+" + esc(perks) + " perk point" + (perks === 1 ? "" : "s") + "</b>";
+    if (skills) sub += " · <b>+" + esc(skills) + " skill points</b>";
     $("luSub").innerHTML = sub;
     $("luHint").hidden = !S.perkKey; $("luKey").textContent = S.perkKey;
     if (S.settings.levelUpBanner) enqueueBanner(function(){
@@ -1717,7 +1720,7 @@ hudUpdate('{"paused":true}')       // freeze timers while menus are open
   function renderMutations(t, fresh){
     var box = $("tMuts"), list = (t && t.mutations) || [];
     box.innerHTML = list.map(function(m, i){
-      return '<span class="' + (m.kind || "") + (fresh && i === list.length - 1 ? " new" : "") + '">' + esc(m.name) + "</span>";
+      return '<span class="' + esc(m.kind || "") + (fresh && i === list.length - 1 ? " new" : "") + '">' + esc(m.name) + "</span>";
     }).join("");
     var lvl = $("tLvl"), mx = lvl.querySelector(".t-mx");
     if (list.length > 1){ if (!mx){ mx = document.createElement("span"); mx.className = "t-mx"; lvl.appendChild(mx); } mx.textContent = "×" + list.length; }
@@ -2467,6 +2470,7 @@ hudUpdate('{"paused":true}')       // freeze timers while menus are open
     });
     $("adRank").textContent = a.rank + (a.bonus ? " · " + a.bonus : "");
   }
+  var wasOver = false;
   function renderWeight(){
     var w = S.weight, f = w.max > 0 ? w.cur / w.max : 0, el = cores.wt.el;
     setCore("wt", Math.min(f, 1), Math.round(w.cur) + "/" + Math.round(w.max), Math.min(f, 1));
@@ -2476,6 +2480,7 @@ hudUpdate('{"paused":true}')       // freeze timers while menus are open
     el.classList.toggle("over", f > 1);
     var lbl = el.querySelector("small");
     if (lbl.firstChild.nodeType === 3) lbl.firstChild.nodeValue = f > 1 ? "Overweight" : "Weight";
+    if ((f > 1) !== wasOver){ wasOver = f > 1; layoutCoresSoon(); }
   }
   function setSurvival(x){
     var wasOver = S.weight.cur > S.weight.max;
@@ -2661,6 +2666,9 @@ hudUpdate('{"paused":true}')       // freeze timers while menus are open
   }
 
   function hudUpdate(data){
+    try { applyUpdate(data); } catch (e) { console.error("hudUpdate", e); }
+  }
+  function applyUpdate(data){
     var d = typeof data === "string" ? JSON.parse(data) : (data || {});
     /* in game the stage stays invisible until the first full snapshot, so preview sample values never show */
     if (d.snapshot || d.hp !== undefined){
@@ -2750,7 +2758,7 @@ hudUpdate('{"paused":true}')       // freeze timers while menus are open
     if (d.tracker !== undefined) setTracker(d.tracker);
     if (vit){ renderVitals(); wake($("vitals")); }
     if (amm){ renderAmmo(); wake($("kit")); wakeCalm("cross"); }
-    renderCompass(true);
+    renderCompass(!!(d.markers || d.marker || d.markerRemove));
   }
   window.hudUpdate = hudUpdate;
   window.hud = { update:hudUpdate, notify:notify, quest:quest, message:message, subtitle:subtitle,

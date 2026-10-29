@@ -1,6 +1,7 @@
 #include <F4SE/F4SE.h>
 #include <RE/Fallout.h>
 #include <Windows.h>
+#include <timeapi.h>
 #include <PrismaUI_F4_API.h>
 #include <spdlog/spdlog.h>
 #if defined(PHOSPHOR_AE)
@@ -55,6 +56,7 @@ struct PluginOptions {
     bool hideWidgets = true, hideText = true, hideCrosshair = true, hideFlashlight = true; int keepWidgetMask = 0;
     bool engineQuests = true;  // bEngineQuestData: quest/map data from the engine (0 = Pip-Boy feed only)
     bool engineProbe = false;  // bEngineProbe: Ctrl+F11 diagnostic dump
+    bool messageLog = false;
 } options;
 bool liveStarted = false, liveShown = false, suppressed = false, pausedSent = false;
 bool nativeHudActive = false, nativeRestorePending = false;
@@ -573,6 +575,7 @@ void LiveTick() {
         auto snap = Phosphor::Live::ReadSlow(raw);
         if (!raw.valid) return;
         snap.update(Phosphor::Live::ReadFast(raw));
+        snap.update(Phosphor::Live::ReadVitals(raw));
         snap["loot"] = LootNow();
         Json startAllies = Json::array();
         snap["party"] = Phosphor::Live::ReadParty(&startAllies);
@@ -642,10 +645,10 @@ void LiveTick() {
     lastTick = now;
     if (!raw.menuOpen && predHour >= 0) predHour = std::fmod(predHour + dt * predScale / 3600.0, 24.0);
 
-    Json current = Json::object();
+    Json current = Phosphor::Live::ReadVitals(raw);
     const bool slow = now - lastSlow >= std::chrono::milliseconds(250);
     if (slow) {
-        current = Phosphor::Live::ReadSlow(raw);
+        current.update(Phosphor::Live::ReadSlow(raw));
         const auto pip = QuestData();
         current.update(Phosphor::Live::ReadQuests(pip, options.locationMeters));
         auto enemies = Phosphor::Live::ReadEnemies();
@@ -924,8 +927,9 @@ void Tick() {
 
 void Poll(std::stop_token stop) {
     bool wasDown = false, probeWasDown = false;
+    timeBeginPeriod(1);
     while (!stop.stop_requested()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(33));
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
         if (stop.stop_requested()) break;
         DWORD foregroundPID = 0;
         GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPID);
@@ -947,6 +951,7 @@ void Poll(std::stop_token stop) {
             })) tickQueued.store(false);
         }
     }
+    timeEndPeriod(1);
 }
 
 class MenuWatch final : public RE::BSTEventSink<RE::MenuOpenCloseEvent> {
@@ -994,9 +999,16 @@ void HandleMessage(F4SE::MessagingInterface::Message* message) {
             if (const auto it = ini.find("iKeepVanillaWidgetMask"); it != ini.end()) options.keepWidgetMask = std::max(0, it->second);
             if (const auto it = ini.find("bEngineQuestData"); it != ini.end()) options.engineQuests = it->second != 0;
             if (const auto it = ini.find("bEngineProbe"); it != ini.end()) options.engineProbe = it->second != 0;
+            if (const auto it = ini.find("bMessageLog"); it != ini.end()) options.messageLog = it->second != 0;
             spdlog::info("Options: live HUD {}, hide vanilla meters {} (widgets {}, text {}, crosshair {}, flashlight {}, keep mask {})",
                          options.live, options.hideVanilla, options.hideWidgets, options.hideText, options.hideCrosshair,
                          options.hideFlashlight, options.keepWidgetMask);
+            if (options.messageLog) {
+                messageLog = spdlog::rotating_logger_mt("PhosphorMessages", "Data/F4SE/Plugins/PhosphorHUD/messages.jsonl", 2 * 1024 * 1024, 2);
+                messageLog->set_pattern("%v");
+                messageLog->set_level(spdlog::level::debug);
+                messageLog->flush_on(spdlog::level::debug);
+            }
             api = PRISMA_UI_API::RequestPluginAPI<API>();
             if (!api) spdlog::warn("PrismaUI V12 unavailable; Phosphor HUD disabled");
             else spdlog::info("Connected to PrismaUI V12 (ABI 139)");
@@ -1145,10 +1157,6 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadIn
         Phosphor::AE::f4seVersion = f4se->F4SEVersion().string();
         Phosphor::AE::Initialize();
 #endif
-        messageLog = spdlog::rotating_logger_mt("PhosphorMessages", "Data/F4SE/Plugins/PhosphorHUD/messages.jsonl", 2 * 1024 * 1024, 2);
-        messageLog->set_pattern("%v");
-        messageLog->set_level(spdlog::level::debug);
-        messageLog->flush_on(spdlog::level::debug);
         F4SE::Init(f4se, false);
         const auto* messaging = F4SE::GetMessagingInterface();
         if (!messaging || !messaging->RegisterListener(HandleMessage)) return false;
