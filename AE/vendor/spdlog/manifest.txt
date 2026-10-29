@@ -1,0 +1,53 @@
+{
+    arch = "x64",
+    artifacts = {
+        installdir = [[<xmake package dir>]]
+    },
+    configs = {
+        debug = false,
+        fmt_external = false,
+        fmt_external_ho = false,
+        header_only = false,
+        noexcept = false,
+        pic = true,
+        runtimes = "MD",
+        shared = false,
+        std_format = true,
+        thread_id = true,
+        tls = true,
+        wchar = true,
+        wchar_console = false,
+        wchar_filenames = false
+    },
+    deps = { },
+    description = "Fast C++ logging library.",
+    envs = { },
+    librarydeps = { },
+    license = "MIT",
+    mode = "release",
+    name = "spdlog",
+    pathenvs = {
+        "ACLOCAL_PATH",
+        "CMAKE_PREFIX_PATH",
+        "DYLD_LIBRARY_PATH",
+        "LD_LIBRARY_PATH",
+        "PATH",
+        "PKG_CONFIG_PATH",
+        "PYTHONPATH"
+    },
+    plat = "windows",
+    repo = {
+        branch = "master",
+        commit = "e567b25f0575b952c47b2000e0dedbd6fa698b2c",
+        name = "xmake-repo",
+        url = "https://github.com/xmake-io/xmake-repo.git"
+    },
+    vars = {
+        defines = {
+            "SPDLOG_COMPILED_LIB",
+            "SPDLOG_USE_STD_FORMAT",
+            "SPDLOG_WCHAR_TO_UTF8_SUPPORT"
+        }
+    },
+    version = "v1.17.0"
+}

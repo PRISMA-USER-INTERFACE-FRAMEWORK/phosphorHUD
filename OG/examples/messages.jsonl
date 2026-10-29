@@ -1,0 +1,96 @@
+{"settings":{"limbFigure":"vaultboy","hideHealthyFigure":true,"armorPieces":true,"contextRules":{"ads":"recommended","scope":"recommended","vats":"recommended","dialogue":"recommended","wheel":"recommended","workshop":"recommended","powerarmor":"recommended","scene":"recommended"},"showWeight":"near","showAdrenaline":true,"needStageNames":true,"survivalEnemyMarkers":false,"mineWarnings":true,"mineCompass":true,"karmaReadout":true,"localReputation":true,"challengeTracker":true,"mutationNotices":"bar","legendaryDropMarkers":true,"levelUpBanner":true,"perkReminder":true}}
+{"reset":true}
+{"snapshot":true,"hp":212,"hpMax":310,"ap":64,"apMax":90,"rads":140,"level":23,"xp":0.72,"heading":27,"location":"Sanctuary Hills","region":"Commonwealth"}
+{"xpGain":150,"xp":0.31,"level":24}
+{"levelUp":{"from":23,"to":24,"perks":1,"skills":15},"perkPoints":1,"skillPoints":15}
+{"perkKey":"K","skillsPerLevel":15}
+{"location":"Diamond City","region":"Commonwealth","faction":"Diamond City"}
+{"time":{"hour":21.7,"timescale":20,"h24":false}}
+{"combat":true}
+{"survival":{"on":true,"fatigue":0.18,"stages":{"food":1,"water":2,"rest":3},"adrenaline":{"rank":4,"kills":2,"perRank":5,"bonus":"+20% dmg"}}}
+{"needs":{"food":0.7,"water":0.45,"rest":0.25}}
+{"weight":{"cur":286,"max":300}}
+{"illness":{"id":"parasites","hoursLeft":120}}
+{"illness":{"id":"infection","hoursLeft":36,"quiet":true}}
+{"cure":true}
+{"weapon":"Combat Shotgun","clip":3,"clipMax":8,"reserve":216,"weaponLegendary":["Bloodied","Explosive"]}
+{"explosive":{"name":"Plasma Grenade","short":"PLSM","count":2}}
+{"explosive":null}
+{"flashlight":true}
+{"limbs":{"head":1,"torso":0.6,"larm":0.2,"rarm":1,"lleg":0,"rleg":0.9}}
+{"figure":{"type":"vaultgirl","hideHealthy":true}}
+{"gear":{"clothed":true,"armor":{"torso":true,"larm":true,"rarm":false}}}
+{"effect":{"id":"psycho","name":"Psycho","kind":"chem","icon":"bolt","duration":480,"remaining":480}}
+{"effect":{"id":"wellrested","name":"Well Rested","kind":"med","icon":"bed","hours":8}}
+{"effect":{"id":"0003f2c1","name":"Grilled Radstag","kind":"food","icon":"food","duration":3600,"remaining":3600}}
+{"effectRemove":"psycho","announce":true}
+{"effects":[{"id":"radx","name":"Rad-X","kind":"med","icon":"capsule","duration":60,"remaining":41}]}
+{"heading":27,"markers":[{"id":"q1","t":"door","b":42,"dist":142,"dz":12,"label":"Relay Tower","active":true},{"id":"v111","t":"vault","b":-68,"dist":780,"label":"Vault 111","disc":true},{"id":"e1","t":"enemy","b":118}]}
+{"marker":{"id":"q1","t":"quest","dist":38,"dz":-9,"label":"Broadcast source"}}
+{"markerRemove":"q1"}
+{"tracker":{"title":"Signal in the Static","objectives":[{"t":"Reach the relay tower","done":true},{"t":"Get inside the relay tower","dist":142}],"others":["Salt and Rust"]}}
+{"quest":{"eyebrow":"Quest started","title":"Signal in the Static","objectives":[{"t":"Find the source of the broadcast"}]}}
+{"challenges":[{"id":"hitdeck","name":"Hit the Deck","cur":31,"max":50}]}
+{"challengeComplete":{"id":"hitdeck","name":"Hit the Deck","reward":"Perk: Hit the Deck","xp":0}}
+{"notify":{"text":"Purified Water","sub":"+1 Â· WT 1.0","kind":"item","icon":"bottle"}}
+{"message":{"title":"Tutorial","text":"Hold the workshop key to build."}}
+{"subtitle":{"who":"Settler","line":"Water pump is running again."}}
+{"crosshair":{"spread":34}}
+{"prompt":{"key":"E","text":"Talk to Piper"}}
+{"prompt":null}
+{"prompt":{"name":"Piper","keys":[{"key":"E","text":"Talk"},{"key":"R","text":"Pickpocket"}]}}
+{"prompt":{"name":"Toolbox","keys":[{"key":"E","text":"Steal"}],"crime":true}}
+{"subtitle":null,"message":null}
+{"target":{"name":"Legendary Raider Veteran","level":28,"pct":0.6,"legendary":true,"mutations":[{"name":"Ballistic hide","kind":"defense"}]}}
+{"targetMutated":{"name":"Healing factor","kind":"heal","heal":0.25}}
+{"legendaryLoot":{"id":"ff0a12","dropped":true,"item":"Combat Rifle","effects":["Two Shot"],"b":40,"dist":12}}
+{"legendaryLoot":{"id":"ff0a12","picked":true,"item":"Combat Rifle","effects":["Two Shot"]}}
+{"loot":{"name":"Wooden Crate","items":[{"n":"Duct Tape","q":2,"w":0.5}],"sel":0}}
+{"loot":{"name":"First Aid","items":[{"n":"AI-2 Medkit [II]"},{"n":"Herbal Restorant","q":2},{"n":"Dirty Bandage","leg":true}],"sel":1,"keys":[{"key":"F","text":"Take"},{"key":"R","text":"Transfer"},{"key":"Space","text":"Equip"}]}}
+{"target":null,"loot":null}
+{"stealth":{"sneaking":true,"level":35}}
+{"stealth":{"sneaking":false}}
+{"party":[{"name":"Piper","affinity":780},{"name":"Dogmeat","type":"dog","affinity":null},{"name":"Nick Valentine","hp":0.6,"affinity":910}]}
+{"companion":{"name":"Piper","hp":0,"state":"downed"}}
+{"companionReact":{"name":"Piper","kind":"liked"}}
+{"companionRemove":"Dogmeat"}
+{"settlementAttack":{"id":"abernathy","name":"Abernathy Farm","faction":"Raiders","total":12,"defense":85,"state":"pending","b":118,"dist":1320}}
+{"settlementAttack":{"id":"abernathy","state":"active","remaining":7}}
+{"settlementAttack":null}
+{"mines":[{"id":"ff012a","name":"Frag Mine","x":905,"y":792,"dist":5,"left":2.1,"total":4.5,"disarm":true,"b":31},{"id":"ff012b","name":"Frag Mine","onScreen":false,"bearing":150,"dist":8,"left":3,"total":4}]}
+{"mines":[],"mineExploded":"ff012a"}
+{"karma":{"value":380,"title":"Defender","change":15,"reason":"Healed a settler"}}
+{"reputation":{"faction":"Diamond City","title":"Liked","event":"fameGained"}}
+{"reputation":{"faction":"the Gunners","event":"hitSquad"}}
+{"context":{"menus":["ScopeMenu"],"powerArmor":false,"ads":false,"scene":false,"photo":false,"hudHidden":false}}
+{"context":{"menus":[],"prismaFocus":true}}
+{"rads":9,"radsGain":5}
+{"radsGain":1}
+{"settings":{"showLevelBar":false,"clock24":true}}
+{"settings":{"showLevelBar":true,"clock24":false}}
+{"settings":{"hideSatisfiedNeeds":true},"survival":{"on":true,"stages":{"food":0,"water":0,"rest":0}}}
+{"survival":{"stages":{"food":1,"water":0,"rest":1}}}
+{"survival":{"stages":{"food":0,"water":0,"rest":0}}}
+{"settings":{"hideSatisfiedNeeds":false}}
+{"settings":{"hideFullVitals":true},"hp":100,"hpMax":100,"ap":100,"apMax":100,"rads":0,"survival":{"on":false}}
+{"hp":75,"ap":50,"rads":100}
+{"hp":90,"ap":100}
+{"settings":{"hideFullVitals":false}}
+{"settings":{"locationOnArrival":true},"location":"Sanctuary Hills","region":"Commonwealth"}
+{"location":"Red Rocket"}
+{"settings":{"locationOnArrival":false}}
+{"settings":{"textReadability":"subtle"}}
+{"settings":{"textReadability":"strong"}}
+{"settings":{"textReadability":"off"}}
+
+{"snapshot":true,"heading":0,"context":{"menus":[],"ads":true,"thirdPerson":true},"settings":{"hideThirdPersonAimCrosshair":false},"markers":[{"id":"player-waypoint","t":"pin","b":180,"dist":1200,"label":"Custom waypoint","active":true}]}
+{"settings":{"hideThirdPersonAimCrosshair":true}}
+{"settings":{"hideThirdPersonAimCrosshair":false},"markers":[],"context":{"ads":false,"thirdPerson":false}}
+{"settings":{"showCrosshair":false,"showHitMarkers":true,"calmDelay":0,"calmRules":{"vitals":"hide","compass":"hide","kit":"hide","party":"hide","tracker":"hide","effects":"hide","cross":"hide"}},"combat":false}
+{"clip":5,"hp":30,"hpMax":100,"tracker":{"title":"Find shelter","objectives":[{"t":"Reach Sanctuary","done":false}]}}
+{"combat":true}
+{"settings":{"showCrosshair":true,"showHitMarkers":false,"calmDelay":5,"calmRules":{"vitals":"show","compass":"show","kit":"show","party":"show","tracker":"show","effects":"show","cross":"show"}}}
+{"settings":{"showHitMarkers":true},"combat":false}
+{"armor":{"current":150,"max":150,"perPlate":50,"stock":12}}
+{"armor":{"current":60,"max":150,"perPlate":50,"stock":11}}
+{"armor":{"current":0,"max":150,"perPlate":50,"stock":0}}

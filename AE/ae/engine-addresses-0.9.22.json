@@ -1,0 +1,79 @@
+{
+  "runtime": "1.11.240.0",
+  "database_sha256": "65985cc2259384a13cffb538d74776e422e62b0cd3766485a000620242b72b06",
+  "entries": 652306,
+  "note": "Presence confirms a mapping, not live correctness. Native inline data access has no relocation. Existing RTTI/runtime helper coverage is retained in the full 0.9.20 audit.",
+  "helpers": [
+    {
+      "name": "PlayerCharacter::Singleton",
+      "id": 4798212,
+      "offset": "0x31ede50"
+    },
+    {
+      "name": "TESDataHandler::Singleton",
+      "id": 4796135,
+      "offset": "0x30e7100"
+    },
+    {
+      "name": "TESQuest::GetAliasedRef",
+      "id": 2207810,
+      "offset": "0x671fa0"
+    },
+    {
+      "name": "TESObjectREFR::GetDisplayFullName",
+      "id": 2201126,
+      "offset": "0x513630"
+    },
+    {
+      "name": "BSSpinLock::lock",
+      "id": 2192245,
+      "offset": "0x2dd800"
+    },
+    {
+      "name": "BSSpinLock::BSReadWriteLock::lock_read",
+      "id": 2267897,
+      "offset": "0x1659400"
+    },
+    {
+      "name": "BSPointerHandle::BSPointerHandleManagerInterface::GetSmartPointer",
+      "id": 2188681,
+      "offset": "0x22d060"
+    },
+    {
+      "name": "TESForm::AllForms",
+      "id": 4796465,
+      "offset": "0x30ebec8"
+    },
+    {
+      "name": "TESForm::AllFormsMapLock",
+      "id": 4796476,
+      "offset": "0x30ebf18"
+    },
+    {
+      "name": "TESForm::AllFormsByEditorID",
+      "id": 4796466,
+      "offset": "0x30ebed0"
+    },
+    {
+      "name": "TESForm::AllFormsEditorIDMapLock",
+      "id": 4796477,
+      "offset": "0x30ebf20"
+    },
+    {
+      "name": "TESFullName::SparseFullNameMap",
+      "id": 2661402,
+      "offset": "0x2edcb00"
+    },
+    {
+      "name": "BSStringPool::GetEntry_char",
+      "id": 2268729,
+      "offset": "0x167dd20"
+    },
+    {
+      "name": "BSStringPool::Entry::Release",
+      "id": 2268720,
+      "offset": "0x167d4a0"
+    }
+  ],
+  "missing": []
+}

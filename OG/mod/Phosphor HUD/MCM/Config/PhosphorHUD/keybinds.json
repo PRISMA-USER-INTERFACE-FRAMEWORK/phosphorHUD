@@ -1,0 +1,15 @@
+{
+  "modName": "PhosphorHUD",
+  "keybinds": [
+    {
+      "id": "PerkChoicesKey",
+      "desc": "Phosphor HUD: hold to show perk choices on containers and bodies",
+      "action": {
+        "type": "CallGlobalFunction",
+        "script": "PhosphorHUD",
+        "function": "PerkChoicesKey",
+        "params": []
+      }
+    }
+  ]
+}

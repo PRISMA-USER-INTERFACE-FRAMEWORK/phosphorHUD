@@ -1,0 +1,22 @@
+{
+ "version": "0.9.20",
+ "reviewed": "2026-10-20",
+ "note": "Reviewed OG-active delta against 0.9.19: Core armor wheel setting; Mods armor globals and inventory reader; Live vanilla reticle/dot and AAF-preserving compass children; NativeHudRequest hideCompass; Plugin armor output, suppression troubleshooting switches, compass widget exclusion and 0.9.20 metadata/log. All other source files unchanged. AE-only compass early-exit correction leaves these tokens unchanged. Regenerate only after reviewing intended OG changes.",
+ "files": {
+  "Core.cpp": "77726a75783e82752d23de67cbb925c35ba18cb8ec73d841e45757b078b4a698",
+  "Core.h": "56de74c1f76502c082ea659f188697b2884d75ec43833e49d874b6707ad8dafc",
+  "EventInbox.h": "9fc70ebf84c4e77b86000672fae7a110a82121ac7793eff5c9281ae4b6706a69",
+  "Live.cpp": "50e28c9de7bccab556930c91a735f5c292545a14661e774c76c43e25d494bd40",
+  "Live.h": "80306396960a277517dfb2989d6f459a06d5eec971caf4f7bf94e6741cd5f89c",
+  "Mines.cpp": "a76fdd518bf06657fe82a94cd3adbbed0f7d84acce827822c95e01cfaa783a09",
+  "Mines.h": "44a965d8de9e571f522106b59a0bfd9d72c29ee1b3c19e65da8495b8b0954efe",
+  "ModData.cpp": "7dd7801d3dee55a4fd117b54f272e5a0679d3ddbf7fe9ce98fdde7843d3a7a56",
+  "ModData.h": "ba531cf3930cf98b7e3de8b34d3f31d35fef03164bb73276e6df7e34ba0b0eee",
+  "Mods.cpp": "a4dc72a25bfda1e6c1a0b7df104bcf8c80222cf90ab0842e0c5b4984f9ffbaf9",
+  "Mods.h": "10c62d04b2a51702239f292331e375371ed371873dcb409b11408f21a3665ef4",
+  "Pipboy.cpp": "b4ee56bde1d901a609056f0e4bb299a227bfd969a2155ee35e911eb1b8de1a8e",
+  "Pipboy.h": "1bf8593fc0be49152f7ce6596e43f7330e19f4695b62650fcf208110ea20c0e7",
+  "Plugin.cpp": "ba31282e66c50924096bd0ffb09f4454801c22e39cfd4433eca80e6a0c9cc3c7",
+  "UiMailbox.h": "9a508c5ceaa3260a9abeeb63b8c02942a1bc72ada037454aeb6e3f509f6b6a29"
+ }
+}

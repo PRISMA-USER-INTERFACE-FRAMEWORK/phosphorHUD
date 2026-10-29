@@ -1,0 +1,36 @@
+{
+    arch = "x64",
+    artifacts = {
+        installdir = [[<xmake package dir>]]
+    },
+    configs = {
+        cmake = false,
+        debug = false,
+        pic = true,
+        runtimes = "MD",
+        shared = false
+    },
+    description = "JSON for Modern C++",
+    envs = { },
+    kind = "library",
+    license = "MIT",
+    mode = "release",
+    name = "nlohmann_json",
+    pathenvs = {
+        "ACLOCAL_PATH",
+        "CMAKE_PREFIX_PATH",
+        "DYLD_LIBRARY_PATH",
+        "LD_LIBRARY_PATH",
+        "PATH",
+        "PKG_CONFIG_PATH",
+        "PYTHONPATH"
+    },
+    plat = "windows",
+    repo = {
+        branch = "master",
+        commit = "e567b25f0575b952c47b2000e0dedbd6fa698b2c",
+        name = "xmake-repo",
+        url = "https://github.com/xmake-io/xmake-repo.git"
+    },
+    version = "v3.12.0"
+}

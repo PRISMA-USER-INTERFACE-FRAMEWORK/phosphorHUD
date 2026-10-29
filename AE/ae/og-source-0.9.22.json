@@ -1,0 +1,29 @@
+{
+ "version": "0.9.22",
+ "reviewed": "2026-10-22",
+ "note": "Reviewed source ZIP 0.9.21 to task-start: Core.cpp/Core.h door merging; Live.cpp door merge and engine height; Plugin.cpp engine data/probe integration and version. Five new files: EngineLayout.h, EngineQuests.cpp/.h, EngineProbe.cpp/.h (task count four omitted layout header). Other sources unchanged. OG projection now handles !defined as well as defined PHOSPHOR_AE. 2026-10-21 (Claude): intended OG change, map location visible reads MapMarkerData flag 0x01 (EngineLayout.h kMarkerVisible, EngineQuests.cpp) and new bShowUndiscovered setting (Core.cpp). 2026-10-22 (Claude, 0.9.23, intended OG changes): text/icon/ring size settings (Core.cpp), survival message stages in the F4SE co-save (Live.cpp/.h, Plugin.cpp), every enabled named map marker is a compass candidate (EngineQuests.cpp, EngineLayout.h comment), version 0.9.23 (Plugin.cpp). 2026-10-22 (Claude, 0.9.24, intended OG changes): quick loot first, opt-in perk Activate conditions behind an MCM key (new QuickLootFirst.cpp/.h, an AE stub; Plugin.cpp wiring), MCM switch and Keybinds.json reader (Core.cpp/.h), the game's own subtitles kept during dialogue (Live.cpp/.h keepSubtitles, Core KeepGameSubtitles, Plugin.cpp), version 0.9.24 (Plugin.cpp).",
+ "files": {
+  "Core.cpp": "e57e33f980d040db571147c898f8e4adf95377eb7191b3d7ccb8035f2f815e43",
+  "Core.h": "f920f041aab921d2b9238ed0fdf74298fc44c0333f3cf36b63c68b85eb93e016",
+  "EngineLayout.h": "e8a25e663fc7897310833ec067c2816122e264b640191bccaad2e909cfea0b89",
+  "EngineProbe.cpp": "8ff193d8486bb95c4b89d11653d4470fb362bd4cb6b453110172a692662dff38",
+  "EngineProbe.h": "ea8b2c35ab58efe4fadadd3a3e363b5fdd845ed2a244f4a056c1996ccd329dbc",
+  "EngineQuests.cpp": "2257b06f6cd3ec1168474280747d171b18bb701bd46a4d99a1115585fb9da563",
+  "EngineQuests.h": "fe7ba2308a3563d4a75648674c3a61523e2a5db2d6052ab05fe324ff598fa826",
+  "EventInbox.h": "9fc70ebf84c4e77b86000672fae7a110a82121ac7793eff5c9281ae4b6706a69",
+  "Live.cpp": "8f1df32c023de3a3aed5006b6c58da864b8c9a90bee0826d300f67e0b3c4e3cc",
+  "Live.h": "6509e3c7ace9cedf69c1c014f2d353e49c48d9f73b1e66f29e00e6c9bb8f6834",
+  "Mines.cpp": "a76fdd518bf06657fe82a94cd3adbbed0f7d84acce827822c95e01cfaa783a09",
+  "Mines.h": "44a965d8de9e571f522106b59a0bfd9d72c29ee1b3c19e65da8495b8b0954efe",
+  "ModData.cpp": "7dd7801d3dee55a4fd117b54f272e5a0679d3ddbf7fe9ce98fdde7843d3a7a56",
+  "ModData.h": "ba531cf3930cf98b7e3de8b34d3f31d35fef03164bb73276e6df7e34ba0b0eee",
+  "Mods.cpp": "a4dc72a25bfda1e6c1a0b7df104bcf8c80222cf90ab0842e0c5b4984f9ffbaf9",
+  "Mods.h": "10c62d04b2a51702239f292331e375371ed371873dcb409b11408f21a3665ef4",
+  "Pipboy.cpp": "b4ee56bde1d901a609056f0e4bb299a227bfd969a2155ee35e911eb1b8de1a8e",
+  "Pipboy.h": "1bf8593fc0be49152f7ce6596e43f7330e19f4695b62650fcf208110ea20c0e7",
+  "Plugin.cpp": "53bfc5f7e1dec65bd7342caa3b5ea7b6811b447ff6fa8fe99385f579a6a2c57d",
+  "QuickLootFirst.cpp": "97801882cfc4ad59640e50bcdbc3bd0c06727694ed3eab88c2d0ab726e989d6d",
+  "QuickLootFirst.h": "16b597f211751fc5d6dd4ce58ce53c79d9de13bbca2d1e2dc3f708472c7b2d14",
+  "UiMailbox.h": "9a508c5ceaa3260a9abeeb63b8c02942a1bc72ada037454aeb6e3f509f6b6a29"
+ }
+}

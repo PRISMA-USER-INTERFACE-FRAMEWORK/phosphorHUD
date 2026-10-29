@@ -1,0 +1,41 @@
+{
+    arch = "x64",
+    artifacts = {
+        installdir = [[<xmake package dir>]]
+    },
+    configs = {
+        debug = false,
+        exceptions = true,
+        pic = true,
+        runtimes = "MD",
+        shared = false
+    },
+    deps = { },
+    description = "Header-only C++ library for JSON Schema validation, with support for many popular parsers",
+    envs = { },
+    kind = "library",
+    librarydeps = { },
+    license = "BSD-2-Clause",
+    mode = "release",
+    name = "valijson",
+    pathenvs = {
+        "ACLOCAL_PATH",
+        "CMAKE_PREFIX_PATH",
+        "DYLD_LIBRARY_PATH",
+        "LD_LIBRARY_PATH",
+        "PATH",
+        "PKG_CONFIG_PATH",
+        "PYTHONPATH"
+    },
+    plat = "windows",
+    repo = {
+        branch = "master",
+        commit = "e567b25f0575b952c47b2000e0dedbd6fa698b2c",
+        name = "xmake-repo",
+        url = "https://github.com/xmake-io/xmake-repo.git"
+    },
+    vars = {
+        defines = "VALIJSON_USE_EXCEPTIONS=1"
+    },
+    version = "v1.1.3"
+}

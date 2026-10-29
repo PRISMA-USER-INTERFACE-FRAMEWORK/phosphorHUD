@@ -1,0 +1,22 @@
+{
+ "version": "0.9.19",
+ "reviewed": "2026-10-18",
+ "note": "SHA-256 of OG-active tokens (PHOSPHOR_AE blocks removed, comments and whitespace ignored). Reviewed against the 0.9.18 tree in .build/og-crosshair-calm/before: only Core.cpp (crosshair, hit-marker and out-of-combat settings) and Plugin.cpp (version 0.9.19) changed. Regenerate only after reviewing an intended OG change. Re-reviewed 2026-10-18: Core.cpp gained the bShowWeaponLegendary -> showWeaponLegendary setting (one line).",
+ "files": {
+  "Core.cpp": "6481194411360275834246d55504adab4b5308360fc054bf01fade11df8abba5",
+  "Core.h": "56de74c1f76502c082ea659f188697b2884d75ec43833e49d874b6707ad8dafc",
+  "EventInbox.h": "9fc70ebf84c4e77b86000672fae7a110a82121ac7793eff5c9281ae4b6706a69",
+  "Live.cpp": "22463cda97c1bb5da9e239a07d7f2035d9c5ebc868051a9d006307b7d9fdf9ad",
+  "Live.h": "fb1b0b46591afb64b7268b6f8bbe29c2084fd9999254cff7a484a2e991cef4ed",
+  "Mines.cpp": "a76fdd518bf06657fe82a94cd3adbbed0f7d84acce827822c95e01cfaa783a09",
+  "Mines.h": "44a965d8de9e571f522106b59a0bfd9d72c29ee1b3c19e65da8495b8b0954efe",
+  "ModData.cpp": "7dd7801d3dee55a4fd117b54f272e5a0679d3ddbf7fe9ce98fdde7843d3a7a56",
+  "ModData.h": "ba531cf3930cf98b7e3de8b34d3f31d35fef03164bb73276e6df7e34ba0b0eee",
+  "Mods.cpp": "d16608f247a55bcdcf8399d812a4ca9313cf9797cfae4de713bcbbb25655d9ac",
+  "Mods.h": "324e7af1e387d2c52a09c4696151373c6c94e0736acb60b04bb257b00304a76e",
+  "Pipboy.cpp": "b4ee56bde1d901a609056f0e4bb299a227bfd969a2155ee35e911eb1b8de1a8e",
+  "Pipboy.h": "1bf8593fc0be49152f7ce6596e43f7330e19f4695b62650fcf208110ea20c0e7",
+  "Plugin.cpp": "e9d18c976b6caebeea66c3bb20dc9ac1ea1c2740b16657d0c7e428a30197f67a",
+  "UiMailbox.h": "9a508c5ceaa3260a9abeeb63b8c02942a1bc72ada037454aeb6e3f509f6b6a29"
+ }
+}

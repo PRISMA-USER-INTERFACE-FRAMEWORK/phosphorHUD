@@ -1,0 +1,1665 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "phosphor-hud/hud-messages.schema.json",
+  "title": "Phosphor HUD message",
+  "description": "One argument to hudUpdate(). Every field is optional. See docs/02_MESSAGES.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "fraction": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "effectIcon": {
+      "enum": [
+        "bolt",
+        "shield",
+        "hourglass",
+        "dumbbell",
+        "capsule",
+        "syringe",
+        "ivbag",
+        "bottle",
+        "warn",
+        "infection",
+        "parasites",
+        "insomnia",
+        "lethargy",
+        "weakness",
+        "karma",
+        "star",
+        "medal",
+        "hitsquad",
+        "gift",
+        "sleepy",
+        "bed",
+        "food"
+      ]
+    },
+    "objective": {
+      "type": "object",
+      "required": [
+        "t"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "t": {
+          "type": "string"
+        },
+        "done": {
+          "type": "boolean"
+        },
+        "dist": {
+          "type": "number"
+        }
+      }
+    },
+    "effect": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "chem",
+            "med",
+            "drink",
+            "food",
+            "bad"
+          ]
+        },
+        "icon": {
+          "$ref": "#/$defs/effectIcon"
+        },
+        "duration": {
+          "type": "number",
+          "minimum": 0
+        },
+        "remaining": {
+          "type": "number",
+          "minimum": 0
+        },
+        "hours": {
+          "type": "number",
+          "minimum": 0
+        },
+        "hoursLeft": {
+          "type": "number",
+          "minimum": 0
+        },
+        "desc": {
+          "type": "string"
+        }
+      }
+    },
+    "marker": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "t": {
+          "enum": [
+            "quest",
+            "door",
+            "settlement",
+            "city",
+            "cave",
+            "vault",
+            "factory",
+            "landmark",
+            "pin",
+            "enemy",
+            "ally"
+          ]
+        },
+        "b": {
+          "type": "number"
+        },
+        "dist": {
+          "type": "number",
+          "minimum": 0
+        },
+        "dz": {
+          "type": "number"
+        },
+        "label": {
+          "type": "string"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "disc": {
+          "type": "boolean"
+        }
+      }
+    },
+    "member": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "human",
+            "dog",
+            "robot",
+            "mutant"
+          ]
+        },
+        "hp": {
+          "$ref": "#/$defs/fraction"
+        },
+        "state": {
+          "enum": [
+            "following",
+            "waiting",
+            "downed"
+          ]
+        },
+        "affinity": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": -1000,
+          "maximum": 1000
+        },
+        "rank": {
+          "type": "string"
+        },
+        "portrait": {
+          "type": "string"
+        }
+      }
+    },
+    "mine": {
+      "type": "object",
+      "required": [
+        "id",
+        "dist"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "dist": {
+          "type": "number",
+          "minimum": 0
+        },
+        "left": {
+          "type": "number"
+        },
+        "total": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "disarm": {
+          "type": "boolean"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "onScreen": {
+          "type": "boolean"
+        },
+        "bearing": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        }
+      }
+    },
+    "ctxRule": {
+      "enum": [
+        "recommended",
+        "show",
+        "hide"
+      ]
+    }
+  },
+  "properties": {
+    "snapshot": {
+      "const": true
+    },
+    "reset": {
+      "const": true
+    },
+    "paused": {
+      "type": "boolean"
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "limbFigure": {
+          "enum": [
+            "silhouette",
+            "vaultboy",
+            "vaultgirl"
+          ]
+        },
+        "hideHealthyFigure": {
+          "type": "boolean"
+        },
+        "armorPieces": {
+          "type": "boolean"
+        },
+        "contextRules": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ads": {
+              "$ref": "#/$defs/ctxRule"
+            },
+            "scope": {
+              "$ref": "#/$defs/ctxRule"
+            },
+            "vats": {
+              "$ref": "#/$defs/ctxRule"
+            },
+            "dialogue": {
+              "$ref": "#/$defs/ctxRule"
+            },
+            "wheel": {
+              "$ref": "#/$defs/ctxRule"
+            },
+            "workshop": {
+              "$ref": "#/$defs/ctxRule"
+            },
+            "powerarmor": {
+              "$ref": "#/$defs/ctxRule"
+            },
+            "scene": {
+              "$ref": "#/$defs/ctxRule"
+            }
+          }
+        },
+        "showWeight": {
+          "enum": [
+            "near",
+            "always",
+            "never"
+          ]
+        },
+        "showAdrenaline": {
+          "type": "boolean"
+        },
+        "needStageNames": {
+          "type": "boolean"
+        },
+        "hideSatisfiedNeeds": {
+          "type": "boolean"
+        },
+        "hideFullVitals": {
+          "type": "boolean"
+        },
+        "showArmorWheel": {
+          "type": "boolean"
+        },
+        "showUndiscovered": {
+          "type": "boolean"
+        },
+        "locationOnArrival": {
+          "type": "boolean"
+        },
+        "survivalEnemyMarkers": {
+          "type": "boolean"
+        },
+        "mineWarnings": {
+          "type": "boolean"
+        },
+        "mineCompass": {
+          "type": "boolean"
+        },
+        "karmaReadout": {
+          "type": "boolean"
+        },
+        "localReputation": {
+          "type": "boolean"
+        },
+        "challengeTracker": {
+          "type": "boolean"
+        },
+        "mutationNotices": {
+          "enum": [
+            "bar",
+            "feed",
+            "off"
+          ]
+        },
+        "legendaryDropMarkers": {
+          "type": "boolean"
+        },
+        "showWeaponLegendary": {
+          "type": "boolean"
+        },
+        "showLevelBar": {
+          "type": "boolean"
+        },
+        "hideThirdPersonAimCrosshair": {
+          "type": "boolean"
+        },
+        "clock24": {
+          "type": "boolean"
+        },
+        "textReadability": {
+          "type": "string",
+          "enum": [
+            "off",
+            "subtle",
+            "strong"
+          ],
+          "description": "Optional dark text shadow. Off preserves the original appearance."
+        },
+        "levelUpBanner": {
+          "type": "boolean"
+        },
+        "perkReminder": {
+          "type": "boolean"
+        },
+        "idleOpacity": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 1
+        },
+        "textScale": {
+          "type": "number",
+          "minimum": 0.8,
+          "maximum": 1.5,
+          "description": "HUD text size multiplier (MCM Text size)."
+        },
+        "iconScale": {
+          "type": "number",
+          "minimum": 0.8,
+          "maximum": 2,
+          "description": "Compass marker size multiplier (MCM Compass icon size)."
+        },
+        "ringScale": {
+          "type": "number",
+          "minimum": 0.8,
+          "maximum": 1.5,
+          "description": "Vital ring, effect ring and companion portrait size multiplier (MCM Ring size)."
+        },
+        "showCrosshair": {
+          "type": "boolean"
+        },
+        "showHitMarkers": {
+          "type": "boolean"
+        },
+        "calmDelay": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15
+        },
+        "calmRules": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vitals": {
+              "enum": [
+                "show",
+                "dim",
+                "hide"
+              ]
+            },
+            "compass": {
+              "enum": [
+                "show",
+                "dim",
+                "hide"
+              ]
+            },
+            "kit": {
+              "enum": [
+                "show",
+                "dim",
+                "hide"
+              ]
+            },
+            "party": {
+              "enum": [
+                "show",
+                "dim",
+                "hide"
+              ]
+            },
+            "tracker": {
+              "enum": [
+                "show",
+                "dim",
+                "hide"
+              ]
+            },
+            "effects": {
+              "enum": [
+                "show",
+                "dim",
+                "hide"
+              ]
+            },
+            "cross": {
+              "enum": [
+                "show",
+                "dim",
+                "hide"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "hp": {
+      "type": "number"
+    },
+    "hpMax": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "ap": {
+      "type": "number"
+    },
+    "apMax": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "rads": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1000
+    },
+    "radsGain": {
+      "type": "number",
+      "description": "Floats +N RADS. Adds to radiation only when absolute rads is absent; live batches always include rads."
+    },
+    "level": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "xp": {
+      "$ref": "#/$defs/fraction"
+    },
+    "xpGain": {
+      "type": "number"
+    },
+    "levelUp": {
+      "type": "object",
+      "required": [
+        "from",
+        "to"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "type": "integer"
+        },
+        "to": {
+          "type": "integer"
+        },
+        "perks": {
+          "type": "integer"
+        },
+        "skills": {
+          "type": "integer"
+        }
+      }
+    },
+    "perkPoints": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "skillPoints": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "skillsPerLevel": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "perkKey": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string"
+    },
+    "faction": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "time": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "timescale": {
+          "type": "number",
+          "minimum": 0
+        },
+        "h24": {
+          "type": "boolean"
+        }
+      }
+    },
+    "combat": {
+      "type": "boolean"
+    },
+    "needs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "food": {
+          "$ref": "#/$defs/fraction"
+        },
+        "water": {
+          "$ref": "#/$defs/fraction"
+        },
+        "rest": {
+          "$ref": "#/$defs/fraction"
+        }
+      }
+    },
+    "survival": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "on": {
+          "type": "boolean"
+        },
+        "fatigue": {
+          "$ref": "#/$defs/fraction"
+        },
+        "stages": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "food": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "water": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "rest": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            }
+          }
+        },
+        "adrenaline": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "rank": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "kills": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "perRank": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "bonus": {
+              "type": "string"
+            }
+          }
+        },
+        "stageNames": {
+          "type": "boolean"
+        },
+        "showAdrenaline": {
+          "type": "boolean"
+        },
+        "enemyMarkers": {
+          "type": "boolean"
+        }
+      }
+    },
+    "weight": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cur": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max": {
+          "type": "number",
+          "minimum": 0
+        },
+        "show": {
+          "enum": [
+            "near",
+            "always",
+            "never"
+          ]
+        }
+      }
+    },
+    "illness": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "enum": [
+            "fatigue",
+            "infection",
+            "insomnia",
+            "lethargy",
+            "parasites",
+            "weakness"
+          ]
+        },
+        "hoursLeft": {
+          "type": "number",
+          "minimum": 0
+        },
+        "quiet": {
+          "type": "boolean"
+        }
+      }
+    },
+    "cure": {
+      "oneOf": [
+        {
+          "const": true
+        },
+        {
+          "enum": [
+            "fatigue",
+            "infection",
+            "insomnia",
+            "lethargy",
+            "parasites",
+            "weakness"
+          ]
+        }
+      ]
+    },
+    "weapon": {
+      "type": "string"
+    },
+    "clip": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "clipMax": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reserve": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "weaponLegendary": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5
+    },
+    "flashlight": {
+      "type": "boolean"
+    },
+    "explosive": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "short": {
+              "type": "string",
+              "maxLength": 6
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "announce": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "grenades": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "limbs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "head": {
+          "$ref": "#/$defs/fraction"
+        },
+        "torso": {
+          "$ref": "#/$defs/fraction"
+        },
+        "larm": {
+          "$ref": "#/$defs/fraction"
+        },
+        "rarm": {
+          "$ref": "#/$defs/fraction"
+        },
+        "lleg": {
+          "$ref": "#/$defs/fraction"
+        },
+        "rleg": {
+          "$ref": "#/$defs/fraction"
+        }
+      }
+    },
+    "figure": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "silhouette",
+            "vaultboy",
+            "vaultgirl"
+          ]
+        },
+        "hideHealthy": {
+          "type": "boolean"
+        }
+      }
+    },
+    "gear": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "clothed": {
+          "type": "boolean"
+        },
+        "armor": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "head": {
+              "type": "boolean"
+            },
+            "torso": {
+              "type": "boolean"
+            },
+            "larm": {
+              "type": "boolean"
+            },
+            "rarm": {
+              "type": "boolean"
+            },
+            "lleg": {
+              "type": "boolean"
+            },
+            "rleg": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "effect": {
+      "$ref": "#/$defs/effect"
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/effect"
+      }
+    },
+    "effectRemove": {
+      "$ref": "#/$defs/id"
+    },
+    "announce": {
+      "type": "boolean"
+    },
+    "heading": {
+      "type": "number"
+    },
+    "markers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/marker"
+      }
+    },
+    "marker": {
+      "$ref": "#/$defs/marker"
+    },
+    "markerRemove": {
+      "$ref": "#/$defs/id"
+    },
+    "tracker": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "title"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "objectives": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/objective"
+              }
+            },
+            "others": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "quest": {
+      "type": "object",
+      "required": [
+        "title"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "eyebrow": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "objectives": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/objective"
+          }
+        },
+        "tone": {
+          "enum": [
+            "alert",
+            "good"
+          ]
+        },
+        "ms": {
+          "type": "integer",
+          "minimum": 500
+        }
+      }
+    },
+    "challenges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "cur",
+          "max"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "cur": {
+            "type": "number",
+            "minimum": 0
+          },
+          "max": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        }
+      }
+    },
+    "challengeComplete": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "reward": {
+          "type": "string"
+        },
+        "xp": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "notify": {
+      "type": "object",
+      "required": [
+        "text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "sub": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "item",
+            "weapon",
+            "radio",
+            "level",
+            "quest",
+            "caps",
+            "chem",
+            "bad",
+            "legendary"
+          ]
+        },
+        "icon": {
+          "$ref": "#/$defs/effectIcon"
+        },
+        "ms": {
+          "type": "integer",
+          "minimum": 500
+        }
+      }
+    },
+    "message": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "ms": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      ]
+    },
+    "subtitle": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "line"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "who": {
+              "type": "string"
+            },
+            "line": {
+              "type": "string"
+            },
+            "ms": {
+              "type": "integer",
+              "minimum": 500
+            }
+          }
+        }
+      ]
+    },
+    "prompt": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "key",
+            "text"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "hold": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "keys"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "crime": {
+              "type": "boolean"
+            },
+            "keys": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "key": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "target": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "level": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "pct": {
+              "$ref": "#/$defs/fraction"
+            },
+            "legendary": {
+              "type": "boolean"
+            },
+            "mutations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "enum": [
+                      "offense",
+                      "defense",
+                      "heal"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "targetMutated": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "offense",
+            "defense",
+            "heal"
+          ]
+        },
+        "heal": {
+          "$ref": "#/$defs/fraction"
+        }
+      }
+    },
+    "mutationFeed": {
+      "type": "boolean"
+    },
+    "legendaryLoot": {
+      "type": "object",
+      "required": [
+        "id",
+        "item"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "item": {
+          "type": "string"
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dropped": {
+          "type": "boolean"
+        },
+        "picked": {
+          "type": "boolean"
+        },
+        "b": {
+          "type": "number"
+        },
+        "dist": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "loot": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "sel": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "n"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "n": {
+                    "type": "string"
+                  },
+                  "q": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "w": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "leg": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            },
+            "locked": {
+              "type": "boolean"
+            },
+            "steal": {
+              "type": "boolean"
+            },
+            "keys": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "key": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "stealth": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sneaking": {
+          "type": "boolean"
+        },
+        "level": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "state": {
+          "enum": [
+            "hidden",
+            "caution",
+            "danger",
+            "detected",
+            null
+          ]
+        },
+        "mult": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "party": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/member"
+      }
+    },
+    "companion": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/member"
+        }
+      ]
+    },
+    "companionRemove": {
+      "type": "string"
+    },
+    "companionReact": {
+      "oneOf": [
+        {
+          "enum": [
+            "loved",
+            "liked",
+            "disliked",
+            "hated"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "kind": {
+              "enum": [
+                "loved",
+                "liked",
+                "disliked",
+                "hated"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "settlementAttack": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/id"
+            },
+            "name": {
+              "type": "string"
+            },
+            "faction": {
+              "type": "string"
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "remaining": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "defense": {
+              "type": "number"
+            },
+            "state": {
+              "enum": [
+                "pending",
+                "active",
+                "won",
+                "lost",
+                "ended"
+              ]
+            },
+            "b": {
+              "type": "number"
+            },
+            "dist": {
+              "type": "number",
+              "minimum": 0
+            },
+            "hoursLeft": {
+              "type": "number",
+              "minimum": 0
+            },
+            "vertibird": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "mines": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/mine"
+      }
+    },
+    "mineExploded": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/id"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      ]
+    },
+    "karma": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "number"
+        },
+        "alignment": {
+          "type": "integer",
+          "minimum": -2,
+          "maximum": 2
+        },
+        "title": {
+          "type": "string"
+        },
+        "change": {
+          "type": "number"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "armor": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "current": {
+              "type": "number",
+              "minimum": 0
+            },
+            "max": {
+              "type": "number",
+              "minimum": 0
+            },
+            "perPlate": {
+              "type": "number",
+              "minimum": 0
+            },
+            "stock": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      ]
+    },
+    "reputation": {
+      "type": "object",
+      "required": [
+        "faction"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "faction": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "fame": {
+          "type": "number",
+          "minimum": 0
+        },
+        "infamy": {
+          "type": "number",
+          "minimum": 0
+        },
+        "event": {
+          "enum": [
+            "discovered",
+            "fameGained",
+            "fameLost",
+            "infamyGained",
+            "infamyLost",
+            "hitSquad",
+            "gift"
+          ]
+        },
+        "detail": {
+          "type": "string"
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "menus": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "powerArmor": {
+          "type": "boolean"
+        },
+        "ads": {
+          "type": "boolean"
+        },
+        "thirdPerson": {
+          "type": "boolean"
+        },
+        "scene": {
+          "type": "boolean"
+        },
+        "photo": {
+          "type": "boolean"
+        },
+        "hudHidden": {
+          "type": "boolean"
+        },
+        "prismaFocus": {
+          "type": "boolean"
+        },
+        "rules": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ads": {
+              "$ref": "#/$defs/ctxRule"
+            },
+            "scope": {
+              "$ref": "#/$defs/ctxRule"
+            },
+            "vats": {
+              "$ref": "#/$defs/ctxRule"
+            },
+            "dialogue": {
+              "$ref": "#/$defs/ctxRule"
+            },
+            "wheel": {
+              "$ref": "#/$defs/ctxRule"
+            },
+            "workshop": {
+              "$ref": "#/$defs/ctxRule"
+            },
+            "powerarmor": {
+              "$ref": "#/$defs/ctxRule"
+            },
+            "scene": {
+              "$ref": "#/$defs/ctxRule"
+            }
+          }
+        }
+      }
+    },
+    "crosshair": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "spread": {
+              "type": "number",
+              "minimum": 0
+            },
+            "reticle": {
+              "type": "boolean"
+            },
+            "dot": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

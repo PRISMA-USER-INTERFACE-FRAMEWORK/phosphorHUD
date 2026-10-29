@@ -1,0 +1,22 @@
+{
+ "version": "0.9.21",
+ "reviewed": "2026-10-20",
+ "note": "Reviewed against 0.9.20 fingerprints using .build/bak-ally: only Live.cpp/Live.h (optional companion marker output using existing actor positions) and Plugin.cpp (initial/slow-tick ally merge, feed-unavailable notice, 0.9.21 metadata/log). No other OG-active source changes. Preserve intended shared changes; regenerate only after review.",
+ "files": {
+  "Core.cpp": "77726a75783e82752d23de67cbb925c35ba18cb8ec73d841e45757b078b4a698",
+  "Core.h": "56de74c1f76502c082ea659f188697b2884d75ec43833e49d874b6707ad8dafc",
+  "EventInbox.h": "9fc70ebf84c4e77b86000672fae7a110a82121ac7793eff5c9281ae4b6706a69",
+  "Live.cpp": "52dcd85371ae9d715e8e99f68aafe04be79ca1f85b510e9ca553ee96c2ad5774",
+  "Live.h": "1ecd903cb91544695ddb652705570ca2a722a0042f79c39e7f8958ff2aec0c75",
+  "Mines.cpp": "a76fdd518bf06657fe82a94cd3adbbed0f7d84acce827822c95e01cfaa783a09",
+  "Mines.h": "44a965d8de9e571f522106b59a0bfd9d72c29ee1b3c19e65da8495b8b0954efe",
+  "ModData.cpp": "7dd7801d3dee55a4fd117b54f272e5a0679d3ddbf7fe9ce98fdde7843d3a7a56",
+  "ModData.h": "ba531cf3930cf98b7e3de8b34d3f31d35fef03164bb73276e6df7e34ba0b0eee",
+  "Mods.cpp": "a4dc72a25bfda1e6c1a0b7df104bcf8c80222cf90ab0842e0c5b4984f9ffbaf9",
+  "Mods.h": "10c62d04b2a51702239f292331e375371ed371873dcb409b11408f21a3665ef4",
+  "Pipboy.cpp": "b4ee56bde1d901a609056f0e4bb299a227bfd969a2155ee35e911eb1b8de1a8e",
+  "Pipboy.h": "1bf8593fc0be49152f7ce6596e43f7330e19f4695b62650fcf208110ea20c0e7",
+  "Plugin.cpp": "21d02d05fcf9d4939a5e9a1a1fe0226a8ec08a6fdf00b6397a6fa145d9a12c2a",
+  "UiMailbox.h": "9a508c5ceaa3260a9abeeb63b8c02942a1bc72ada037454aeb6e3f509f6b6a29"
+ }
+}

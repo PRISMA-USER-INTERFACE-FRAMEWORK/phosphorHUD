@@ -1,0 +1,641 @@
+{
+  "modName": "PhosphorHUD",
+  "displayName": "Phosphor HUD",
+  "minMcmVersion": 2,
+  "content": [
+    {
+      "text": "Phosphor HUD",
+      "align": "center",
+      "type": "text"
+    },
+    {
+      "text": "Look",
+      "type": "section"
+    },
+    {
+      "id": "iIdleOpacity:Main",
+      "text": "Idle opacity (%)",
+      "type": "slider",
+      "help": "How visible HUD parts stay after a few quiet seconds. They light up fully when something changes and in combat.",
+      "valueOptions": {
+        "min": 20,
+        "max": 100,
+        "step": 5,
+        "sourceType": "ModSettingInt"
+      }
+    },
+    {
+      "id": "iTextReadability:Main",
+      "text": "Text readability",
+      "type": "dropdown",
+      "help": "Add dark text shadows for brighter backgrounds. Off keeps the original appearance. Subtle adds a light outline; Strong adds a heavier outline and shadow. Does not change text size, HUD layout or hide rules.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Off (original appearance)",
+          "Subtle shadow",
+          "Strong shadow"
+        ]
+      }
+    },
+    {
+      "id": "iTextScale:Main",
+      "text": "Text size (%)",
+      "type": "slider",
+      "help": "Makes all HUD text bigger or smaller: labels, names, tracker, subtitles, messages and the loot list. The small captions under the vital rings stop growing at 130% so the row stays clear of the compass. Large numbers (ammo count, quest titles) keep their size.",
+      "valueOptions": {
+        "min": 80,
+        "max": 150,
+        "step": 10,
+        "sourceType": "ModSettingInt"
+      }
+    },
+    {
+      "id": "iIconScale:Main",
+      "text": "Compass icon size (%)",
+      "type": "slider",
+      "help": "Makes the compass markers bigger or smaller: quests, doors, locations, waypoints, enemies, companions and mines. Icons grow upward so they never cover the compass ticks.",
+      "valueOptions": {
+        "min": 80,
+        "max": 200,
+        "step": 10,
+        "sourceType": "ModSettingInt"
+      }
+    },
+    {
+      "id": "iRingScale:Main",
+      "text": "Ring size (%)",
+      "type": "slider",
+      "help": "Makes the round icons bigger or smaller: the vital rings (health, AP, rads, weight, food, water, rest, armor), the active effect rings and the companion portraits. If the vitals row would reach the compass, food, water and rest move up to their own row.",
+      "valueOptions": {
+        "min": 80,
+        "max": 150,
+        "step": 10,
+        "sourceType": "ModSettingInt"
+      }
+    },
+    {
+      "id": "bShowLevelBar:Main",
+      "text": "Show player level / XP bar",
+      "type": "switcher",
+      "help": "Show your player level and XP progress row, including its perk reminder and karma readout. Turning this off hides the row; XP still updates and level-up banners keep their own setting.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bShowCrosshair:Main",
+      "text": "Show crosshair",
+      "type": "switcher",
+      "help": "Off hides Phosphor's crosshair everywhere, including third-person aiming. The game's own crosshair stays hidden.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bShowHitMarkers:Main",
+      "text": "Show hit markers",
+      "type": "switcher",
+      "help": "Show hit and kill markers independently of the crosshair. Normal menu and power-armor visibility rules still apply.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bHideThirdPersonAimCrosshair:Main",
+      "text": "Hide crosshair while aiming in third person",
+      "type": "switcher",
+      "help": "Off: keep the crosshair visible while aiming in third person. On: hide it while aiming, matching the previous behavior. First-person sights, scopes, menus and power armor keep their existing rules. Iron sights Show/Hide everything overrides this setting.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "iClockFormat:Main",
+      "text": "Clock format",
+      "type": "dropdown",
+      "help": "Choose 12-hour time with AM/PM (1:30 PM) or 24-hour military time (13:30).",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "12-hour (AM/PM)",
+          "24-hour (military time)"
+        ]
+      }
+    },
+    {
+      "id": "bHideFullVitals:Main",
+      "text": "Hide full health/AP and zero radiation",
+      "type": "switcher",
+      "help": "Off: always show the health, AP and radiation wheels. On: hide health when healed to its radiation-reduced maximum, AP when recovered to its fatigue-reduced maximum, and radiation at zero. Each wheel works independently from the survival-needs setting.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bShowArmorWheel:Main",
+      "text": "Show armor wheel",
+      "type": "switcher",
+      "help": "On: show the armor wheel (Warzone Armor Plates System). Off: hide it. The armor value keeps tracking either way, and the wheel only appears while that mod is installed.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bLocationOnArrival:Main",
+      "text": "Show location name only on arrival",
+      "type": "switcher",
+      "help": "Off: always show the location name. On: show it for 8 seconds on entering a different named location or loading a save, then fade it out. The countdown waits while paused or the location group is hidden. The clock and region stay unchanged.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bShowUndiscovered:Main",
+      "text": "Show undiscovered locations on compass",
+      "type": "switcher",
+      "help": "On: nearby places you haven't discovered yet show on the compass as hollow, grey markers. Off: only discovered places show, like the vanilla Pip-Boy map.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "iMaxEffectHours:Main",
+      "text": "Hide effects longer than (hours)",
+      "type": "slider",
+      "help": "Some mods use long-lasting items for permanent statuses. Effects longer than this stay off the effects tray. 0 shows everything.",
+      "valueOptions": {
+        "min": 0,
+        "max": 48,
+        "step": 1,
+        "sourceType": "ModSettingInt"
+      }
+    },
+    {
+      "text": "Limb figure",
+      "type": "section"
+    },
+    {
+      "id": "iLimbFigure:Main",
+      "text": "Figure",
+      "type": "dropdown",
+      "help": "Auto uses the Character Type you picked in Condition Boy, so Phosphor matches it. Vault Boy and Vault Girl need the figures folder made from Condition Boy's files; without it Phosphor falls back to its silhouette.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Auto (match Condition Boy)",
+          "Phosphor silhouette",
+          "Vault Boy",
+          "Vault Girl"
+        ]
+      }
+    },
+    {
+      "id": "bHideHealthyFigure:Main",
+      "text": "Hide figure when uninjured",
+      "type": "switcher",
+      "help": "The figure appears as soon as a limb takes damage and stays lit while a limb is crippled.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bShowArmorPieces:Main",
+      "text": "Show armor pieces",
+      "type": "switcher",
+      "help": "Draw equipped armor pieces over the figure, like Condition Boy.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "text": "Hide the HUD",
+      "type": "section"
+    },
+    {
+      "text": "Phosphor shows, dims or hides each part of the HUD depending on what's on screen. Recommended uses Phosphor's rules; the other two override them for that situation.",
+      "type": "text"
+    },
+    {
+      "id": "iCtxAds:Main",
+      "text": "Iron sights",
+      "type": "dropdown",
+      "help": "Default: crosshair hidden, quests, companions and feed dimmed.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Recommended",
+          "Show everything",
+          "Hide everything"
+        ]
+      }
+    },
+    {
+      "id": "iCtxScope:Main",
+      "text": "Scopes",
+      "type": "dropdown",
+      "help": "Default: only ammo, effects, stealth and the enemy bar stay up; compass and vitals dim.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Recommended",
+          "Show everything",
+          "Hide everything"
+        ]
+      }
+    },
+    {
+      "id": "iCtxVats:Main",
+      "text": "VATS",
+      "type": "dropdown",
+      "help": "Default: vitals (including AP), effects and ammo stay up; the rest hides.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Recommended",
+          "Show everything",
+          "Hide everything"
+        ]
+      }
+    },
+    {
+      "id": "iCtxDialogue:Main",
+      "text": "Dialogue",
+      "type": "dropdown",
+      "help": "Default: companions, feed and quest banners stay up so you see reactions; the game's own dialogue subtitles show in place of Phosphor's, positioned by the dialogue menu (for example Extended Dialogue Interface). Show everything uses Phosphor's subtitles instead.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Recommended",
+          "Show everything",
+          "Hide everything"
+        ]
+      }
+    },
+    {
+      "id": "iCtxWheel:Main",
+      "text": "Wheel menus",
+      "type": "dropdown",
+      "help": "Default: crosshair hidden, most of the HUD dimmed.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Recommended",
+          "Show everything",
+          "Hide everything"
+        ]
+      }
+    },
+    {
+      "id": "iCtxWorkshop:Main",
+      "text": "Workshop mode",
+      "type": "dropdown",
+      "help": "Default: feed, quest banners and subtitles stay up; the compass hides under the build bar.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Recommended",
+          "Show everything",
+          "Hide everything"
+        ]
+      }
+    },
+    {
+      "id": "iCtxPowerArmor:Main",
+      "text": "Power armor",
+      "type": "dropdown",
+      "help": "Default: the vanilla power armor HUD takes over; Phosphor keeps only quests, companions and active effects.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Recommended",
+          "Show everything",
+          "Hide everything"
+        ]
+      }
+    },
+    {
+      "id": "iCtxScene:Main",
+      "text": "Animation scenes",
+      "type": "dropdown",
+      "help": "Default: everything hides during NAF and AAF scenes.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Recommended",
+          "Show everything",
+          "Hide everything"
+        ]
+      }
+    },
+    {
+      "text": "Out of combat",
+      "type": "section"
+    },
+    {
+      "text": "Choose what stays on screen when you're not fighting. Parts come back when something changes, when health is low, or when you fire.",
+      "type": "text"
+    },
+    {
+      "id": "iCalmDelay:Main",
+      "text": "Delay after combat (seconds)",
+      "type": "slider",
+      "help": "Wait this long after combat ends before applying these rules. Combat restores parts immediately.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "min": 0,
+        "max": 15,
+        "step": 1
+      }
+    },
+    {
+      "id": "iCalmVitals:Main",
+      "text": "Vitals",
+      "type": "dropdown",
+      "help": "Outside combat: Show keeps normal idle opacity, Dim uses 30% context opacity, and Hide removes this part until it wakes. Higher-priority situations keep their normal rules.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Show",
+          "Dim",
+          "Hide"
+        ]
+      }
+    },
+    {
+      "id": "iCalmCompass:Main",
+      "text": "Compass",
+      "type": "dropdown",
+      "help": "Outside combat: Show keeps normal idle opacity, Dim uses 30% context opacity, and Hide removes this part until it wakes. Higher-priority situations keep their normal rules.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Show",
+          "Dim",
+          "Hide"
+        ]
+      }
+    },
+    {
+      "id": "iCalmWeapon:Main",
+      "text": "Weapon and ammo",
+      "type": "dropdown",
+      "help": "Outside combat: Show keeps normal idle opacity, Dim uses 30% context opacity, and Hide removes this part until it wakes. Higher-priority situations keep their normal rules.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Show",
+          "Dim",
+          "Hide"
+        ]
+      }
+    },
+    {
+      "id": "iCalmCompanions:Main",
+      "text": "Companions",
+      "type": "dropdown",
+      "help": "Outside combat: Show keeps normal idle opacity, Dim uses 30% context opacity, and Hide removes this part until it wakes. Higher-priority situations keep their normal rules.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Show",
+          "Dim",
+          "Hide"
+        ]
+      }
+    },
+    {
+      "id": "iCalmQuests:Main",
+      "text": "Quest tracker",
+      "type": "dropdown",
+      "help": "Outside combat: Show keeps normal idle opacity, Dim uses 30% context opacity, and Hide removes this part until it wakes. Higher-priority situations keep their normal rules.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Show",
+          "Dim",
+          "Hide"
+        ]
+      }
+    },
+    {
+      "id": "iCalmEffects:Main",
+      "text": "Active effects",
+      "type": "dropdown",
+      "help": "Outside combat: Show keeps normal idle opacity, Dim uses 30% context opacity, and Hide removes this part until it wakes. Higher-priority situations keep their normal rules.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Show",
+          "Dim",
+          "Hide"
+        ]
+      }
+    },
+    {
+      "id": "iCalmCrosshair:Main",
+      "text": "Crosshair",
+      "type": "dropdown",
+      "help": "Outside combat: Show keeps normal idle opacity, Dim uses 30% context opacity, and Hide removes this part until it wakes. Higher-priority situations keep their normal rules.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Show",
+          "Dim",
+          "Hide"
+        ]
+      }
+    },
+    {
+      "text": "Survival",
+      "type": "section"
+    },
+    {
+      "id": "iShowWeight:Main",
+      "text": "Carry weight",
+      "type": "dropdown",
+      "help": "Near the limit shows the weight circle from 85% of your max; it turns red past 100%.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Near the limit",
+          "Always",
+          "Never"
+        ]
+      }
+    },
+    {
+      "id": "bShowAdrenaline:Main",
+      "text": "Adrenaline counter",
+      "type": "switcher",
+      "help": "Survival only. Ten segments above your weapon, one per rank, with progress toward the next rank.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bNeedStageNames:Main",
+      "text": "Show need stages by name",
+      "type": "switcher",
+      "help": "Shows Peckish, Parched, Tired and so on under the food, water and rest circles instead of percentages.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bHideSatisfiedNeeds:Main",
+      "text": "Hide satisfied survival needs",
+      "type": "switcher",
+      "help": "Off: always show food, water and rest in survival. On: show each circle only from Peckish, Parched or Tired onward, and hide it again once that need is satisfied.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bSurvivalEnemyMarkers:Main",
+      "text": "Enemies on compass in survival",
+      "type": "switcher",
+      "help": "Off matches vanilla survival, which hides enemies from the compass.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "text": "Mines",
+      "type": "section"
+    },
+    {
+      "id": "bMineWarnings:Main",
+      "text": "Mine warnings",
+      "type": "switcher",
+      "help": "Markers over armed mines counting down at you, chevrons around the crosshair for ones you can't see, and the closest mine's distance and fuse. Replaces Mine Detector HUD's markers, so turn that mod off to avoid doubles.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bMineCompass:Main",
+      "text": "Mines on compass",
+      "type": "switcher",
+      "help": "Adds a marker on the compass for each armed mine.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "text": "Quick loot",
+      "type": "section"
+    },
+    {
+      "text": "Perk mods such as Alternative Activation Prompts, Scrap As You Go and You Are Exceptional add choices (scrap, harvest, equip, take all) that replace the quick-loot box with a choice wheel on containers and bodies. Pick a key below: the quick-loot box comes first, and holding the key brings the choices back.",
+      "type": "text"
+    },
+    {
+      "id": "bQuickLootFirst:Main",
+      "text": "Quick loot before perk choices",
+      "type": "switcher",
+      "help": "On: on containers and dead bodies the quick-loot box shows, and perk activation choices wait until you hold the perk-choices key. Nothing changes until you pick a key. Off: the game's usual behavior. Other targets (people, robots that are alive, doors, items) are never affected. OG only for now: the AE edition ignores this section.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "PerkChoicesKey",
+      "text": "Perk choices key (hold)",
+      "type": "hotkey",
+      "help": "Hold this key while looking at a container or body to show perk activation choices instead of the quick-loot box. No key is set by default. If Dynamic Activation Key is installed, holding its key works too.",
+      "valueOptions": {
+        "allowModifierKeys": true
+      }
+    },
+    {
+      "text": "Karma, reputation and challenges",
+      "type": "section"
+    },
+    {
+      "id": "bKarmaReadout:Main",
+      "text": "Karma next to level",
+      "type": "switcher",
+      "help": "Shows your KARMA alignment beside your level, with your karma title when it changes. Turn off KARMA's own notifications and Vault-Boy pop-ups to avoid doubles.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bLocalReputation:Main",
+      "text": "Standing with the local town",
+      "type": "switcher",
+      "help": "Shows your REPUTATION title with the town or faction you're in, next to the location name.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bChallengeTracker:Main",
+      "text": "Tracked challenges",
+      "type": "switcher",
+      "help": "Challenges you track in the CHALLENGES Pip-Boy tab show under the quest tracker with their progress.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "text": "Legendaries",
+      "type": "section"
+    },
+    {
+      "id": "iMutationNotices:Main",
+      "text": "Mutation notices",
+      "type": "dropdown",
+      "help": "Immersive Legendary Mutations hides the mutation message on purpose. Enemy bar only marks the mutation on the targeted enemy's bar; the feed option also posts a line.",
+      "valueOptions": {
+        "sourceType": "ModSettingInt",
+        "options": [
+          "Enemy bar only",
+          "Enemy bar and feed",
+          "Off"
+        ]
+      }
+    },
+    {
+      "id": "bLegendaryDropMarkers:Main",
+      "text": "Legendary drops on compass",
+      "type": "switcher",
+      "help": "A gold star on the compass where a legendary item dropped, until you pick it up.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bShowWeaponLegendary:Main",
+      "text": "Legendary effects on weapon",
+      "type": "switcher",
+      "help": "Show the equipped weapon's legendary effects above the ammo counter. Off hides that line; the weapon name and ammo stay.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "text": "Leveling",
+      "type": "section"
+    },
+    {
+      "id": "bLevelUpBanner:Main",
+      "text": "Level-up banner",
+      "type": "switcher",
+      "help": "The big level number with your new perk and skill points. With it off, level-ups still post to the feed and the XP bar still rolls over.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    },
+    {
+      "id": "bPerkReminder:Main",
+      "text": "Unspent perk reminder",
+      "type": "switcher",
+      "help": "Keeps a small perk (and LevelUpMenuEx skill) point count next to your level until you spend them.",
+      "valueOptions": {
+        "sourceType": "ModSettingBool"
+      }
+    }
+  ]
+}

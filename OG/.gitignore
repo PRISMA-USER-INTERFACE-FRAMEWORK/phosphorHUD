@@ -1,0 +1,10 @@
+/.tools/
+/.xmake/
+/build/
+/dist/
+/test-output/
+__pycache__/
+*.pyc
+mod/Phosphor HUD/F4SE/Plugins/*.dll
+mod/Phosphor HUD/F4SE/Plugins/*.pdb
+/.build/
