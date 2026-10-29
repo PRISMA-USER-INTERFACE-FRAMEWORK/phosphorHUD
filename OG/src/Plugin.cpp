@@ -640,6 +640,7 @@ void LiveTick() {
         liveShown = !blocked;
         if (liveShown) api->Show(g_view); else api->Hide(g_view);
     }
+    if (blocked && now - lastTick < std::chrono::milliseconds(250)) return;
 
     const double dt = std::chrono::duration<double>(now - lastTick).count();
     lastTick = now;
