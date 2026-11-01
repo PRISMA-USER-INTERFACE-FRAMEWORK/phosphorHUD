@@ -136,6 +136,7 @@ jobs:
             $plugins = Join-Path $mod 'F4SE/Plugins'
             New-Item -ItemType Directory -Force -Path (Join-Path $plugins 'PhosphorHUD') | Out-Null
             Copy-Item -LiteralPath $v.Dll -Destination $plugins -Force
+            if ($v.Dir -eq 'AE') { Copy-Item -LiteralPath 'AE/ae/PhosphorHUD.ini' -Destination $plugins -Force }
             Copy-Item -LiteralPath (Join-Path $v.Dir 'examples/messages.jsonl') -Destination (Join-Path $plugins 'PhosphorHUD/replay.jsonl') -Force
             Copy-Item -LiteralPath (Join-Path $v.Dir 'schema/hud-messages.schema.json') -Destination (Join-Path $plugins 'PhosphorHUD') -Force
             Copy-Item -LiteralPath (Join-Path $v.Dir 'third_party/licenses') -Destination $mod -Recurse -Force
