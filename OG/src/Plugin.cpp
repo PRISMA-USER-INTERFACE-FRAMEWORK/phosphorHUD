@@ -489,9 +489,9 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadIn
             serialization->SetLoadCallback(OnCoSaveLoad);
         } else spdlog::warn("Co-save unavailable: survival stages from game messages will not survive a save load");
 #if defined(PHOSPHOR_AE)
-        spdlog::info("Phosphor HUD 0.9.24-ae1 EXPERIMENTAL built for AE 1.11.240; in-game behavior UNVERIFIED");
+        spdlog::info("Phosphor HUD 0.9.25-ae1 EXPERIMENTAL built for AE 1.11.240; in-game behavior UNVERIFIED");
 #else
-        spdlog::info("Phosphor HUD 0.9.24 loaded for OG 1.10.163; live HUD");
+        spdlog::info("Phosphor HUD 0.9.25 loaded for OG 1.10.163; live HUD");
 #endif
         return true;
     } catch (const std::exception& e) {

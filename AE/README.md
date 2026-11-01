@@ -1,4 +1,4 @@
-# Phosphor HUD 0.9.24-ae1 — AE source
+# Phosphor HUD 0.9.25-ae1 — AE source
 
 Source for the Phosphor HUD F4SE plugin built for Fallout 4 **1.11.240** (Anniversary Edition) and its PrismaUI HUD
 page. The playable mod is the AE main download; this archive is optional and only needed if you want to read or build

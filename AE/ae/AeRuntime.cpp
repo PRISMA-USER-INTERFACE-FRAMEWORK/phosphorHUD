@@ -12,7 +12,7 @@ std::set<std::pair<std::string, bool>> observations;
 void Initialize() {
     std::ifstream input("Data/F4SE/Plugins/PhosphorHUD.ini");
     options.Read(input);
-    spdlog::info("AE EXPERIMENTAL 0.9.24-ae1; runtime behavior UNVERIFIED");
+    spdlog::info("AE EXPERIMENTAL 0.9.25-ae1; runtime behavior UNVERIFIED");
     for (auto key : kSwitches) spdlog::info("AE Experimental: {}={}", key, Enabled(key) ? 1 : 0);
 }
 void ResetObservations() {

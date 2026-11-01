@@ -1,4 +1,4 @@
-# Phosphor HUD 0.9.24 — OG source
+# Phosphor HUD 0.9.25 — OG source
 
 Source for the Phosphor HUD F4SE plugin (Fallout 4 **1.10.163**, OG) and its PrismaUI HUD page. The playable mod is
 the main download; this archive is optional and only needed if you want to read or build the code.
