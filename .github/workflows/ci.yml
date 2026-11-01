@@ -1,0 +1,30 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  hud:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [AE, OG]
+    defaults:
+      run:
+        working-directory: ${{ matrix.variant }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: node --check "mod/Phosphor HUD/PrismaUI_F4/views/PhosphorHUD/hud.js"
+      - run: pip install pytest playwright jsonschema
+      - run: python -m playwright install --with-deps chromium
+      - run: python tools/replay.py
+      - run: python -m pytest tests/test_hud.py tests/test_ui_boundary.py -q
