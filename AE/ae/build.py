@@ -10,7 +10,7 @@ includes=[lib/'include',shared/'include',Path(a.spdlog)/'include',Path(a.json)/'
 flags=['/nologo','/std:c++latest','/EHsc','/permissive-','/bigobj','/Zc:enumTypes','/Zc:preprocessor','/O2','/MD','/utf-8','/DNOMINMAX','/DWIN32_LEAN_AND_MEAN','/DSPDLOG_USE_STD_FORMAT','/DSPDLOG_WCHAR_TO_UTF8_SUPPORT','/DSPDLOG_COMPILED_LIB']+['/I"'+str(i)+'"' for i in includes]
 commands=['@echo off',f'call "{a.vcvars}" >nul','if errorlevel 1 exit /b %errorlevel%']
 objects=[]
-for name,sources,pch in [('shared',list((shared/'src').rglob('*.cpp')),shared/'src/REX/PCH.h'),('commonlib',list((lib/'src').rglob('*.cpp')),lib/'include/F4SE/Impl/PCH.h'),('plugin',[root/'src'/f'{n}.cpp' for n in ['Plugin','Live','Mods','Mines','Pipboy','EngineQuests','EngineProbe','QuickLootFirst']]+[root/'ae/AeRuntime.cpp'],None)]:
+for name,sources,pch in [('shared',list((shared/'src').rglob('*.cpp')),shared/'src/REX/PCH.h'),('commonlib',list((lib/'src').rglob('*.cpp')),lib/'include/F4SE/Impl/PCH.h'),('plugin',[root/'src'/f'{n}.cpp' for n in ['Plugin','PluginSettings','PluginEvents','PluginView','PluginTest','Live','Mods','Mines','Pipboy','EngineQuests','EngineProbe','QuickLootFirst']]+[root/'ae/AeRuntime.cpp'],None)]:
  sources=[s for s in sources if s.stem.lower()!='pch'] # Upstream's PCH-only TU is replaced by the generated stub.
  d=out/name;d.mkdir(exist_ok=True)
  assert len({s.stem for s in sources})==len(sources),'duplicate object basenames'

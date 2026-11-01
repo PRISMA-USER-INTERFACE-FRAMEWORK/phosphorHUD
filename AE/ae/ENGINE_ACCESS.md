@@ -82,14 +82,14 @@ OG resolution throughout is the existing CommonLibF4-NG headers plus the matchin
 
 | File, function, baseline line | Reads/calls; OG resolution | AE source status and remaining risk |
 |---|---|---|
-| Plugin.cpp, HitEventSource, 127 | Manual `REL::ID(1411899)`; known OG event-source getter | library-verified replacement: `RE::TESHitEvent::GetEventSource`, AE ID **2201886** in `RE/IDs.h`. Never reuse 1411899 on AE. |
-| Plugin.cpp, HitWatch::ProcessEvent, 133 | Event cause/target NiPointers; player singleton, As<Actor>, form IDs | library-verified `TESHitEvent`, `HitData`, reference/actor layouts; event lifetime/thread behavior still needs testing. |
-| Plugin.cpp, HandleMessage, 861 | F4SE messages; UI/menu and hit sink registration; data-ready callbacks | library-verified F4SE Interfaces, UI, BSTEvent. AE uses exported version data and Load, not Query alone. |
-| Plugin.cpp, MenuWatch::ProcessEvent, 829 | Menu name/opening, generation/queue state | library-verified MenuOpenCloseEvent; same menu names assumed. |
-| Plugin.cpp, Queue, 309; CreateView, 409; DomReady, 395; HandleMessage, 861 | Prisma V12 callbacks, thread dispatch, view and widget APIs | library-verified public ABI: header identical after comment/whitespace normalization; V12=139. Live AE callbacks unverified. |
-| Plugin.cpp, KeyFor, 65; SetWidgets, 103 | Prisma button prompts and vanilla widget suppression | ABI verified; widget class names and suppression semantics assumed on AE; no suppression in power armor. |
-| Plugin.cpp, BlockingMenu, 431; AutoTestTick, 691 | UI singleton and GetMenuOpen; autotest menu messages | library-verified UI/UIMessageQueue definitions; menu strings assumed. |
-| Plugin.cpp, AutoTestQueueLoad, 684 | BGSSaveLoadManager singleton and queued latest-save load | library-verified manager/queue enum. Autotest defaults disabled; not an AE acceptance result. |
+| PluginEvents.cpp, HitEventSource, 11 | Manual `REL::ID(1411899)`; known OG event-source getter | library-verified replacement: `RE::TESHitEvent::GetEventSource`, AE ID **2201886** in `RE/IDs.h`. Never reuse 1411899 on AE. |
+| PluginEvents.cpp, HitWatch::ProcessEvent, 22 | Event cause/target NiPointers; player singleton, As<Actor>, form IDs | library-verified `TESHitEvent`, `HitData`, reference/actor layouts; event lifetime/thread behavior still needs testing. |
+| PluginView.cpp, HandleMessage, 230 | F4SE messages; UI/menu and hit sink registration; data-ready callbacks | library-verified F4SE Interfaces, UI, BSTEvent. AE uses exported version data and Load, not Query alone. |
+| PluginView.cpp, MenuWatch::ProcessEvent, 204 | Menu name/opening, generation/queue state | library-verified MenuOpenCloseEvent; same menu names assumed. |
+| PluginView.cpp, Queue, 27; CreateView, 138; DomReady, 122; HandleMessage, 230 | Prisma V12 callbacks, thread dispatch, view and widget APIs | library-verified public ABI: header identical after comment/whitespace normalization; V12=139. Live AE callbacks unverified. |
+| Plugin.cpp, KeyFor, 30; PluginView.cpp, SetWidgets, 52 | Prisma button prompts and vanilla widget suppression | ABI verified; widget class names and suppression semantics assumed on AE; no suppression in power armor. |
+| PluginView.cpp, BlockingMenu, 160; PluginTest.cpp, AutoTestTick, 19 | UI singleton and GetMenuOpen; autotest menu messages | library-verified UI/UIMessageQueue definitions; menu strings assumed. |
+| PluginTest.cpp, AutoTestQueueLoad, 11 | BGSSaveLoadManager singleton and queued latest-save load | library-verified manager/queue enum. Autotest defaults disabled; not an AE acceptance result. |
 | Live.cpp, Name/Value/Permanent, 36–40 | TESFullName and actor-value virtual getters | library-verified TESFullName/ActorValueOwner; actual values require console comparison. |
 | Live.cpp, ReadEquipped, 62 | currentProcess->middleHigh; equipment lock/list; item, equipIndex, weapon instance, ammo count/capacity/type | library-verified Actor, AIProcess, MiddleHighProcessData, EquippedItem, EquippedWeaponData, TESObjectWEAP. Header probe verifies currentProcess 0x300 and equippedItems 0x288. |
 | Live.cpp, ReadInventory, 96 | Inventory rwLock/data/stack chain, counts, display names, extra-data mods | library-verified BGSInventoryList/BGSInventoryItem/extra-data definitions. Bad lists or pointer lifetimes can still fault/loop. |
