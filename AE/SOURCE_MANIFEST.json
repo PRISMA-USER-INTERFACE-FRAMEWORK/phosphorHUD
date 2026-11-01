@@ -20,7 +20,7 @@
   "src/Pipboy.cpp": "e5a16f27179c605216f5ad8ee927f3cb7d8fe3b5b4eec0201a7c80a0fdf62933",
   "src/Pipboy.h": "f0dba610f748c25ec750e7ac4115ed57f79ad3dbfb56b8fcca672ae08555fc99",
   "src/Plugin.cpp": "d8aa619396c2785346348f1638934b497cb2d82e890a882f70d63ecd1afba15a",
-  "src/PluginEvents.cpp": "5df6fc68383cbd1bd021f10853726191da556c1a77aa2e4e448f2cc658ea733f",
+  "src/PluginEvents.cpp": "75e7f0b6b487e6267e7e1c0ebf066c7dd4b76b00efe3bbe356b97361638803f3",
   "src/PluginSettings.cpp": "2806616d40b90d1cfa928b75b80124d6234b28a3f063a6cf7ac53fc72683990d",
   "src/PluginState.h": "68ddb177e6ee311aaa488768c0d9ac58316fa7270b7870465558a83582f05c8d",
   "src/PluginTest.cpp": "1fcaedd3a934a99e141de422ab367b04cc7b08d2a52d23c41f995305b3dcf6c9",

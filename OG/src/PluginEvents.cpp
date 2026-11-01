@@ -7,7 +7,6 @@ std::int64_t NowMs() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now().time_since_epoch()).count();
 }
 namespace {
-// TODO-verify: REL::ID 1411899 against the live Address Library (f4-re-mcp database was unavailable).
 RE::BSTEventSource<RE::TESHitEvent>* HitEventSource() {
 #if defined(PHOSPHOR_AE)
     AE_GATE("bTarget", nullptr);
