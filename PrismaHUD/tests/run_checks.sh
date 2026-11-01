@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+python3 tests/widget_registry_contract.py
+python3 tests/widget_registration_contract.py
+python3 tests/reload_api_contract.py
+python3 tests/v11_load_thread_contract.py
+python3 tests/messagebox_failsafe_v11_contract.py
+python3 tests/sleepwait_menu_contract.py
+python3 tests/sleepwait_mirror_contract.py
+node tests/sleepwait_mirror_behavior_tests.js
+python3 tests/barter_menu_replacement_contract.py
+python3 tests/container_menu_replacement_contract.py
+python3 tests/keyhandler_reentrancy_contract.py
+python3 tests/data_cache_reset_contract.py
+python3 tests/settings_durability_contract.py
+python3 tests/slots_durability_contract.py
+python3 tests/layout_writer_contract.py
+python3 tests/layout_extent_recovery_contract.py
+python3 tests/ammo_diag_noise_contract.py
+python3 tests/icon_catalog_contract.py
+python3 tests/quickcontainer_state_contract.py
+python3 tests/fusion_core_charge_contract.py
+python3 tests/quickcontainer_perk_mapping_contract.py
+python3 tests/quest_item_badge_contract.py
+python3 tests/quickcontainer_perk_prompt_collision_contract.py
+python3 tests/quickloot_keyboard_activate_mapping_contract.py
+python3 tests/rads_payload_semantics_contract.py

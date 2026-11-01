@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PrismaHUD Quick Loot</title>
+<link rel="stylesheet" href="hud_quickloot.css">
+<link rel="stylesheet" href="prisma_controller_glyphs.css">
+</head>
+<body>
+<div id="root">
+  <div class="ql-header">
+    <div class="ql-icon container" id="qlIcon">&#x25A3;</div>
+    <div class="ql-meta">
+      <div class="ql-name" id="qlName">Container</div>
+      <div class="ql-sub" id="qlSub">0.0 lbs inside</div>
+    </div>
+    <div class="ql-badge" id="qlCount">0</div>
+  </div>
+
+  <div class="ql-list" id="qlList"></div>
+
+  <div class="ql-choices" id="qlChoices"></div>
+
+  <div class="ql-carry">
+    <span class="carry-lbl">CARRY</span>
+    <div class="carry-bar"><div class="carry-fill" id="carryFill" style="width:0%"></div><div class="carry-ghost" id="carryGhost" style="left:0;width:0"></div></div>
+    <span class="carry-val" id="carryVal">0 / 200</span>
+  </div>
+
+  <div class="ql-footer">
+    <div class="key-hint ql-hint-normal" id="takeHint"><span id="takeCap"></span> Take</div>
+    <div class="key-hint ql-hint-normal" id="takeAllHint"><span id="takeAllCap"></span> All</div>
+    <div class="key-hint ql-hint-transfer" id="transferHint"><span id="transferCap"></span> Transfer</div>
+    <div class="key-hint ql-hint-perk" id="perkHint" style="display:none"><span id="perkCap"></span> <span id="perkLbl"></span></div>
+    <div class="key-hint ql-hint-normal" id="selectHint"><span id="selectCap"></span> Select</div>
+    <div class="key-hint ql-hint-normal"><span id="hideKeyCap"></span> Hide</div>
+    <div class="ql-footer-spacer"></div>
+    <div class="total-val ql-hint-normal" id="totalVal"><img class="caps-icon" src="icons/cat-caps.png" alt="">0</div>
+  </div>
+</div>
+<script src="prisma_controller_glyphs.js"></script>
+<script src="hud_quickloot.js"></script>
+</body>
+</html>

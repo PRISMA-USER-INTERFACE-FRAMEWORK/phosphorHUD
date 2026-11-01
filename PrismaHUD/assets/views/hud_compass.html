@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PrismaHUD Compass</title>
+<link rel="stylesheet" href="hud_compass.css">
+</head>
+<body>
+<div id="root">
+  <div id="shade"></div>
+  <div id="strip"></div>
+  <div class="center"><div class="caret"></div></div>
+  <div id="markers"></div>
+  <div class="blip" id="questBlip">
+    <svg viewBox="0 0 20 24" preserveAspectRatio="none">
+      <polygon points="10,1 18,8 18,16 10,23 2,16 2,8" fill="rgba(255,210,58,0.12)" stroke="#ffd23a" stroke-width="2.4" stroke-linejoin="round"/>
+    </svg>
+  </div>
+</div>
+<script src="hud_compass.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "icons": [
+    { "file": "heart-rate.png", "label": "Heart" },
+    { "file": "running-man.png", "label": "Runner" },
+    { "file": "radioactive.png", "label": "Radiation" },
+    { "file": "biohazard.png", "label": "Biohazard" },
+    { "file": "ammo.png", "label": "Ammo" },
+    { "file": "hand-grenade.png", "label": "Grenade" },
+    { "file": "melee.png", "label": "Melee" }
+  ]
+}

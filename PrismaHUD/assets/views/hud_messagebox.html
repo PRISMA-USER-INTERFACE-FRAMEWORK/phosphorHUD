@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PrismaHUD Message Box</title>
+<link rel="stylesheet" href="hud_messagebox.css">
+<link rel="stylesheet" href="prisma_controller_glyphs.css">
+</head>
+<body>
+<div id="scrim">
+  <div id="box" role="dialog" aria-modal="true">
+    <div class="mb-header" id="mbHeader">Message</div>
+    <div class="mb-body" id="mbBody"></div>
+    <div class="mb-buttons" id="mbButtons"></div>
+    <div class="mb-hint">
+      <span id="navHint"></span> Select
+      <span id="confirmHint"></span> Confirm
+      <span id="cancelHint"></span> Cancel
+    </div>
+  </div>
+</div>
+<script src="prisma_controller_glyphs.js"></script>
+<script src="hud_messagebox.js"></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:transparent;overflow:hidden;user-select:none;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+#root{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:560px;max-height:78vh;display:flex;flex-direction:column;
+  background:rgba(12,14,18,0.94);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.10);border-radius:9px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.6);opacity:0;transition:opacity 0.15s;pointer-events:none}
+#root.visible{opacity:1;pointer-events:auto}
+.kb-head{display:flex;align-items:center;gap:10px;padding:14px 18px;
+  border-bottom:1px solid rgba(255,255,255,0.07)}
+.kb-title{flex:1;font-size:15px;font-weight:600;color:rgba(225,230,245,0.95);letter-spacing:0.3px}
+.kb-title small{display:block;font-size:10px;font-weight:400;color:rgba(255,255,255,0.35);
+  letter-spacing:1px;margin-top:2px}
+.kb-x{width:26px;height:26px;border-radius:5px;border:1px solid rgba(255,255,255,0.14);
+  background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.6);font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center}
+.kb-x:hover{background:rgba(255,80,80,0.18);border-color:rgba(255,80,80,0.4)}
+.kb-list{flex:1;overflow-y:auto;padding:8px 0}
+.kb-list::-webkit-scrollbar{width:6px}
+.kb-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.14);border-radius:3px}
+.kb-cat{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(120,190,255,0.55);
+  padding:12px 18px 4px}
+.kb-row{display:flex;align-items:center;gap:12px;padding:8px 18px}
+.kb-row:hover{background:rgba(255,255,255,0.03)}
+.kb-label{flex:1;font-size:12px;color:rgba(220,225,240,0.9)}
+.kb-cap{min-width:64px;text-align:center;padding:5px 10px;border-radius:5px;
+  border:1px solid rgba(255,255,255,0.16);background:rgba(255,255,255,0.05);
+  font-size:11px;font-weight:600;color:rgba(230,235,250,0.92);font-variant-numeric:tabular-nums}
+.kb-cap.custom{border-color:rgba(120,190,255,0.5);color:rgba(150,205,255,0.95)}
+.kb-cap.listening{border-color:rgba(255,190,60,0.8);background:rgba(255,190,60,0.12);
+  color:rgba(255,205,90,0.95);animation:pulse 0.9s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.55}}
+.kb-btn{padding:5px 11px;border-radius:5px;border:1px solid rgba(255,255,255,0.14);
+  background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.6);font-size:10px;cursor:pointer}
+.kb-btn:hover{background:rgba(120,190,255,0.16);border-color:rgba(120,190,255,0.4);color:rgba(200,225,255,0.95)}
+.kb-foot{display:flex;align-items:center;gap:10px;padding:12px 18px;
+  border-top:1px solid rgba(255,255,255,0.07)}
+.kb-foot-note{flex:1;font-size:10px;color:rgba(255,255,255,0.3)}
+.kb-reset{padding:6px 12px;border-radius:5px;border:1px solid rgba(255,255,255,0.14);
+  background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.55);font-size:11px;cursor:pointer}
+.kb-reset:hover{background:rgba(255,160,40,0.15);border-color:rgba(255,160,40,0.4);color:rgba(255,200,120,0.95)}
+.kb-modal{position:absolute;inset:0;background:rgba(6,8,12,0.7);display:none;
+  align-items:center;justify-content:center;border-radius:9px}
+.kb-modal.on{display:flex}
+.kb-modal-box{width:380px;background:rgba(20,22,28,0.98);border:1px solid rgba(255,160,40,0.35);
+  border-radius:8px;padding:18px}
+.kb-modal-box h3{font-size:13px;color:rgba(255,200,120,0.95);margin-bottom:8px}
+.kb-modal-box p{font-size:11px;color:rgba(220,225,240,0.8);line-height:1.5;margin-bottom:16px}
+.kb-modal-box b{color:rgba(255,225,150,0.95)}
+.kb-modal-btns{display:flex;gap:10px;justify-content:flex-end}
+.kb-modal-btns button{padding:7px 14px;border-radius:5px;font-size:11px;cursor:pointer;border:1px solid transparent}
+.kb-cancel{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.14)!important;color:rgba(255,255,255,0.7)}
+.kb-force{background:rgba(255,160,40,0.2);border-color:rgba(255,160,40,0.5)!important;color:rgba(255,205,120,0.95)}

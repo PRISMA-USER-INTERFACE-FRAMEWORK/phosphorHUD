@@ -1,0 +1,34 @@
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:transparent;overflow:hidden;user-select:none;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+
+#root{
+  position:fixed;right:2vw;top:12vh;
+  width:min(430px,32vw);max-height:76vh;overflow:hidden;
+  padding:14px 16px;
+  background:rgba(8,12,14,0.90);
+  backdrop-filter:blur(10px);
+  border:1px solid rgba(90,230,200,0.28);
+  border-radius:6px;
+  box-shadow:0 10px 34px rgba(0,0,0,0.6);
+  opacity:0;transition:opacity 0.15s;pointer-events:none;
+}
+#root.visible{opacity:1}
+
+.sp-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;
+  padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid rgba(90,230,200,0.20)}
+.sp-title{font-size:13px;font-weight:600;letter-spacing:1px;color:rgba(120,240,210,0.95)}
+.sp-tag{font-size:8px;letter-spacing:1px;color:rgba(120,240,210,0.45)}
+
+.sp-name{display:flex;gap:8px;font-size:12px;color:rgba(226,240,238,0.92);margin-bottom:10px}
+.sp-lbl{color:rgba(120,240,210,0.55)}
+
+.sp-row{display:grid;grid-template-columns:88px 28px 1fr;gap:8px;align-items:baseline;
+  padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.sp-stat{font-size:11px;color:rgba(226,240,238,0.92)}
+.sp-val{font-size:12px;font-weight:600;color:rgba(120,240,210,0.95);text-align:right;
+  font-variant-numeric:tabular-nums}
+.sp-desc{font-size:9px;line-height:1.35;color:rgba(255,255,255,0.42);overflow-wrap:anywhere}
+
+.sp-note{margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);
+  font-size:8px;line-height:1.4;color:rgba(255,255,255,0.30)}
