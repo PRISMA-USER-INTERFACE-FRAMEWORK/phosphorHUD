@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PrismaHUD Editor</title>
+<link rel="stylesheet" href="hud_editor.css">
+</head>
+<body>
+
+<div id="toolbar">
+  <div class="tb-group">
+    <div class="tb-logo">PRISMA<span>HUD</span></div>
+    <div class="tb-sep"></div>
+    <span class="tb-hint">Drag to reposition &mdash; real HUD visible behind</span>
+  </div>
+  <div class="tb-spacer"></div>
+  <div class="tb-group">
+    <button class="tb-btn active" id="btnSnap">Snap</button>
+    <select class="tb-sel" id="selSnap" title="Snap grid size">
+      <option value="0">Off</option>
+      <option value="5">5px</option>
+      <option value="10" selected>10px</option>
+      <option value="20">20px</option>
+    </select>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" id="btnUndo" title="Undo (Ctrl+Z)">Undo</button>
+    <button class="tb-btn" id="btnRedo" title="Redo (Ctrl+Y)">Redo</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" id="btnResetSel">Reset Sel</button>
+    <button class="tb-btn" id="btnResetAll">Reset All</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn primary" id="btnSave">Save</button>
+    <button class="tb-btn" id="btnClose">Close</button>
+  </div>
+</div>
+
+<div id="alignbar">
+  <span class="ab-label">Align</span>
+  <button class="ab-btn" id="abLeft"   title="Align Left"  >&#8676;L</button>
+  <button class="ab-btn" id="abRight"  title="Align Right" >R&#8677;</button>
+  <button class="ab-btn" id="abTop"    title="Align Top"   >&#8679;T</button>
+  <button class="ab-btn" id="abBottom" title="Align Bottom">B&#8681;</button>
+  <button class="ab-btn" id="abHC"     title="H-Center"   >&#8596;H</button>
+  <button class="ab-btn" id="abVC"     title="V-Center"   >&#8597;V</button>
+  <button class="ab-btn" id="abCenter" title="Screen Center">&#10753;</button>
+  <div class="ab-sep"></div>
+  <button class="ab-btn" id="abDistH" title="Distribute Horizontally">&#10230;H</button>
+  <button class="ab-btn" id="abDistV" title="Distribute Vertically"   >&#10231;V</button>
+</div>
+
+<div id="overlay"></div>
+
+<div id="props">
+  <div id="props-toggle">&#9664;</div>
+  <div class="ph">PROPERTIES</div>
+  <div class="pb" id="propsBody"></div>
+</div>
+
+<script src="hud_editor.js"></script>
+</body>
+</html>

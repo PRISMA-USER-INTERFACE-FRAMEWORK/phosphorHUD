@@ -1,0 +1,28 @@
+# Build artifacts
+build/
+dist/
+.xmake/
+*.ilk
+*.exp
+*.obj
+*.user
+
+# Tooling scratch state (brainstorm session PIDs / server markers -- not source)
+.superpowers/
+
+# OS / editor cruft
+.vs/
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.tmp
+*~
+
+# Internal AI-agent instructions -- contains local absolute paths + internal workflow.
+# Stays on disk for local tooling; not part of the public release.
+CLAUDE.md
+
+
+# (XGamepad/Default, P5Gamepad/Default); the rest of the ~20MB pack (PS4/Switch/Keyboard, style variants)
+# stays local. Full pack: https://juliocacko.itch.io/free-input-prompts

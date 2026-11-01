@@ -1,0 +1,18 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "dependencies": [
+    {
+      "name": "spdlog",
+      "features": ["wchar"]
+    },
+    "fmt",
+    "nlohmann-json",
+    "rsm-mmio",
+    "boost-stl-interfaces",
+    "frozen",
+    "nowide",
+    "robin-hood-hashing",
+    "xbyak",
+    "srell"
+  ]
+}

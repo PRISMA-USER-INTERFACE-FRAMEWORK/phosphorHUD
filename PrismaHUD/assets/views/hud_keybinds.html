@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PrismaHUD Keybinds</title>
+<link rel="stylesheet" href="hud_keybinds.css">
+</head>
+<body>
+<div id="root">
+  <div class="kb-head">
+    <div class="kb-title">Keybindings<small>PRESS A KEY TO REBIND · ESC CANCELS</small></div>
+    <div class="kb-x" id="kbClose">&#x2715;</div>
+  </div>
+  <div class="kb-list" id="kbList"></div>
+  <div class="kb-foot">
+    <span class="kb-foot-note" id="kbNote">Bindings persist to keybinds.json</span>
+    <button class="kb-reset" id="kbResetAll">Reset all to defaults</button>
+  </div>
+  <div class="kb-modal" id="kbModal">
+    <div class="kb-modal-box">
+      <h3>Key already in use</h3>
+      <p id="kbModalMsg"></p>
+      <div class="kb-modal-btns">
+        <button class="kb-cancel" id="kbModalCancel">Cancel</button>
+        <button class="kb-force" id="kbModalForce">Rebind anyway</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="hud_keybinds.js"></script>
+</body>
+</html>
