@@ -8,7 +8,7 @@ the main download; this archive is optional and only needed if you want to read 
 | Path | What |
 |---|---|
 | `src/` | The F4SE plugin (C++23). `Plugin.cpp` lifecycle and message loop, `Live.cpp` game/HUD reads, `Mods.cpp` optional-mod support, `Pipboy.cpp`, `Mines.cpp`, `EngineQuests.cpp` quest markers and map data read from the engine, `Core.cpp` / `ModData.cpp` engine-independent logic. `#if defined(PHOSPHOR_AE)` blocks belong to the separate AE experimental build and are inactive here. |
-| `mod/Phosphor HUD/` | HUD page (`PrismaUI_F4/views/PhosphorHUD/hud.html`), MCM page, plugin INI and licenses. Portraits and figures are separate add-ons and are not included. |
+| `mod/Phosphor HUD/` | HUD page (`PrismaUI_F4/views/PhosphorHUD/hud.html`, with `hud.css` and `hud.js` beside it), MCM page, plugin INI and licenses. Portraits and figures are separate add-ons and are not included. |
 | `docs/` | Architecture, the message contract between plugin and page, data sources, settings, build plan. |
 | `schema/`, `examples/` | JSON Schema for one HUD message and example messages (also the in-game replay file). |
 | `tests/` | Native core tests (`core_tests.cpp`) and browser tests for the HUD page (Python + Playwright). |

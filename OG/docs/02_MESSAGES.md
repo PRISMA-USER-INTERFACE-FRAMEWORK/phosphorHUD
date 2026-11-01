@@ -394,7 +394,7 @@ Menu names it maps (anything else is ignored):
 | `wheel` | FavoritesMenu, WheelMenu |
 | `photo` | ScreenArcherMenu, PhotoMenu |
 
-The mod menu names come from their files and need confirming in game (see `06_OPEN_QUESTIONS.md`). To add one, add it to `MENU_CTX` in `hud.html`.
+The mod menu names come from their files and need confirming in game (see `06_OPEN_QUESTIONS.md`). To add one, add it to `MENU_CTX` in `hud.js`.
 
 ```json
 {"context":{"menus":["ScopeMenu"],"powerArmor":false,"ads":false,"scene":false,"photo":false,"hudHidden":false}}

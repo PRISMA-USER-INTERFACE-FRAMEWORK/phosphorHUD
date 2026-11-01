@@ -3,7 +3,7 @@
 
 Checks, in order:
   1. every line is valid JSON and matches schema/hud-messages.schema.json (if `jsonschema` is installed)
-  2. the schema and hud.html agree on the top-level fields (catches spec/HUD drift)
+  2. the schema and hud.js agree on the top-level fields (catches spec/HUD drift)
   3. every message runs through hudUpdate() in a headless browser without a JavaScript error
 
 Usage:
@@ -22,11 +22,11 @@ DEF_MSGS = ROOT / "examples" / "messages.jsonl"
 SCHEMA = ROOT / "schema" / "hud-messages.schema.json"
 
 
-def hud_fields(html):
+def hud_fields(js):
     """Top-level fields hudUpdate() reads, straight from its source."""
-    m = re.search(r"function hudUpdate\(data\)\{(.*?)\n  \}\n  window\.hudUpdate", html, re.S)
+    m = re.search(r"function hudUpdate\(data\)\s*\{(.*?)\n  \}\n  window\.hudUpdate", js, re.S)
     if not m:
-        sys.exit("could not find hudUpdate() in " + str(DEF_HUD))
+        sys.exit("could not find hudUpdate() in hud.js")
     body = m.group(1)
     fields = set(re.findall(r"\bd\.([A-Za-z0-9_]+)", body))
     for lst in re.findall(r"\[((?:\"[A-Za-z0-9_]+\",?\s*)+)\]\.forEach", body):
@@ -54,12 +54,12 @@ async def main():
     ap.add_argument("--shots", help="folder to save a screenshot after each message")
     a = ap.parse_args()
 
-    html = pathlib.Path(a.hud).read_text(encoding="utf-8")
+    js = pathlib.Path(a.hud).with_name("hud.js").read_text(encoding="utf-8")
     schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
     problems = []
 
     # 2. drift between the spec's schema and the HUD
-    in_hud, in_schema = hud_fields(html), set(schema["properties"])
+    in_hud, in_schema = hud_fields(js), set(schema["properties"])
     for f in sorted(in_hud - in_schema):
         problems.append(f"schema is missing a field hud.html reads: {f}")
     for f in sorted(in_schema - in_hud):
