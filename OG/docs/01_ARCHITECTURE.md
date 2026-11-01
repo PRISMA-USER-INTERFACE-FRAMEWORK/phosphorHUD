@@ -19,6 +19,8 @@ Fallout 4 ──reads──▶ PhosphorHUD.dll (F4SE plugin, to build) ──Int
 Data\
   F4SE\Plugins\PhosphorHUD.dll                     (to build)
   PrismaUI_F4\views\PhosphorHUD\hud.html          (done)
+  PrismaUI_F4\views\PhosphorHUD\hud.css           (done)
+  PrismaUI_F4\views\PhosphorHUD\hud.js            (done)
   PrismaUI_F4\views\PhosphorHUD\portraits\*.svg   (11 companion faces, from Companion Status UI Remastered)
   PrismaUI_F4\views\PhosphorHUD\figures\*.png     (36 Vault Boy/Girl parts, from Condition Boy and Girl)
   MCM\Config\PhosphorHUD\config.json + settings.ini (done)

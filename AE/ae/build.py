@@ -10,7 +10,7 @@ includes=[lib/'include',shared/'include',Path(a.spdlog)/'include',Path(a.json)/'
 flags=['/nologo','/std:c++latest','/EHsc','/permissive-','/bigobj','/Zc:enumTypes','/Zc:preprocessor','/O2','/MD','/utf-8','/DNOMINMAX','/DWIN32_LEAN_AND_MEAN','/DSPDLOG_USE_STD_FORMAT','/DSPDLOG_WCHAR_TO_UTF8_SUPPORT','/DSPDLOG_COMPILED_LIB']+['/I"'+str(i)+'"' for i in includes]
 commands=['@echo off',f'call "{a.vcvars}" >nul','if errorlevel 1 exit /b %errorlevel%']
 objects=[]
-for name,sources,pch in [('shared',list((shared/'src').rglob('*.cpp')),shared/'src/REX/PCH.h'),('commonlib',list((lib/'src').rglob('*.cpp')),lib/'include/F4SE/Impl/PCH.h'),('plugin',[root/'src'/f'{n}.cpp' for n in ['Plugin','Live','Mods','Mines','Pipboy','EngineQuests','EngineProbe']]+[root/'ae/AeRuntime.cpp'],None)]:
+for name,sources,pch in [('shared',list((shared/'src').rglob('*.cpp')),shared/'src/REX/PCH.h'),('commonlib',list((lib/'src').rglob('*.cpp')),lib/'include/F4SE/Impl/PCH.h'),('plugin',[root/'src'/f'{n}.cpp' for n in ['Plugin','Live','Mods','Mines','Pipboy','EngineQuests','EngineProbe','QuickLootFirst']]+[root/'ae/AeRuntime.cpp'],None)]:
  sources=[s for s in sources if s.stem.lower()!='pch'] # Upstream's PCH-only TU is replaced by the generated stub.
  d=out/name;d.mkdir(exist_ok=True)
  assert len({s.stem for s in sources})==len(sources),'duplicate object basenames'
@@ -41,7 +41,7 @@ rsp=core_dir/'compile.rsp';rsp.write_text(' '.join(flags+['/MP2','/c']+[f'"{root
 commands += [f'cl @"{rsp}"','if errorlevel 1 exit /b %errorlevel%']
 rsp=core_dir/'archive.rsp';rsp.write_text(f'/NOLOGO /OUT:"{core}" "{core_dir}/Core.obj" "{core_dir}/ModData.obj"')
 commands += [f'lib @"{rsp}"','if errorlevel 1 exit /b %errorlevel%']
-rsp=out/'link.rsp';rsp.write_text(' '.join(['/NOLOGO','/DLL','/OPT:REF','/OPT:ICF',f'/OUT:"{out}/PhosphorHUD.dll"']+[f'"{f}"' for f in objects]+[f'"{core}"',f'"{Path(a.spdlog)}/lib/spdlog.lib"']+[n+'.lib' for n in ['Advapi32','Bcrypt','D3d11','D3dcompiler','Dbghelp','Dxgi','Ole32','OleAut32','Shell32','User32','Version','Ws2_32']]))
+rsp=out/'link.rsp';rsp.write_text(' '.join(['/NOLOGO','/DLL','/OPT:REF','/OPT:ICF',f'/OUT:"{out}/PhosphorHUD.dll"']+[f'"{f}"' for f in objects]+[f'"{core}"',f'"{Path(a.spdlog)}/lib/spdlog.lib"']+[n+'.lib' for n in ['Advapi32','Bcrypt','D3d11','D3dcompiler','Dbghelp','Dxgi','Ole32','OleAut32','Shell32','User32','Version','Winmm','Ws2_32']]))
 commands += [f'link @"{rsp}"','exit /b %errorlevel%']
 bat=out/'build.cmd';bat.write_text('\n'.join(commands)+'\n')
 with (out/'build.log').open('w') as log:r=subprocess.run(['cmd','/d','/c',str(bat)],cwd=root,stdout=log,stderr=subprocess.STDOUT)

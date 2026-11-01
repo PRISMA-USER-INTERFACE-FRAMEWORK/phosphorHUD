@@ -214,12 +214,11 @@ Json ReadFast(Raw& raw) {
     return out;
 }
 
-Json ReadSlow(Raw& raw) {
+Json ReadVitals(Raw& raw) {
     Json out = Json::object();
     auto* player = RE::PlayerCharacter::GetSingleton();
     auto* av = RE::ActorValue::GetSingleton();
-    if (!player || !av) { raw.valid = false; return out; }
-    raw.valid = true;
+    if (!player || !av) return out;
 
     const int hp = Round(Value(*player, av->health));
     out["hp"] = hp;
@@ -230,6 +229,15 @@ Json ReadSlow(Raw& raw) {
     raw.radsValue = Value(*player, av->rads);
     raw.radsPermanent = Permanent(*player, av->rads);
     out["rads"] = std::clamp(Round(raw.radsValue), 0, 1000);
+    return out;
+}
+
+Json ReadSlow(Raw& raw) {
+    Json out = Json::object();
+    auto* player = RE::PlayerCharacter::GetSingleton();
+    auto* av = RE::ActorValue::GetSingleton();
+    if (!player || !av) { raw.valid = false; return out; }
+    raw.valid = true;
 
     const auto limb = [&](RE::ActorValueInfo* info) {
         const float max = std::max(1.0F, Permanent(*player, info));

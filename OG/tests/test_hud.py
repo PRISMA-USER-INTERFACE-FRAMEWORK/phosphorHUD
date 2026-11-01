@@ -24,6 +24,7 @@ class HudTests(unittest.TestCase):
         self.page = self.browser.new_page(viewport={"width": 1920, "height": 1080})
         self.errors = []
         self.page.on("pageerror", lambda error: self.errors.append(str(error)))
+        self.page.on("console", lambda msg: self.errors.append(msg.text) if msg.type == "error" and msg.text.startswith("hudUpdate") else None)
         # Game rendering must work offline, without Google's font service.
         self.page.route("https://**/*", lambda route: route.abort())
         self.page.goto(HUD.as_uri(), wait_until="domcontentloaded")

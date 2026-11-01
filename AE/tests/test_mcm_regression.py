@@ -72,6 +72,7 @@ class McmRegressionTests(unittest.TestCase):
         self.errors = []
         self.page = self.browser.new_page(viewport={"width": 3440, "height": 1440})
         self.page.on("pageerror", lambda error: self.errors.append(str(error)))
+        self.page.on("console", lambda msg: self.errors.append(msg.text) if msg.type == "error" and msg.text.startswith("hudUpdate") else None)
         self.page.route("https://**/*", lambda route: route.abort())
         self.page.clock.install(time=1700000000000)
         self.page.goto(HUD.as_uri(), wait_until="domcontentloaded")
