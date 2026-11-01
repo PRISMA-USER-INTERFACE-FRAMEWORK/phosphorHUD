@@ -1,87 +1,32 @@
-#include <F4SE/F4SE.h>
-#include <RE/Fallout.h>
-#include <Windows.h>
-#include <timeapi.h>
-#include <PrismaUI_F4_API.h>
-#include <spdlog/spdlog.h>
-#if defined(PHOSPHOR_AE)
-#include "../ae/AeRuntime.h"
-#endif
-#include <spdlog/sinks/rotating_file_sink.h>
-#include "Core.h"
-#include "Live.h"
-#include "EngineProbe.h"
-#include "EngineQuests.h"
-#include "Mods.h"
-#include "Mines.h"
-#include "QuickLootFirst.h"
-#include <atomic>
-#include <cctype>
-#include <map>
-#include <cmath>
-#include <filesystem>
-#include <fstream>
-#include <format>
-#include <functional>
-#include <memory>
-#include <optional>
-#include <thread>
+#include "PluginState.h"
 
-static_assert(static_cast<unsigned>(PRISMA_UI_API::InterfaceVersion::V12) == 139,
-              "Use the ABI-safe PrismaUI 2.1.1 mod-root header, not its old F4SE/plugins copy");
-
-namespace {
-using Phosphor::Json;
-using API = PRISMA_UI_API::IVPrismaUI12;
-using Clock = Phosphor::Replay::Clock;
-API* api = nullptr; // Assigned at PostLoad before scheduler starts; never changed.
-PrismaView g_view = 0;
-bool domReady = false, dataReady = false, session = false, displaying = false;
-bool realMenuPaused = false, replayPaused = false, settingsDirty = true;
-bool hookedMenus = false;
-bool waitingForPrismaLogged = false;
-Clock::time_point nextViewAttempt{};
-std::atomic<bool> tickQueued{false};
-std::atomic<bool> toggleRequested{false};
-std::atomic<unsigned> generation{0};
-std::jthread scheduler;
-Phosphor::Replay replay;
-std::shared_ptr<spdlog::logger> messageLog;
-
-// Live HUD (Stage 1)
-// hideVanilla is the master switch; the four below split it for troubleshooting (e.g. AAF's wizard lives in HUDMenu).
-// keepWidgetMask: bit i leaves kReplacedWidgets[i] (then kQuestWidgets from bit 11) visible.
-struct PluginOptions {
-    bool live = true; bool hideVanilla = true; int locationMeters = 100;
-    bool hideWidgets = true, hideText = true, hideCrosshair = true, hideFlashlight = true; int keepWidgetMask = 0;
-    bool engineQuests = true;  // bEngineQuestData: quest/map data from the engine (0 = Pip-Boy feed only)
-    bool engineProbe = false;  // bEngineProbe: Ctrl+F11 diagnostic dump
-    bool messageLog = false;
-} options;
-bool liveStarted = false, liveShown = false, suppressed = false, pausedSent = false;
+namespace Phosphor::Plugin {
+API* api = nullptr;
+bool liveStarted = false, liveShown = false;
 bool nativeHudActive = false, nativeRestorePending = false;
+PluginOptions options;
+std::string effectsKey;
+float maxEffectSeconds = 2 * 3600.0F;
+bool dropMarkers = true;
+std::string dialogueRule = "recommended";
+namespace {
+std::atomic<bool> tickQueued{false};
+bool pausedSent = false;
 Phosphor::Delta delta;
 Phosphor::RadiationEvents radiation;
 Phosphor::Live::Raw raw;
 Clock::time_point lastSlow{}, lastTick{};
-// One on-screen notice per launch when the Pip-Boy feed (quest markers, map locations) never connects.
 Clock::time_point liveStartedAt{};
 bool pipNoticeSent = false;
-// Engine probe (diagnostic, bEngineProbe=1 in PhosphorHUD.ini): Ctrl+F11 logs the engine's quest and map data.
 std::atomic<bool> probeRequested{false};
 double predHour = -1;
 float predScale = 20;
 int lastLevel = 0;
 float lastExp = 0;
-// Vanilla widgets Phosphor replaces in Stage 1 (class names confirmed in PrismaUI's DLL).
-constexpr const char* kReplacedWidgets[] = {"HUDPlayerHealthMeter", "HUDActionPointMeter", "HUDRadiationMeter",
-    "HUDExperienceMeter", "HUDCompass", "HUDAmmoCounter", "HUDExplosiveAmmoCounter", "HUDActiveEffectsDisplay",
-    "HUDQuickContainer", "HUDEnemyHealthMeter", "HUDStealthMeter"};
-// Key text per ControlMap event for the loot panel, refreshed every couple of seconds.
 std::map<std::string, std::string> keyCache;
 Clock::time_point keyCacheAt{};
 std::string lastLootId;
-std::map<std::string, float> illnesses;  // what the HUD currently shows
+std::map<std::string, float> illnesses;
 std::string KeyFor(const char* event) {
     const auto now = Clock::now();
     if (now - keyCacheAt > std::chrono::seconds(2)) { keyCache.clear(); keyCacheAt = now; }
@@ -102,232 +47,15 @@ Json LootNow() {
     }
     return loot;
 }
-std::string effectsKey;
-float maxEffectSeconds = 2 * 3600.0F;  // MCM iMaxEffectHours (0 = keep all)
 Clock::time_point lastEffects{};
-bool dropMarkers = true;               // MCM bLegendaryDropMarkers
-std::string dialogueRule = "recommended";  // MCM iCtxDialogue as contextRules.dialogue (game subtitles in dialogue)
-std::map<std::string, float> affinitySeen;   // companion name -> last affinity
 std::optional<double> karmaSeen;
-std::optional<std::string> localFactionSeen;
-bool localFactionBaseline = false;
 std::string targetSeen;
 std::size_t targetMutationsSeen = 0;
-Clock::time_point lastKarmaChange{}, lastRepEvent{};
-
-bool ViewValid() { return api && g_view && api->IsValid(g_view); }
-void Send(const Json& message);
-
-// Vanilla quest pop-ups are only hidden while the Pip-Boy feed supplies Phosphor's quest banners.
-constexpr const char* kQuestWidgets[] = {"HUDQuestUpdates", "HUDObjectiveUpdates", "HUDQuestVaultBoy"};
-bool questsSuppressed = false;
-void SetWidgets(const char* const* list, std::size_t count, bool on, int bit0) {
-    for (std::size_t i = 0; i < count; ++i) {
-        if ((options.keepWidgetMask >> (bit0 + static_cast<int>(i))) & 1) continue;
-        // The compass is shrunk through Scaleform instead (Live::ShrinkVanillaCompass): suppressing the widget breaks AAF.
-        if (std::string_view{list[i]} == "HUDCompass") continue;
-#if defined(PHOSPHOR_AE)
-        const std::string_view widget{list[i]};
-        if ((widget == "HUDCompass" && !Phosphor::AE::Enabled("bCompass")) ||
-            (widget == "HUDActiveEffectsDisplay" && !Phosphor::AE::Enabled("bEffects")) ||
-            (widget == "HUDQuickContainer" && !Phosphor::AE::Enabled("bQuickLoot")) ||
-            (widget == "HUDEnemyHealthMeter" && !Phosphor::AE::Enabled("bTarget"))) continue;
-#endif
-        const bool ok = api->SuppressHUDWidget(list[i], on);
-        spdlog::info("{} vanilla {}: {}", on ? "Hiding" : "Restoring", list[i], ok ? "ok" : "refused");
-    }
-}
-void SetSuppressed(bool on, bool quests = false) {
-#if defined(PHOSPHOR_AE)
-    AE_GATE("bHideVanilla", );
-#endif
-    on = on && options.hideVanilla && options.hideWidgets;
-    quests = quests && on;
-    if (!api) return;
-    if (on != suppressed) { SetWidgets(kReplacedWidgets, std::size(kReplacedWidgets), on, 0); suppressed = on; }
-    if (quests != questsSuppressed) { SetWidgets(kQuestWidgets, std::size(kQuestWidgets), quests, static_cast<int>(std::size(kReplacedWidgets))); questsSuppressed = quests; }
-}
-
-// Last actor the player hit, written by the hit event sink (any thread), read on the game thread.
-std::atomic<std::uint32_t> lastHitId{0};
-std::atomic<std::int64_t> lastHitAt{0};
-std::int64_t NowMs() {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now().time_since_epoch()).count();
-}
-// CommonLibF4-NG's TESHitEvent::GetEventSource has its OG/NG Address Library IDs swapped: its OG ID (989868)
-// resolves to data (Fallout4.exe+59D8140) and calling it crashed the game at save load (Buffout logs
-// 2026-10-10). 1411899 is the OG ID: it resolves to 0x444670, among the other event-source getters
-// (TESActivateEvent 0x441C90, TESDeathEvent 0x442550, cell attach 0x434DB0).
-RE::BSTEventSource<RE::TESHitEvent>* HitEventSource() {
-#if defined(PHOSPHOR_AE)
-    AE_GATE("bTarget", nullptr);
-    return RE::TESHitEvent::GetEventSource();
-#else
-    using func_t = RE::BSTEventSource<RE::TESHitEvent>* (*)();
-    static REL::Relocation<func_t> func{ REL::ID(1411899) };
-    return func();
-#endif
-}
-class HitWatch final : public RE::BSTEventSink<RE::TESHitEvent> {
-    RE::BSEventNotifyControl ProcessEvent(const RE::TESHitEvent& event, RE::BSTEventSource<RE::TESHitEvent>*) override {
-#if defined(PHOSPHOR_AE)
-        if (!Phosphor::AE::Enabled("bTarget")) return RE::BSEventNotifyControl::kContinue;
-#endif
-        try {
-            auto* player = RE::PlayerCharacter::GetSingleton();
-            if (player && event.cause.get() == player && event.target && event.target.get() != player && event.target->As<RE::Actor>()) {
-                lastHitId.store(event.target->GetFormID());
-                lastHitAt.store(NowMs());
-            }
-        } catch (...) {}
-        return RE::BSEventNotifyControl::kContinue;
-    }
-} hitWatch;
-
-// Quest banners from changes in the Pip-Boy quest list.
-struct QuestSeen { std::string text; std::vector<std::pair<std::string, bool>> objectives; };
-std::map<std::uint32_t, QuestSeen> questsSeen;
-bool questBaseline = false;
-void QuestEvents(const Phosphor::Pipboy::Snapshot& pip, Json& message) {
-    if (!pip.connected || pip.quests.empty()) { questBaseline = false; return; }
-    std::map<std::uint32_t, QuestSeen> now;
-    for (const auto& q : pip.quests) {
-        QuestSeen seen{q.text, {}};
-        for (const auto& o : q.objectives) seen.objectives.emplace_back(o.text, o.completed);
-        now[q.formId] = std::move(seen);
-    }
-    if (!questBaseline) { questsSeen = std::move(now); questBaseline = true; return; }
-    Json banners = Json::array(), lines = Json::array();
-    for (const auto& [id, q] : now) {
-        const auto before = questsSeen.find(id);
-        const auto firstOpen = [&]() -> std::string {
-            for (const auto& [text, done] : q.objectives) if (!done) return text;
-            return {};
-        };
-        if (before == questsSeen.end()) {
-            if (id == 0) continue;
-            Json banner{{"eyebrow", "Quest started"}, {"title", Phosphor::Live::CleanName(q.text, false)}};
-            if (auto open = firstOpen(); !open.empty()) banner["objectives"] = Json::array({Json{{"t", open}}});
-            banners.push_back(std::move(banner));
-            continue;
-        }
-        const auto wasDone = [&](const std::string& text) -> int {
-            for (const auto& [t, d] : before->second.objectives) if (t == text) return d ? 1 : 0;
-            return -1;  // new objective
-        };
-        bool allDone = !q.objectives.empty(), allDoneBefore = !before->second.objectives.empty();
-        for (const auto& [t, d] : before->second.objectives) allDoneBefore = allDoneBefore && d;
-        for (const auto& [text, done] : q.objectives) {
-            allDone = allDone && done;
-            const int was = wasDone(text);
-            if (was == 0 && done) lines.push_back(Json{{"text", text}, {"sub", "Objective completed · " + Phosphor::Live::CleanName(q.text, false)}, {"kind", "quest"}});
-            else if (was == -1 && !done) lines.push_back(Json{{"text", text}, {"sub", id == 0 ? std::string("Miscellaneous") : Phosphor::Live::CleanName(q.text, false)}, {"kind", "quest"}});
-        }
-        if (id != 0 && allDone && !allDoneBefore) {
-            Json last = Json::array();
-            if (!q.objectives.empty()) last.push_back(Json{{"t", q.objectives.back().first}, {"done", true}});
-            banners.push_back(Json{{"eyebrow", "Quest completed"}, {"title", Phosphor::Live::CleanName(q.text, false)}, {"objectives", last}, {"tone", "good"}});
-        }
-    }
-    questsSeen = std::move(now);
-    // hudUpdate takes one quest banner and one feed line per message; extra ones go out as their own messages.
-    for (std::size_t i = 0; i < banners.size(); ++i) {
-        if (i == 0 && !message.contains("quest")) message["quest"] = banners[i];
-        else Send(Json{{"quest", banners[i]}});
-    }
-    for (std::size_t i = 0; i < lines.size(); ++i) {
-        if (i == 0 && !message.contains("notify")) message["notify"] = lines[i];
-        else Send(Json{{"notify", lines[i]}});
-    }
-}
+Clock::time_point lastKarmaChange{};
 int lastStealthRaw = -9999;
+}
+Clock::time_point lastRepEvent{};
 
-// Vanilla HUD text mirrored into Phosphor: prompt/subtitle/tutorial follow vanilla's show and hide; each new
-// on-screen message posts once to the feed.
-std::vector<std::string> shownMessages;
-bool messagesBaseline = false;
-void HudTextFields(Json& current, Json& message, const Phosphor::Live::HudText& t) {
-    if (!t.ok) return;
-    if (t.rolloverShown) {
-        Json keys = Json::array();
-        for (const auto& [key, label] : t.keys) {
-            Json k{{"text", Phosphor::Live::CleanName(label, false)}};
-            if (!key.empty()) k["key"] = key;
-            keys.push_back(std::move(k));
-        }
-        Json p{{"name", Phosphor::Live::CleanName(t.rolloverName, false)}, {"keys", keys}};
-        if (t.crime) p["crime"] = true;
-        current["prompt"] = std::move(p);
-    } else current["prompt"] = nullptr;
-    current["subtitle"] = t.subtitleShown ? Json{{"who", t.who}, {"line", t.line}, {"ms", 60000}} : Json(nullptr);
-    current["message"] = t.tutorialShown ? Json{{"text", t.tutorial}, {"ms", 60000}} : Json(nullptr);
-    std::vector<std::string> fresh;
-    for (const auto& m : t.messages)
-        if (std::find(shownMessages.begin(), shownMessages.end(), m) == shownMessages.end()) fresh.push_back(m);
-    shownMessages = t.messages;
-    if (!messagesBaseline) { messagesBaseline = true; return; }
-    const auto has = [](std::string text, std::string_view part) {
-        for (auto& c : text) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-        return text.find(part) != std::string::npos;
-    };
-    bool first = true;
-    for (const auto& text : fresh) {
-        // CHALLENGES' completion message becomes Phosphor's challenge banner; KARMA's and REPUTATION's own
-        // gain/loss messages are left out because Phosphor posts those changes itself.
-        if (auto done = Phosphor::Mods::ChallengeFromMessage(text)) { Send(Json{{"challengeComplete", *done}}); continue; }
-        Phosphor::Live::NoteSurvivalMessage(text);  // still shown in the feed; it also sets the need's stage
-        if (Phosphor::Mods::HasKarma() && has(text, "karma")) continue;
-        if (Phosphor::Mods::HasReputation() && (has(text, "fame") || has(text, "infamy"))) continue;
-        Json line{{"text", Phosphor::Live::CleanName(text, false)}, {"kind", "item"}};
-        if (first && !message.contains("notify")) message["notify"] = std::move(line);
-        else Send(Json{{"notify", line}});
-        first = false;
-    }
-}
-
-// Mod and deeper-game fields that ride along with the slow tick.
-void ModFields(Json& current, const Phosphor::Pipboy::Snapshot& pip, int enemies) {
-    if (auto karma = Phosphor::Mods::ReadKarma(); !karma.is_null()) current["karma"] = std::move(karma);
-    // Only sent while the armor plates mod is loaded: the HUD builds its armor core from the first one.
-    if (Phosphor::Mods::HasArmorPlates()) current["armor"] = Phosphor::Mods::ReadArmorPlates();
-    if (auto challenges = Phosphor::Mods::ReadChallenges(pip); !challenges.is_null()) current["challenges"] = std::move(challenges);
-    current["settlementAttack"] = Phosphor::Mods::ReadAttack(pip, enemies);
-    current["gear"] = Phosphor::Live::ReadGear();
-    // The local reputation chip: send the faction's standing first (setReputation keeps it), then the name.
-    Json status;
-    const auto faction = Phosphor::Mods::LocalFaction(&status);
-    if (!localFactionBaseline || faction != localFactionSeen) {
-        if (faction) Send(Json{{"reputation", status}});
-        localFactionSeen = faction;
-        localFactionBaseline = true;
-    }
-    current["faction"] = faction ? Json(*faction) : Json(nullptr);
-}
-// Events that go out as their own messages: reputation changes, legendary drops, companion reactions.
-void ModEvents(const Json& current) {
-    for (auto& e : Phosphor::Mods::ReputationEvents()) { Send(Json{{"reputation", e}}); lastRepEvent = Clock::now(); }
-    if (current.contains("party")) {
-        const bool baseline = !affinitySeen.empty();
-        std::map<std::string, float> now;
-        for (const auto& m : current["party"]) {
-            if (!m.contains("affinity") || !m["affinity"].is_number()) continue;
-            const auto name = m.value("name", std::string{});
-            const float value = m["affinity"].get<float>();
-            now[name] = value;
-            const auto before = affinitySeen.find(name);
-            if (!baseline || before == affinitySeen.end()) continue;
-            const float d = value - before->second;
-            if (std::abs(d) < 5) continue;
-            const char* kind = d >= 30 ? "loved" : d > 0 ? "liked" : d <= -30 ? "hated" : "disliked";
-            // Before the party update in this tick's message: the HUD nudges its own copy, then gets the exact value.
-            Send(Json{{"companionReact", Json{{"name", name}, {"kind", kind}}}});
-            spdlog::info("Companion {} affinity {:.0f} -> {:.0f} ({})", name, before->second, value, kind);
-        }
-        // Keep companions who just stepped out of the high-process list so they don't re-baseline.
-        for (const auto& [name, value] : affinitySeen) now.try_emplace(name, value);
-        affinitySeen = std::move(now);
-    }
-}
 void StopLive() {
     Phosphor::Live::ResetNativeHud();
     Phosphor::EngineQuests::Reset();
@@ -345,196 +73,7 @@ void StopLive() {
     targetMutationsSeen = 0;
 }
 
-// No exception may unwind across the game/framework callback boundary.
-void Guard(const std::function<void()>& task) noexcept {
-    try { task(); }
-    catch (const std::exception& e) { spdlog::error("Phosphor task failed: {}", e.what()); }
-    catch (...) { spdlog::error("Phosphor task failed with an unknown exception"); }
-}
-bool Queue(std::function<void()> task) {
-    if (!api) return false;
-    // At kGameDataReady PrismaUI may not have verified the window thread yet.
-    // Its dispatcher can reject startup work. F4SE's task queue exists already
-    // and drains on the game thread once frame processing starts (as in Gunsmith).
-    const auto* tasks = F4SE::GetTaskInterface();
-    if (!tasks) {
-        spdlog::error("F4SE task interface unavailable; cannot schedule HUD work");
-        return false;
-    }
-    tasks->AddTask([task = std::move(task)] { Guard(task); });
-    return true;
-}
-
-void Send(const Json& message) {
-    if (!domReady || !ViewValid()) return;
-    const auto serialized = message.dump(-1, ' ', false, Json::error_handler_t::replace);
-    api->InteropCall(g_view, "hudUpdate", serialized.c_str());
-    // Messages go to PhosphorHUD/messages.jsonl only, so the main log keeps a whole session of diagnostics.
-    if (messageLog) messageLog->debug("{}", serialized);
-}
-
-Phosphor::Ini ReadIni(const std::filesystem::path& path) {
-    std::ifstream file(path, std::ios::binary);
-    return Phosphor::ReadMainIni(file);
-}
-void SendSettings() {
-    const auto defaults = ReadIni("Data/MCM/Config/PhosphorHUD/settings.ini");
-    const auto overrides = ReadIni("Data/MCM/Settings/PhosphorHUD.ini");
-#if defined(PHOSPHOR_AE)
-    Phosphor::Ini condition;
-    if (Phosphor::AE::Enabled("bModData")) {
-    condition = ReadIni("Data/MCM/Config/ConditionBoy/settings.ini");
-#else
-    auto condition = ReadIni("Data/MCM/Config/ConditionBoy/settings.ini");
-#endif
-    for (const auto& [key, value] : ReadIni("Data/MCM/Settings/ConditionBoy.ini")) {
-        if (key != "iCharacterType" || value == 0 || value == 1) condition[key] = value;
-    }
-#if defined(PHOSPHOR_AE)
-    }
-#endif
-    std::optional<int> character;
-    if (const auto it = condition.find("iCharacterType"); it != condition.end()) character = it->second;
-    auto settings = Phosphor::MakeSettings(defaults, overrides, character);
-    {
-        std::ifstream keybinds("Data/MCM/Settings/Keybinds.json", std::ios::binary);
-        const auto key = keybinds ? Phosphor::FindKeybind(keybinds, "PhosphorHUD", "PerkChoicesKey") : std::nullopt;
-        Phosphor::QuickLootFirst::Configure(Phosphor::QuickLootFirstEnabled(defaults, overrides),
-                                            key ? key->code : 0, key ? key->modifiers : 0);
-    }
-    dropMarkers = settings.value("legendaryDropMarkers", true);
-    if (settings.contains("contextRules") && settings["contextRules"].is_object())
-        dialogueRule = settings["contextRules"].value("dialogue", std::string("recommended"));
-    Send(Json{{"settings", settings}, {"perkKey", Phosphor::Mods::PerkMenuKey()}});
-    maxEffectSeconds = 3600.0F * Phosphor::EffectHourLimit(defaults, overrides);
-    effectsKey.clear();  // resend the tray with the new limit
-    settingsDirty = false;
-    spdlog::info("MCM settings refreshed");
-}
-
-void CreateView();
-void HideReplay() {
-    replay.Stop();
-    displaying = false;
-    replayPaused = false;
-    realMenuPaused = false;
-    toggleRequested.store(false);
-    if (ViewValid()) {
-        api->Hide(g_view);
-        api->Destroy(g_view);
-    }
-    g_view = 0;
-    domReady = false;
-    // Examples deliberately change persistent context/effects/companions.
-    // A fresh DOM prevents those synthetic values leaking into the next replay.
-    if (dataReady) CreateView();
-}
-void RestoreNativeHud() {
-    Phosphor::Live::ResetNativeHud();
-    nativeHudActive = false;
-    nativeRestorePending = true;
-    Phosphor::Live::RequestNativeHud({});
-}
-void EndSession() {
-    generation.fetch_add(1);
-    session = false;
-    StopLive();
-    SetSuppressed(false);
-    RestoreNativeHud(); // Restore on the UI queue; never touch Flash from this task.
-    messagesBaseline = false;
-    HideReplay();
-}
-
-void ConsoleMessage(PrismaView source, PRISMA_UI_API::ConsoleMessageLevel level, const char* message) noexcept {
-    // Console callbacks may run on a render thread. Logging is thread-safe.
-    try {
-        if (level == PRISMA_UI_API::ConsoleMessageLevel::Error) {
-            spdlog::error("Prisma view {}: {}", source, message ? message : "");
-        }
-    } catch (...) {}
-}
-
-void DomReady(PrismaView readyView) noexcept {
-    try {
-        Queue([readyView] {
-            if (readyView != g_view || !ViewValid() || !dataReady) return;
-            domReady = true;
-            StopLive();
-            api->SetViewRole(g_view, PRISMA_UI_API::ViewRole::kWidget);
-            api->RegisterConsoleCallback(g_view, ConsoleMessage);
-            api->Hide(g_view);
-            SendSettings();
-            spdlog::info("HUD DOM ready; Ctrl+F10 replays after loading a save");
-        });
-    } catch (...) {}
-}
-void CreateView() {
-    if (!dataReady || ViewValid()) return;
-    const auto now = Clock::now();
-    if (now < nextViewAttempt) return;
-    nextViewAttempt = now + std::chrono::seconds(1);
-    domReady = false;
-    displaying = false;
-    replay.Stop();
-    g_view = api->CreateView("PhosphorHUD/hud.html", DomReady);
-    if (!g_view) {
-        if (!waitingForPrismaLogged) {
-            spdlog::info("Waiting for PrismaUI initialization before creating HUD view");
-            waitingForPrismaLogged = true;
-        }
-        return;
-    }
-    waitingForPrismaLogged = false;
-    api->SetViewRole(g_view, PRISMA_UI_API::ViewRole::kWidget);
-    api->Hide(g_view);
-    spdlog::info("HUD view created: {}", g_view);
-}
-
-bool BlockingMenu() {
-    const auto* ui = RE::UI::GetSingleton();
-    if (!ui) return true;
-    // Guard real game screens independently of the replay's synthetic context examples.
-    constexpr const char* names[] = {"MainMenu", "LoadingMenu", "FaderMenu", "PauseMenu", "Console", "PipboyMenu",
-        "ContainerMenu", "BarterMenu", "TerminalMenu", "ExamineMenu", "LockpickingMenu", "LevelUpMenu",
-        "SleepWaitMenu", "LooksMenu", "BookMenu", "SPECIALMenu", "CreditsMenu", "CookingMenu",
-        "PowerArmorModMenu"};
-    for (const auto* name : names) if (ui->GetMenuOpen(RE::BSFixedString(name))) return true;
-    return api->IsAnyPanelVisible(g_view);
-}
-
-void ToggleReplay() {
-    if (!session || !domReady || !ViewValid() || BlockingMenu()) return;
-    if (displaying) {
-        HideReplay();
-        spdlog::info("Replay hidden");
-        return;
-    }
-    const auto path = "Data/F4SE/Plugins/PhosphorHUD/replay.jsonl";
-    std::ifstream file(path, std::ios::binary);
-    if (!file) { spdlog::error("Replay file unavailable: {}", path); return; }
-    const auto bytes = std::filesystem::file_size(path);
-    if (bytes > 4 * 1024 * 1024) { spdlog::error("Replay exceeds 4 MiB limit"); return; }
-    std::ifstream schemaFile("Data/F4SE/Plugins/PhosphorHUD/hud-messages.schema.json");
-    if (!schemaFile) { spdlog::error("Replay schema unavailable; reinstall Phosphor HUD"); return; }
-    const auto schema = Json::parse(schemaFile, nullptr, false);
-    if (!schema.is_object()) { spdlog::error("Replay schema is invalid; reinstall Phosphor HUD"); return; }
-    auto loaded = Phosphor::ReadReplay(file, schema);
-    if (!loaded.errors.empty()) {
-        for (const auto& error : loaded.errors) spdlog::error("Replay rejected: {}", error);
-        return;
-    }
-    spdlog::info("Starting replay: {} messages", loaded.messages.size());
-    Send(Json{{"reset", true}, {"paused", false}});
-    SendSettings();
-    replayPaused = false;
-    realMenuPaused = false;
-    replay.Start(std::move(loaded.messages), Clock::now());
-    displaying = true;
-    // The page itself remains awaiting a snapshot until the replay provides it.
-    api->Show(g_view);
-}
-
-// Game hours between two readings, wrapped across midnight.
+namespace {
 double HourGap(double a, double b) {
     double d = std::fmod(a - b, 24.0);
     if (d > 12) d -= 24;
@@ -542,10 +81,6 @@ double HourGap(double a, double b) {
     return d;
 }
 
-// Quest markers, objectives, map locations and the custom waypoint come from the engine's own data: it works without
-// the Pip-Boy App option (and on AE, where the game no longer starts that service), and indoors it points at the exit
-// door like vanilla, where the feed only has world positions. The feed is the fallback (bEngineQuestData=0, or the
-// engine read fails).
 Phosphor::Pipboy::Snapshot QuestData() {
 #if defined(PHOSPHOR_AE)
     if (!Phosphor::AE::Enabled("bCompass") || !Phosphor::AE::Enabled("bEngineQuests"))
@@ -591,7 +126,7 @@ void LiveTick() {
         for (auto& enemy : enemies) snap["markers"].push_back(std::move(enemy));
         for (auto& ally : startAllies) snap["markers"].push_back(std::move(ally));
         ModFields(snap, pip, enemyCount);
-        Phosphor::Mods::ReputationEvents();  // baseline
+        Phosphor::Mods::ReputationEvents();
         for (const auto& m : snap["party"])
             if (m.contains("affinity") && m["affinity"].is_number()) affinitySeen[m.value("name", std::string{})] = m["affinity"].get<float>();
         if (snap.contains("karma")) karmaSeen = snap["karma"].value("value", 0.0);
@@ -692,7 +227,7 @@ void LiveTick() {
     }
     current.update(Phosphor::Live::ReadFast(raw));
     if (!raw.valid) return;
-    current["loot"] = LootNow();  // every tick: the selection moves as the player scrolls
+    current["loot"] = LootNow();
     current["target"] = Phosphor::Live::ReadTarget(lastHitId.load(), NowMs() - lastHitAt.load() < 6000);
     const auto nativeHud = Phosphor::Live::LatestNativeHud();
     current["crosshair"] = nativeHud.crosshair;
@@ -712,7 +247,6 @@ void LiveTick() {
         }
         karmaSeen = value;
     }
-    // A new mutation on the same enemy: targetMutated plays the HUD's mutation moment.
     if (current.contains("target")) {
         const auto& t = current["target"];
         const std::string name = t.is_object() ? t.value("name", std::string{}) : std::string{};
@@ -723,8 +257,6 @@ void LiveTick() {
     }
     if (slow) {
         if (current.contains("rads")) {
-            // Events bypass Delta: equal consecutive gains must still pop, and a delayed
-            // gain must carry the exact total even if that total was already sent.
             const auto exposure = radiation.Update(current["rads"].get<int>(), now);
             if (!exposure.empty()) {
                 message.update(exposure);
@@ -736,7 +268,6 @@ void LiveTick() {
             message["paused"] = raw.menuOpen;
             pausedSent = raw.menuOpen;
         }
-        // The HUD runs its own clock; resend when it would be more than ~2 game minutes off.
         if (std::abs(HourGap(raw.hour, predHour)) > 0.035 || std::abs(raw.timescale - predScale) > 0.01F) {
             message["time"] = Json{{"hour", std::round(raw.hour * 1000) / 1000}, {"timescale", raw.timescale}};
             predHour = raw.hour;
@@ -748,10 +279,8 @@ void LiveTick() {
             lastLevel = raw.level;
             lastExp = raw.experience;
         }
-        // The tray counts down by itself: resend when the set changes, and every 5 s to stay in step.
         std::string key;
         auto effects = Phosphor::Live::ReadEffects(key, maxEffectSeconds);
-        // Something eaten or drunk resets a need the game's messages had set.
         for (const auto& e : effects) {
             const auto kind = e.value("kind", std::string{});
             const auto id = e.value("id", std::string{});
@@ -764,7 +293,6 @@ void LiveTick() {
             effectsKey = key;
             lastEffects = now;
         }
-        // Illnesses: one message per change (caught / cured); the HUD counts them down itself.
         const auto now_ill = Phosphor::Live::ReadIllnesses(raw.timescale);
         for (const auto& [id, left] : now_ill) {
             if (illnesses.contains(id)) continue;
@@ -781,7 +309,6 @@ void LiveTick() {
         SetSuppressed(!raw.powerArmor, pip.connected);
     }
     if (!message.empty()) Send(message);
-    // Only copied inputs/results cross into the Flash UI queue. Game objects stay on this task queue.
     const bool hide = options.hideVanilla && !raw.powerArmor;
     auto* uiNow = RE::UI::GetSingleton();
     const bool dialogueOpen = uiNow && uiNow->GetMenuOpen(RE::BSFixedString("DialogueMenu"));
@@ -793,92 +320,6 @@ void LiveTick() {
     nativeRestorePending = false;
 }
 
-// Unattended save-load test, only while Data/F4SE/Plugins/PhosphorHUD/autotest.ini sets iInGameLoads > 0:
-// load the most recent save from the main menu, then in game open and close the pause menu and load again,
-// iInGameLoads times, logging each step; then quit to desktop. Lets the crash-on-load fix be checked without input.
-struct AutoTest {
-    bool checked = false;
-    int wanted = 0, done = 0, phase = 0, step = 0;
-    std::uint64_t gen = 0;
-    Clock::time_point at{};
-} autotest;
-void AutoTestQueueLoad(const char* what) {
-    auto* manager = RE::BGSSaveLoadManager::GetSingleton();
-    if (!manager) { spdlog::warn("Autotest: no save/load manager"); return; }
-    autotest.gen = generation.load();
-    spdlog::info("Autotest: {} - loading the most recent save", what);
-    manager->QueueSaveLoadTask(RE::BGSSaveLoadManager::QUEUED_TASK::kLoadMostRecentSave);
-}
-void AutoTestTick() {
-    if (!autotest.checked) {
-        autotest.checked = true;
-        const auto ini = ReadIni("Data/F4SE/Plugins/PhosphorHUD/autotest.ini");
-        if (const auto it = ini.find("iInGameLoads"); it != ini.end()) autotest.wanted = std::clamp(it->second, 0, 20);
-        if (autotest.wanted > 0) spdlog::info("Autotest: on, {} in-game loads planned", autotest.wanted);
-    }
-    if (autotest.wanted <= 0 || autotest.phase >= 6) return;
-    auto* ui = RE::UI::GetSingleton();
-    if (!ui) return;
-    const auto now = Clock::now();
-    const bool mainMenu = ui->GetMenuOpen(RE::BSFixedString("MainMenu"));
-    const bool loading = ui->GetMenuOpen(RE::BSFixedString("LoadingMenu")) || ui->GetMenuOpen(RE::BSFixedString("FaderMenu"));
-    using Clk = Clock::time_point;
-    switch (autotest.phase) {
-    case 0: {  // at the main menu. A load only goes through once the "press any button" screen is dismissed,
-               // so keep asking every 30 s until one starts.
-        if (session) {  // a load went through: run once only, so a normal play session isn't taken over next time
-            std::ofstream("Data/F4SE/Plugins/PhosphorHUD/autotest.ini", std::ios::trunc) << "[Main]\niInGameLoads=0\n";
-            autotest.phase = 1; autotest.at = {};
-            break;
-        }
-        if (ui->GetMenuOpen(RE::BSFixedString("LoadingMenu")) || !mainMenu) break;
-        if (autotest.at == Clk{}) { autotest.at = now + std::chrono::seconds(20); break; }
-        if (now < autotest.at) break;
-        ++autotest.step;
-        AutoTestQueueLoad(std::format("main menu, attempt {}", autotest.step).c_str());
-        autotest.at = now + std::chrono::seconds(30);
-        break;
-    }
-    case 1:  // wait until the new session is live in game, then play for a while
-        if (generation.load() == autotest.gen || !session || !liveStarted || loading || mainMenu) { autotest.at = {}; break; }
-        if (autotest.at == Clk{}) {
-            spdlog::info("Autotest: in game after load {} of {}", autotest.done, autotest.wanted);
-            autotest.at = now + std::chrono::seconds(45);
-            break;
-        }
-        if (now >= autotest.at) {
-            if (autotest.done >= autotest.wanted) {
-                spdlog::info("Autotest: PASSED - {} in-game loads, no crash", autotest.done);
-                autotest.phase = 5; autotest.at = now + std::chrono::seconds(5);
-                break;
-            }
-            if (auto* queue = RE::UIMessageQueue::GetSingleton()) queue->AddMessage(RE::BSFixedString("PauseMenu"), RE::UI_MESSAGE_TYPE::kShow);
-            spdlog::info("Autotest: pause menu opened");
-            autotest.phase = 2; autotest.at = now + std::chrono::seconds(4);
-        }
-        break;
-    case 2:  // close the pause menu (the unpause path)
-        if (now < autotest.at) break;
-        if (auto* queue = RE::UIMessageQueue::GetSingleton()) queue->AddMessage(RE::BSFixedString("PauseMenu"), RE::UI_MESSAGE_TYPE::kHide);
-        spdlog::info("Autotest: pause menu closed");
-        autotest.phase = 3; autotest.at = now + std::chrono::seconds(5);
-        break;
-    case 3:  // load again from inside the game
-        if (now < autotest.at) break;
-        ++autotest.done;
-        AutoTestQueueLoad(std::format("in-game load {} of {}", autotest.done, autotest.wanted).c_str());
-        autotest.phase = 1; autotest.at = {};
-        break;
-    case 5:  // done: quit to desktop
-        if (now < autotest.at) break;
-        spdlog::info("Autotest: quitting to desktop");
-        if (auto* main = RE::Main::GetSingleton()) main->quitGame = true;
-        autotest.phase = 6;
-        break;
-    default: break;
-    }
-}
-
 void Tick() {
     if (!session || !options.live || displaying || !domReady) {
         if (nativeHudActive) RestoreNativeHud();
@@ -887,7 +328,6 @@ void Tick() {
             else Phosphor::Live::RequestNativeHud({});
         }
     }
-    // Stop retaining engine references while live consumers are unavailable (replay, loading, disabled HUD).
     const bool capture = dataReady && session && options.live && !displaying && domReady && ViewValid();
     Phosphor::Mods::SetEventCapture(capture);
     Phosphor::Mines::SetEventCapture(capture);
@@ -925,6 +365,7 @@ void Tick() {
         if (!replay.Active()) spdlog::info("Replay complete; Ctrl+F10 hides the preview");
     }
 }
+}
 
 void Poll(std::stop_token stop) {
     bool wasDown = false, probeWasDown = false;
@@ -943,7 +384,6 @@ void Poll(std::stop_token stop) {
         if (probeDown && !probeWasDown) probeRequested.store(true);
         probeWasDown = probeDown;
         Phosphor::QuickLootFirst::Update(foregroundPID == GetCurrentProcessId());
-        // At most one timer task can be queued, even if the game stops draining.
         if (!tickQueued.exchange(true)) {
             const auto epoch = generation.load();
             if (!Queue([epoch] {
@@ -954,129 +394,11 @@ void Poll(std::stop_token stop) {
     }
     timeEndPeriod(1);
 }
-
-class MenuWatch final : public RE::BSTEventSink<RE::MenuOpenCloseEvent> {
-    RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent& event,
-                                         RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override {
-        Guard([&] {
-            const std::string name(event.menuName.c_str());
-            const bool opening = event.opening;
-            // Loading screens and fades stop the task queue that normally hides the view, so hide it right here
-            // (menu events arrive on the game's main thread). The tick shows it again once the menu has closed.
-            if (opening && name == "LoadingMenu") {
-                Phosphor::Live::ResetNativeHud();
-                // Stop collecting game events for the length of the load; the tick turns capture back on.
-                Phosphor::Mods::SetEventCapture(false);
-                Phosphor::Mines::SetEventCapture(false);
-            }
-            if (opening && (name == "LoadingMenu" || name == "FaderMenu") && ViewValid()) {
-                api->Hide(g_view);
-                liveShown = false;
-                realMenuPaused = true;
-            }
-            Queue([name, opening] {
-                if (name == "PauseMenu" && !opening) settingsDirty = true;
-                if (name == "SleepWaitMenu" && !opening) Phosphor::Live::ClearSurvivalMessage("rest");
-                if (name == "MainMenu" && opening) EndSession();
-            });
-        });
-        return RE::BSEventNotifyControl::kContinue;
-    }
-} menuWatch;
-
-void HandleMessage(F4SE::MessagingInterface::Message* message) {
-    if (!message) return;
-    Guard([&] {
-        using Messaging = F4SE::MessagingInterface;
-        if (message->type == Messaging::kPostLoad) {
-            const auto ini = ReadIni("Data/F4SE/Plugins/PhosphorHUD.ini");
-            if (const auto it = ini.find("bLiveHud"); it != ini.end()) options.live = it->second != 0;
-            if (const auto it = ini.find("bHideVanillaMeters"); it != ini.end()) options.hideVanilla = it->second != 0;
-            if (const auto it = ini.find("iLocationMarkerMeters"); it != ini.end()) options.locationMeters = std::max(0, it->second);
-            if (const auto it = ini.find("bHideVanillaWidgets"); it != ini.end()) options.hideWidgets = it->second != 0;
-            if (const auto it = ini.find("bHideVanillaText"); it != ini.end()) options.hideText = it->second != 0;
-            if (const auto it = ini.find("bHideVanillaCrosshair"); it != ini.end()) options.hideCrosshair = it->second != 0;
-            if (const auto it = ini.find("bHideVanillaFlashlight"); it != ini.end()) options.hideFlashlight = it->second != 0;
-            if (const auto it = ini.find("iKeepVanillaWidgetMask"); it != ini.end()) options.keepWidgetMask = std::max(0, it->second);
-            if (const auto it = ini.find("bEngineQuestData"); it != ini.end()) options.engineQuests = it->second != 0;
-            if (const auto it = ini.find("bEngineProbe"); it != ini.end()) options.engineProbe = it->second != 0;
-            if (const auto it = ini.find("bMessageLog"); it != ini.end()) options.messageLog = it->second != 0;
-            spdlog::info("Options: live HUD {}, hide vanilla meters {} (widgets {}, text {}, crosshair {}, flashlight {}, keep mask {})",
-                         options.live, options.hideVanilla, options.hideWidgets, options.hideText, options.hideCrosshair,
-                         options.hideFlashlight, options.keepWidgetMask);
-            if (options.messageLog) {
-                messageLog = spdlog::rotating_logger_mt("PhosphorMessages", "Data/F4SE/Plugins/PhosphorHUD/messages.jsonl", 2 * 1024 * 1024, 2);
-                messageLog->set_pattern("%v");
-                messageLog->set_level(spdlog::level::debug);
-                messageLog->flush_on(spdlog::level::debug);
-            }
-            api = PRISMA_UI_API::RequestPluginAPI<API>();
-            if (!api) spdlog::warn("PrismaUI V12 unavailable; Phosphor HUD disabled");
-            else spdlog::info("Connected to PrismaUI V12 (ABI 139)");
-            return;
-        }
-        if (!api) return;
-        switch (message->type) {
-        case Messaging::kGameDataReady: {
-            const bool ready = message->data != nullptr;
-            Queue([ready] {
-                dataReady = ready;
-                if (!ready) {
-                    EndSession();
-                    if (ViewValid()) api->Destroy(g_view);
-                    g_view = 0;
-                    domReady = false;
-                    return;
-                }
-                if (!hookedMenus) {
-                    if (auto* ui = RE::UI::GetSingleton()) {
-                        ui->RegisterSink<RE::MenuOpenCloseEvent>(&menuWatch);
-                        if (auto* hits = HitEventSource()) hits->RegisterSink(&hitWatch);
-                        hookedMenus = true;
-                    }
-                }
-                Phosphor::Live::LogXpSettings();
-                Phosphor::Mods::Resolve();
-                Phosphor::QuickLootFirst::DataReady();
-                Phosphor::Mods::RegisterSinks();
-                Phosphor::Mines::RegisterSinks();
-                Phosphor::Pipboy::Start("Data/F4SE/Plugins/PhosphorHUD/pipboy-tree.json");
-                CreateView();
-                if (!scheduler.joinable()) scheduler = std::jthread(Poll);
-            });
-            break;
-        }
-        case Messaging::kPreLoadGame:
-            Phosphor::Live::SetNativeHudLoading(true);
-            generation.fetch_add(1); // Invalidate queued work immediately, before the game-thread reset.
-            Phosphor::Mods::SetEventCapture(false);
-            Phosphor::Mines::SetEventCapture(false);
-            Queue(EndSession);
-            break;
-        case Messaging::kPostLoadGame: {
-            const bool success = message->data != nullptr;
-            Queue([success] {
-                EndSession();
-                session = success;
-                Phosphor::Live::SetNativeHudLoading(!success);
-                if (session) CreateView();
-                spdlog::info("Save load {}; replay {}", success ? "succeeded" : "failed", success ? "available" : "disabled");
-            });
-            break;
-        }
-        case Messaging::kNewGame:
-            Queue([] { EndSession(); session = true; Phosphor::Live::SetNativeHudLoading(false); CreateView(); });
-            break;
-        default: break;
-        }
-    });
-}
 }
 
 namespace {
-// F4SE co-save: survival need stages that came from the game's stage messages (see Live::SurvivalMessageStages).
-constexpr std::uint32_t kCoSaveId = 0x50485544;      // 'PHUD'
-constexpr std::uint32_t kSurvivalRecord = 0x53555256; // 'SURV'
+constexpr std::uint32_t kCoSaveId = 0x50485544;
+constexpr std::uint32_t kSurvivalRecord = 0x53555256;
 constexpr std::uint32_t kSurvivalVersion = 1;
 void F4SEAPI OnCoSaveRevert(const F4SE::SerializationInterface*) {
     Phosphor::Live::SetSurvivalMessageStages({-1, -1, -1});
@@ -1098,7 +420,7 @@ void F4SEAPI OnCoSaveLoad(const F4SE::SerializationInterface* serialization) {
         spdlog::info("Co-save: survival message stages restored (food {}, water {}, rest {})", stages[0], stages[1], stages[2]);
     }
 }
-}  // namespace
+}
 
 extern "C" __declspec(dllexport) constinit auto F4SEPlugin_Version = []() noexcept {
     F4SE::PluginVersionData version{};
@@ -1113,7 +435,6 @@ extern "C" __declspec(dllexport) constinit auto F4SEPlugin_Version = []() noexce
     version.UsesSigScanning(false);
     version.HasNoStructUse(false);
 #if defined(PHOSPHOR_AE)
-    // Force the exact whitelist; the broad AE layout flag bypasses it in F4SE.
     version.IsLayoutDependent(false);
     version.CompatibleVersions({F4SE::RUNTIME_1_11_240});
     version.MinimumRequiredXSEVersion({0, 7, 9, 0});
@@ -1152,7 +473,7 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadIn
 #if defined(PHOSPHOR_AE)
         if (!Phosphor::AE::RuntimeAllowed(f4se->RuntimeVersion())) {
             spdlog::error("unsupported runtime {}: AE experimental requires 1.11.240.0; staying inert", f4se->RuntimeVersion().string());
-            return false; // Before F4SE initialization, relocations or engine access.
+            return false;
         }
         Phosphor::AE::runtime = f4se->RuntimeVersion().string();
         Phosphor::AE::f4seVersion = f4se->F4SEVersion().string();
@@ -1160,7 +481,7 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadIn
 #endif
         F4SE::Init(f4se, false);
         const auto* messaging = F4SE::GetMessagingInterface();
-        if (!messaging || !messaging->RegisterListener(HandleMessage)) return false;
+        if (!messaging || !messaging->RegisterListener(Phosphor::Plugin::HandleMessage)) return false;
         if (const auto* serialization = F4SE::GetSerializationInterface()) {
             serialization->SetUniqueID(kCoSaveId);
             serialization->SetRevertCallback(OnCoSaveRevert);

@@ -15,7 +15,7 @@ class UiBoundaryTests(unittest.TestCase):
                         "Restoration must be limited to widgets hidden by this bridge")
 
     def test_game_tick_consumes_copies_instead_of_calling_flash_readers(self):
-        plugin = (ROOT / "src/Plugin.cpp").read_text(encoding="utf-8")
+        plugin = "".join(p.read_text(encoding="utf-8") for p in sorted(ROOT.glob("src/Plugin*.cpp")))
         for call in ("Live::ReadHudText(", "Live::ReadCrosshair(", "Live::ReadFlashlight(",
                      "Live::ShrinkVanillaText(", "Live::HideVanillaCrosshair(",
                      "Live::ShrinkVanillaFlashlight("):
