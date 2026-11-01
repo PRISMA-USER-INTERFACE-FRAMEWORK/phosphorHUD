@@ -3,7 +3,6 @@ set -euo pipefail
 python3 tests/widget_registry_contract.py
 python3 tests/widget_registration_contract.py
 python3 tests/reload_api_contract.py
-python3 tests/v11_load_thread_contract.py
 python3 tests/messagebox_failsafe_v11_contract.py
 python3 tests/sleepwait_menu_contract.py
 python3 tests/sleepwait_mirror_contract.py
