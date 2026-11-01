@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+    tags: ["v*"]
 
 jobs:
   hud:
@@ -108,3 +109,43 @@ jobs:
           name: ae-dll
           path: AE/build/ae-experimental/PhosphorHUD.dll
           if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [hud, og-build, ae-build]
+    runs-on: windows-2022
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: og-dll
+          path: dl/og
+      - uses: actions/download-artifact@v4
+        with:
+          name: ae-dll
+          path: dl/ae
+      - name: Package
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          foreach ($v in @(@{Dir='OG'; Dll='dl/og/PhosphorHUD.dll'; Name="PhosphorHUD-$version-OG-1.10.163.zip"}, @{Dir='AE'; Dll='dl/ae/PhosphorHUD.dll'; Name="PhosphorHUD-$version-AE-1.11.240-experimental.zip"})) {
+            $mod = Join-Path $v.Dir 'mod/Phosphor HUD'
+            $plugins = Join-Path $mod 'F4SE/Plugins'
+            New-Item -ItemType Directory -Force -Path (Join-Path $plugins 'PhosphorHUD') | Out-Null
+            Copy-Item -LiteralPath $v.Dll -Destination $plugins -Force
+            Copy-Item -LiteralPath (Join-Path $v.Dir 'examples/messages.jsonl') -Destination (Join-Path $plugins 'PhosphorHUD/replay.jsonl') -Force
+            Copy-Item -LiteralPath (Join-Path $v.Dir 'schema/hud-messages.schema.json') -Destination (Join-Path $plugins 'PhosphorHUD') -Force
+            Copy-Item -LiteralPath (Join-Path $v.Dir 'third_party/licenses') -Destination $mod -Recurse -Force
+            Compress-Archive -Path (Join-Path $mod '*') -DestinationPath (Join-Path 'dist' $v.Name) -Force
+          }
+          Get-ChildItem dist | Select-Object Name,Length
+      - name: Draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release create $env:GITHUB_REF_NAME @((Get-ChildItem dist -Filter *.zip).FullName) --draft --title "Phosphor HUD $env:GITHUB_REF_NAME" --generate-notes
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

@@ -1,6 +1,6 @@
 set_xmakever("3.0.0")
 set_project("PhosphorHUD")
-set_version("0.9.24")
+set_version("0.9.25")
 set_languages("c++23")
 set_encodings("utf-8")
 set_warnings("allextra")
