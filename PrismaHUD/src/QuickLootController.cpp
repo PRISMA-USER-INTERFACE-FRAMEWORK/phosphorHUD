@@ -29,10 +29,7 @@ namespace {
             const bool changed = (handle != qlc->CurrentCrosshairPick());
             qlc->SetCachedPick(handle);
 
-            if (changed) {
-                qlc->OnRequestUpdate();
-                HUDDataProvider::GetSingleton()->PushPromptNow();
-            }
+            if (changed) qlc->OnRequestUpdate();
             return RE::BSEventNotifyControl::kContinue;
         }
         static PickRefSink* GetSingleton() { static PickRefSink s; return &s; }

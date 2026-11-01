@@ -53,8 +53,8 @@ assert "preserveIfRuntimeUnknown" in visibility
 assert "runtimeKnown" in visibility
 assert "if (show && preserveIfRuntimeUnknown && !runtimeKnown)" in visibility
 
-assert "if (!g_builtin.field || !g_api->IsValid(g_builtin.field))" in MAIN
-assert "g_builtin = {};" not in MAIN
+assert "if (!g_quickLootView || !g_api->IsValid(g_quickLootView))" in MAIN
+assert "g_quickLootView = MakeView(\"hud_quickloot.html\", OnQuickLootDomReady, true);" in MAIN
 
 assert ".desc." not in CPP
 

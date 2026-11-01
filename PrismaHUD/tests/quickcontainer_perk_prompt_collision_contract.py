@@ -3,7 +3,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 labels = (ROOT / "src/ControlLabels.cpp").read_text(encoding="utf-8")
 quickloot = (ROOT / "src/QuickLootController.cpp").read_text(encoding="utf-8")
-provider = (ROOT / "src/HUDDataProvider.cpp").read_text(encoding="utf-8")
 view = (ROOT / "assets/views/hud_quickloot.js").read_text(encoding="utf-8")
 html = (ROOT / "assets/views/hud_quickloot.html").read_text(encoding="utf-8")
 
@@ -15,7 +14,7 @@ checks = {
         'GamepadCodeForHUDAction("select_up")',
         'GamepadCodeForHUDAction("select_down")',
     )),
-    "HUD action helper exposes bench transfer button code": 'GamepadCodeForHUDAction("bench_transfer")' in provider,
+    "HUD action helper exposes bench transfer button code": 'GamepadCodeForHUDAction("bench_transfer")' in quickloot,
     "default transfer code is normalized Y": '"transfer"' in labels and "0x18000u" in labels,
     "default bench transfer code is normalized X": '"bench_transfer"' in labels and "0x14000u" in labels,
     "footer clears Take only on exact perk collision": 'clearIfCollision(takeKey, "take")' in quickloot,
@@ -24,9 +23,6 @@ checks = {
     "footer clears selection when either D-pad direction collides":
         "padPerkCode == selectUpCode || padPerkCode == selectDownCode" in quickloot,
     "collision helper compares exact normalized codes": "padPerkCode == actionCode" in quickloot,
-    "bench prompt compares live perk and transfer buttons": "perkCode == transferCode" in provider,
-    "bench transfer is omitted only on collision": "transferCollidesWithPerk" in provider
-        and "if (!transferCollidesWithPerk)" in provider,
     "collidable footer hints have stable elements": all(token in html for token in (
         'id="takeHint"', 'id="takeAllHint"', 'id="transferHint"', 'id="selectHint"',
     )),

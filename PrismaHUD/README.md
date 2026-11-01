@@ -1,15 +1,15 @@
 # PrismaHUD
 
-A full HUD replacement and in-game layout editor for Fallout 4, built on the
+A quick-loot panel, in-game HUD layout editor, widget API and menu replacements for Fallout 4, built on the
 [PrismaUI](https://github.com/NomadsReach/framework-F4-Conversion) framework.
 
-PrismaHUD suppresses the vanilla Scaleform HUD widgets and draws its own in HTML/CSS/JS, so every
-element can be repositioned, rescaled, hidden, and restyled without touching a SWF.
+The core HUD (health, AP, ammo, compass, notifications, prompts) is provided by Phosphor HUD. PrismaHUD
+draws the panels Phosphor does not, in HTML/CSS/JS, so they can be repositioned and restyled without touching a SWF.
 
 ## Features
 
-- **11 widgets** - health, action points, rads, compass, ammo, grenade, survival stats, interaction
-  prompt, quick-loot, plus external widgets registered by other plugins through the public API.
+- **Quick-loot widget** - the built-in HUD widget, plus external widgets registered by other plugins
+  through the public API.
 - **In-game layout editor** - drag to reposition, per-widget uniform scale, snap grid, undo/redo,
   alignment and distribution tools, per-widget visibility toggles, and 4 save slots.
 - **Quick-loot panel** - keyboard-driven loot list with per-row 3D model previews, carry-weight bar
@@ -17,7 +17,7 @@ element can be repositioned, rescaled, hidden, and restyled without touching a S
   that matches vanilla, and a Transfer-only view at settlement workbenches.
 - **Perk-driven activate choices** - any mod that adds an activate choice through the vanilla perk
   entry point (for example Wasteland Hunter's "Field Dress", or Workshop Framework's "Manage") is
-  picked up automatically and rendered in the prompt. No per-mod patching.
+  picked up automatically and rendered in the quick-loot panel. No per-mod patching.
 - **Third-party widget API** - other F4SE plugins can register their own HUD widgets and have them
   appear in the layout editor alongside the built-in ones (see `src/PrismaHUD_F4_API.h`).
 - **No savegame writes.** All state lives in external JSON under

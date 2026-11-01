@@ -10,7 +10,6 @@
 #include "KeyHandler.h"
 #include "BindingRegistry.h"
 #include "ActivateChoiceRegistry.h"
-#include "NotificationController.h"
 #include "ControlLabels.h"
 
 #include <RE/U/UI.h>
@@ -24,7 +23,7 @@ static constexpr uint32_t kEditorToggleKey = 0x7A;
 
 static PrismaView              g_editorView = 0;
 static std::atomic<bool>       g_editorOpen = false;
-static BuiltinViews            g_builtin;
+static PrismaView              g_quickLootView = 0;
 static KeyHandlerEvent         g_hideKeyReg = 0;
 
 static PRISMA_UI_API::IVPrismaUI11* g_api = nullptr;
@@ -378,65 +377,6 @@ static PrismaView MakeView(const char* html,
     return view;
 }
 
-#define DOM_READY(Fn, DataBind, WidgetId) \
-static void Fn(PrismaView v) { \
-    auto* dp = HUDDataProvider::GetSingleton(); \
-    dp->DataBind(v); \
-    dp->BindPositionReport(v, WidgetId); \
-    if (g_api) { \
-        g_api->BindUIEvent(v, "reportIconSupport", [](const char* json) { \
-            try { \
-                auto j  = nlohmann::json::parse(json); \
-                auto id = j.at("id").get<std::string>(); \
-                HUDLayoutManager::GetSingleton()->SetIconCapable(id.c_str()); \
-            } catch (...) {} \
-        }); \
-        g_api->BindUIEvent(v, "reportVisibility", [](const char* json) { \
-            try { \
-                auto j   = nlohmann::json::parse(json); \
-                auto id  = j.at("id").get<std::string>(); \
-                bool vis = j.at("visible").get<bool>(); \
-                HUDLayoutManager::GetSingleton()->SetRuntimeVisible(id.c_str(), vis); \
-            } catch (...) {} \
-        }); \
-    } \
-\
-\
-    HUDLayoutManager::GetSingleton()->ApplyLayout(v); \
-}
-
-DOM_READY(OnHealthDomReady,    BindHealthUpdate,    "prisma_health")
-DOM_READY(OnAPDomReady,        BindAPUpdate,        "prisma_ap")
-DOM_READY(OnCompassDomReady,   BindCompassUpdate,   "prisma_compass")
-DOM_READY(OnRadsDomReady,      BindRadsUpdate,      "prisma_rads")
-DOM_READY(OnAmmoDomReady,      BindAmmoUpdate,      "prisma_ammo")
-DOM_READY(OnGrenadeDomReady,   BindGrenadeUpdate,   "prisma_grenade")
-DOM_READY(OnSurvivalDomReady,  BindSurvivalUpdate,  "prisma_survival")
-DOM_READY(OnPromptDomReady,    BindPromptUpdate,    "prisma_prompt")
-
-#undef DOM_READY
-
-static void OnNotifyDomReady(PrismaView v)
-{
-    NotificationController::GetSingleton()->SetView(v);
-
-    HUDDataProvider::GetSingleton()->BindPositionReport(v, "prisma_notify");
-    if (!g_api) return;
-
-    g_api->BindUIEvent(v, "requestUpdate", [](const char*) {
-        NotificationController::GetSingleton()->OnRequestUpdate();
-    });
-    g_api->BindUIEvent(v, "reportVisibility", [](const char* json) {
-        try {
-            auto j   = nlohmann::json::parse(json);
-            auto id  = j.at("id").get<std::string>();
-            bool vis = j.at("visible").get<bool>();
-            HUDLayoutManager::GetSingleton()->SetRuntimeVisible(id.c_str(), vis);
-        } catch (...) {}
-    });
-    HUDLayoutManager::GetSingleton()->ApplyLayout(v);
-}
-
 static void OnQuickLootDomReady(PrismaView v)
 {
     auto* qlc = QuickLootController::GetSingleton();
@@ -446,6 +386,7 @@ static void OnQuickLootDomReady(PrismaView v)
     if (!g_api) return;
 
     g_api->BindUIEvent(v, "requestUpdate", [](const char*) {
+        HUDDataProvider::PollCombatThrottled();
         QuickLootController::GetSingleton()->OnRequestUpdate();
     });
     g_api->BindUIEvent(v, "activateChoice", [](const char* json) {
@@ -468,48 +409,19 @@ static void OnQuickLootDomReady(PrismaView v)
 
 static void CreateBuiltinViews()
 {
-    auto* lm = HUDLayoutManager::GetSingleton();
-
-#define MAKE(field, html, cb, id, name, xf, yf, wf, hf, hide) \
-    if (!g_builtin.field || !g_api->IsValid(g_builtin.field)) { \
-        g_builtin.field = MakeView(html, cb, hide); \
-        if (g_builtin.field)  \
-            lm->RegisterWidget(g_builtin.field, {id, name, xf, yf, wf, hf}); \
+    if (!g_quickLootView || !g_api->IsValid(g_quickLootView)) {
+        g_quickLootView = MakeView("hud_quickloot.html", OnQuickLootDomReady, true);
+        if (g_quickLootView)
+            HUDLayoutManager::GetSingleton()->RegisterWidget(g_quickLootView,
+                {"prisma_quickloot", "Quick Loot", 1480.f/1920.f, 360.f/1080.f, 440.f/1920.f, 380.f/1080.f});
     }
-
-    MAKE(health,    "hud_health.html",      OnHealthDomReady,    "prisma_health",    "Health",             30.f/1920.f,  880.f/1080.f, 260.f/1920.f,  56.f/1080.f, false)
-    MAKE(ap,        "hud_ap.html",          OnAPDomReady,        "prisma_ap",        "Action Points",      30.f/1920.f,  940.f/1080.f, 260.f/1920.f,  36.f/1080.f, false)
-    MAKE(rads,      "hud_rads.html",        OnRadsDomReady,      "prisma_rads",      "Radiation",          30.f/1920.f,  838.f/1080.f, 200.f/1920.f,  44.f/1080.f, false)
-    MAKE(survival,  "hud_survival.html",    OnSurvivalDomReady,  "prisma_survival",  "Survival",          310.f/1920.f,  980.f/1080.f, 220.f/1920.f,  58.f/1080.f, false)
-
-    MAKE(compass,   "hud_compass.html",     OnCompassDomReady,   "prisma_compass",   "Compass",           660.f/1920.f,   12.f/1080.f, 600.f/1920.f,  40.f/1080.f, false)
-
-    MAKE(ammo,      "hud_ammo.html",        OnAmmoDomReady,      "prisma_ammo",      "Ammo Counter",     1720.f/1920.f,  940.f/1080.f, 160.f/1920.f,  60.f/1080.f, false)
-    MAKE(grenade,   "hud_grenade.html",     OnGrenadeDomReady,   "prisma_grenade",   "Grenade Counter",  1816.f/1920.f,  870.f/1080.f,  96.f/1920.f,  52.f/1080.f, false)
-    MAKE(quickloot, "hud_quickloot.html",   OnQuickLootDomReady, "prisma_quickloot", "Quick Loot",       1480.f/1920.f,  360.f/1080.f, 440.f/1920.f, 380.f/1080.f, true)
-
-    MAKE(prompt,    "hud_interaction.html", OnPromptDomReady,    "prisma_prompt",    "Interaction Prompt",760.f/1920.f,  570.f/1080.f, 400.f/1920.f,  72.f/1080.f, false)
-
-    MAKE(notify,    "hud_notify.html",      OnNotifyDomReady,    "prisma_notify",    "Notifications",     40.f/1920.f,  260.f/1080.f, 420.f/1920.f, 200.f/1080.f, true)
-
-#undef MAKE
-
-    HUDDataProvider::GetSingleton()->SetViews(g_builtin);
 }
 
 static void DestroyBuiltinViews()
 {
     if (!g_api) return;
-    PrismaView* views[] = { &g_builtin.health, &g_builtin.ap,       &g_builtin.compass,
-                             &g_builtin.rads,   &g_builtin.ammo,    &g_builtin.grenade,
-                             &g_builtin.quickloot, &g_builtin.survival, &g_builtin.prompt,
-                             &g_builtin.notify };
-    for (auto* v : views) {
-        if (*v && g_api->IsValid(*v)) g_api->Destroy(*v);
-        *v = 0;
-    }
-    NotificationController::GetSingleton()->SetView(0);
-    HUDDataProvider::GetSingleton()->SetViews(g_builtin);
+    if (g_quickLootView && g_api->IsValid(g_quickLootView)) g_api->Destroy(g_quickLootView);
+    g_quickLootView = 0;
     logger::info("PrismaHUD: builtin HUD views destroyed (vanilla HUD closing)");
 }
 
@@ -662,11 +574,8 @@ static void HandleLoadedGameOnVerifiedThread()
 
     auto* layout = HUDLayoutManager::GetSingleton();
     layout->ResetTransientForLoad();
-    HUDDataProvider::GetSingleton()->ResetTransientForLoad();
     QuickLootController::GetSingleton()->ResetTransientForLoad();
     SleepWaitMirrorController::GetSingleton()->ResetForLoad();
-
-    NotificationController::GetSingleton()->NoteGameLoaded();
 
     if (g_editorView && !g_api->IsValid(g_editorView))
         g_editorView = 0;
@@ -735,10 +644,6 @@ static void F4SEMessageHandler(F4SE::MessagingInterface::Message* message)
 
         SleepWaitMirrorController::GetSingleton()->SetAPI(g_api);
         SleepWaitMirrorController::GetSingleton()->InstallMenuSink();
-
-        NotificationController::GetSingleton()->SetAPI(g_api);
-        NotificationController::GetSingleton()->LoadConfig();
-        NotificationController::GetSingleton()->InstallHook();
 
         InstallVanillaHUDSuppression(g_api);
         InstallHUDVisibilitySink();
