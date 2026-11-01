@@ -150,6 +150,7 @@ void RegisterSinks() {
     if (!source) { AE::Observe("bMines event source", false); return; }
     source->RegisterSink(&attachWatch);
 #else
+    if (REL::Module::IsNG()) { spdlog::warn("Mines: not verified on NG; cell attach sink not registered"); return; }
     RE::RegisterForCellAttachDetach(&attachWatch);
 #endif
     sinkRegistered = true;

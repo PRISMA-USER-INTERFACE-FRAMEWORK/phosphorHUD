@@ -662,7 +662,12 @@ Json ReadLoot(const std::function<std::string(const char*)>& keyFor, std::string
     AE_GATE("bQuickLoot", nullptr);
 #endif
     auto* player = RE::PlayerCharacter::GetSingleton();
+#if defined(PHOSPHOR_AE)
     auto* favorites = RE::FavoritesManager::GetSingleton();
+#else
+    static REL::Relocation<RE::FavoritesManager**> singleton{ REL::RelocationID(198281, 2694399) };
+    auto* favorites = *singleton;
+#endif
 #if defined(PHOSPHOR_AE)
     if (!player || !favorites) aeReadScope.Fail();
 #endif
@@ -1036,7 +1041,13 @@ Json ReadWeight() {
     auto* player = RE::PlayerCharacter::GetSingleton();
     auto* av = RE::ActorValue::GetSingleton();
     if (!player || !av) return nullptr;
+#if defined(PHOSPHOR_AE)
     return Json{{"cur", std::lround(player->GetWeightInContainer())}, {"max", std::lround(Value(*player, av->carryWeight))}};
+#else
+    using func_t = float (*)(RE::TESObjectREFR*);
+    static REL::Relocation<func_t> func{ REL::RelocationID(1377567, 2201001) };
+    return Json{{"cur", std::lround(func(player))}, {"max", std::lround(Value(*player, av->carryWeight))}};
+#endif
 }
 
 namespace {
