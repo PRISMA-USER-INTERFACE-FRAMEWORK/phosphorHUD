@@ -45,7 +45,7 @@ jobs:
 
   og-build:
     needs: prismaui-header
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -60,20 +60,25 @@ jobs:
           submodules: recursive
       - uses: xmake-io/github-action-setup-xmake@v1
         with:
-          xmake-version: latest
+          xmake-version: 3.1.2
       - name: Build
         shell: pwsh
         working-directory: OG
         run: |
           $env:COMMONLIBF4_PATH = Join-Path $env:GITHUB_WORKSPACE 'commonlib/VR'
           xmake f -m release -y --vs=2022
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           xmake build PhosphorHUD
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           xmake build phosphor-tests
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\build\tests\phosphor-tests.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v4
         with:
           name: og-dll
           path: OG/build/release/PhosphorHUD.dll
+          if-no-files-found: error
 
   ae-build:
     needs: prismaui-header
@@ -91,7 +96,9 @@ jobs:
         working-directory: AE
         run: |
           cmake -S vendor/spdlog-source/spdlog-1.17.0 -B build/spdlog -G "Visual Studio 17 2022" -A x64 -DSPDLOG_USE_STD_FORMAT=ON -DSPDLOG_WCHAR_SUPPORT=ON -DSPDLOG_BUILD_SHARED=OFF -DSPDLOG_BUILD_EXAMPLE=OFF -DSPDLOG_BUILD_TESTS=OFF -DSPDLOG_INSTALL=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cmake --build build/spdlog --config Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cmake --install build/spdlog --config Release --prefix vendor/spdlog-built
       - name: Build plugin
         working-directory: AE
@@ -100,3 +107,4 @@ jobs:
         with:
           name: ae-dll
           path: AE/build/ae-experimental/PhosphorHUD.dll
+          if-no-files-found: error
