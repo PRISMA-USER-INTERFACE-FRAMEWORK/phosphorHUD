@@ -28,3 +28,83 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: python tools/replay.py
       - run: python -m pytest tests/test_hud.py tests/test_ui_boundary.py -q
+
+  prismaui-header:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: PRISMA-USER-INTERFACE-FRAMEWORK/Fallout-4-Prisma-UI-Framework
+          ref: a0e59ea89bdeef1fae7bbd077c6e731be8b0a15d
+          sparse-checkout: src/PrismaUI_F4_API.h
+          sparse-checkout-cone-mode: false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prismaui-header
+          path: src/PrismaUI_F4_API.h
+
+  og-build:
+    needs: prismaui-header
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: prismaui-header
+          path: OG/third_party
+      - uses: actions/checkout@v4
+        with:
+          repository: G-A-R-D-E-N/commonlibf4-nomad
+          ref: 696f5f5d0094f63abb72c709514561dd13324d52
+          path: commonlib
+          submodules: recursive
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: 3.1.2
+      - name: Build
+        shell: pwsh
+        working-directory: OG
+        run: |
+          $env:COMMONLIBF4_PATH = Join-Path $env:GITHUB_WORKSPACE 'commonlib/VR'
+          xmake f -m release -y --vs=2022
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          xmake build PhosphorHUD
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          xmake build phosphor-tests
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\build\tests\phosphor-tests.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: og-dll
+          path: OG/build/release/PhosphorHUD.dll
+          if-no-files-found: error
+
+  ae-build:
+    needs: prismaui-header
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: prismaui-header
+          path: AE/third_party
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build spdlog
+        working-directory: AE
+        run: |
+          cmake -S vendor/spdlog-source/spdlog-1.17.0 -B build/spdlog -G "Visual Studio 17 2022" -A x64 -DSPDLOG_USE_STD_FORMAT=ON -DSPDLOG_WCHAR_SUPPORT=ON -DSPDLOG_BUILD_SHARED=OFF -DSPDLOG_BUILD_EXAMPLE=OFF -DSPDLOG_BUILD_TESTS=OFF -DSPDLOG_INSTALL=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/spdlog --config Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --install build/spdlog --config Release --prefix vendor/spdlog-built
+      - name: Build plugin
+        working-directory: AE
+        run: python ae/build.py --commonlib vendor/commonlibf4 --spdlog vendor/spdlog-built --json vendor/nlohmann_json --valijson vendor/valijson --vcvars "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ae-dll
+          path: AE/build/ae-experimental/PhosphorHUD.dll
+          if-no-files-found: error
