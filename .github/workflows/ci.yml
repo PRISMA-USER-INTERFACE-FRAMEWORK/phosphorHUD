@@ -25,10 +25,16 @@ jobs:
         with:
           python-version: "3.12"
       - run: node --check "mod/Phosphor HUD/PrismaUI_F4/views/PhosphorHUD/hud.js"
+      - if: matrix.variant == 'OG'
+        run: node --check "mod/Phosphor HUD/PrismaUI_F4/views/PhosphorHUD/layout.js"
+      - if: matrix.variant == 'OG'
+        run: node --check "mod/Phosphor HUD/PrismaUI_F4/views/PhosphorHUD/editor.js"
       - run: pip install pytest playwright jsonschema
       - run: python -m playwright install --with-deps chromium
       - run: python tools/replay.py
       - run: python -m pytest tests/test_hud.py tests/test_ui_boundary.py -q
+      - if: matrix.variant == 'OG'
+        run: python -m pytest tests/test_layout.py -q
 
   prismaui-header:
     runs-on: ubuntu-latest

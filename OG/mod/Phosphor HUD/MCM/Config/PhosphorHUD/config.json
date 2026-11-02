@@ -549,6 +549,23 @@
       }
     },
     {
+      "text": "HUD layout",
+      "type": "section"
+    },
+    {
+      "text": "Move, scale and hide the HUD groups in place. Press the key below to open the layout editor; press it again or Escape to close. Nothing changes until you pick a key.",
+      "type": "text"
+    },
+    {
+      "id": "EditorKey",
+      "text": "HUD layout editor key",
+      "type": "hotkey",
+      "help": "Press this key in game to open the HUD layout editor, and again to close it. No key is set by default.",
+      "valueOptions": {
+        "allowModifierKeys": true
+      }
+    },
+    {
       "text": "Karma, reputation and challenges",
       "type": "section"
     },

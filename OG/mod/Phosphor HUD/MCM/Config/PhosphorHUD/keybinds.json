@@ -10,6 +10,16 @@
         "function": "PerkChoicesKey",
         "params": []
       }
+    },
+    {
+      "id": "EditorKey",
+      "desc": "Phosphor HUD: press to open or close the HUD layout editor",
+      "action": {
+        "type": "CallGlobalFunction",
+        "script": "PhosphorHUD",
+        "function": "EditorKey",
+        "params": []
+      }
     }
   ]
 }

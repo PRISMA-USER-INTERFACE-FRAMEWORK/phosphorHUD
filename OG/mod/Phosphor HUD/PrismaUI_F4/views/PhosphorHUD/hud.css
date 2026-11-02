@@ -621,6 +621,7 @@ html.ingame,html.ingame body{background:transparent!important}
 .ingame .stage.wide-layout .feed,.ingame .stage.wide-layout .rcol,.ingame .stage.wide-layout .kit{right:calc(56px - var(--wide-gutter,0px))}
 .stage.awaiting{opacity:0}
 .stage{transition:opacity .4s ease}
+[data-edit-hidden]{display:none!important}
 
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
