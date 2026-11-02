@@ -1,16 +1,23 @@
 #include "PluginState.h"
+#include <REX/W32/OLE32.h>
+#include <REX/W32/SHELL32.h>
+#include <iterator>
+#include <mutex>
 
 namespace Phosphor::Plugin {
 PrismaView g_view = 0;
 bool domReady = false, dataReady = false, session = false, displaying = false;
 bool realMenuPaused = false, replayPaused = false, settingsDirty = true;
-std::atomic<bool> toggleRequested{false};
+bool editorOpen = false;
+std::atomic<bool> toggleRequested{false}, editorRequested{false};
 std::atomic<unsigned> generation{0};
 Phosphor::Replay replay;
 
 namespace {
 bool hookedMenus = false;
 bool waitingForPrismaLogged = false;
+bool editorWasDown = false;
+std::atomic<int> editorKeyCode{0}, editorKeyModifiers{0};
 Clock::time_point nextViewAttempt{};
 std::shared_ptr<spdlog::logger> messageLog;
 std::jthread scheduler;
@@ -78,12 +85,24 @@ void SetSuppressed(bool on, bool quests) {
 }
 
 namespace {
+void EndEditor() {
+    if (ViewValid()) {
+        api->Unfocus(g_view);
+        api->SetViewOwnsEscape(g_view, false);
+        api->Hide(g_view);
+    }
+    editorOpen = false;
+    liveShown = false;
+}
+
 void HideReplay() {
     replay.Stop();
     displaying = false;
     replayPaused = false;
     realMenuPaused = false;
     toggleRequested.store(false);
+    editorRequested.store(false);
+    if (editorOpen) EndEditor();
     if (ViewValid()) {
         api->Hide(g_view);
         api->Destroy(g_view);
@@ -111,6 +130,100 @@ void EndSession() {
 }
 
 namespace {
+constexpr std::uintmax_t kLayoutMaxBytes = 64 * 1024;
+std::mutex layoutWriteMutex;
+std::uint64_t layoutGeneration = 0;
+
+std::filesystem::path LayoutPath() {
+    wchar_t* known = nullptr;
+    const auto result = REX::W32::SHGetKnownFolderPath(REX::W32::FOLDERID_Documents, REX::W32::KF_FLAG_DEFAULT, nullptr, &known);
+    std::unique_ptr<wchar_t[], decltype(&REX::W32::CoTaskMemFree)> guard(known, REX::W32::CoTaskMemFree);
+    if (result != 0 || !known) return {};
+    return std::filesystem::path(known) / "My Games" / "Fallout4" / "PhosphorHUD" / "layout.json";
+}
+
+std::string ReadLayout() {
+    const auto path = LayoutPath();
+    std::error_code ec;
+    if (path.empty() || !std::filesystem::exists(path, ec)) return {};
+    const auto size = std::filesystem::file_size(path, ec);
+    if (ec) {
+        spdlog::error("HUD layout rejected: cannot read size of {}: {}", path.string(), ec.message());
+        return {};
+    }
+    if (size > kLayoutMaxBytes) {
+        spdlog::error("HUD layout rejected: {} is over 64 KiB", path.string());
+        return {};
+    }
+    std::ifstream file(path, std::ios::binary);
+    std::string text((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    if (Json::parse(text, nullptr, false).is_discarded()) {
+        spdlog::error("HUD layout rejected: {} is not valid JSON", path.string());
+        return {};
+    }
+    spdlog::info("HUD layout loaded: {}", path.string());
+    return text;
+}
+
+void WriteLayout(const std::string& text, std::uint64_t saveGeneration) noexcept {
+    try {
+        const auto path = LayoutPath();
+        if (path.empty()) {
+            spdlog::error("HUD layout save failed: Documents folder unavailable");
+            return;
+        }
+        auto temp = path;
+        temp += ".tmp";
+        std::lock_guard lock(layoutWriteMutex);
+        if (saveGeneration != layoutGeneration) return;
+        std::error_code ec;
+        std::filesystem::create_directories(path.parent_path(), ec);
+        std::ofstream out(temp, std::ios::binary | std::ios::trunc);
+        out << text;
+        out.close();
+        if (!out) {
+            spdlog::error("HUD layout save failed: cannot write {}", temp.string());
+            return;
+        }
+        std::filesystem::rename(temp, path, ec);
+        if (ec) {
+            spdlog::error("HUD layout save failed: {}", ec.message());
+            return;
+        }
+        spdlog::info("HUD layout saved: {} bytes to {}", text.size(), path.string());
+    } catch (const std::exception& e) {
+        spdlog::error("HUD layout save failed: {}", e.what());
+    } catch (...) {}
+}
+
+void SaveLayout(const char* argument) noexcept {
+    try {
+        const std::string text = argument ? argument : "";
+        if (text.size() > kLayoutMaxBytes) {
+            spdlog::error("HUD layout save rejected: over 64 KiB");
+            return;
+        }
+        const auto layout = Json::parse(text, nullptr, false);
+        if (!layout.is_object() || !layout.contains("version") || layout["version"] != 1 ||
+            !layout.contains("groups") || !layout["groups"].is_object()) {
+            spdlog::error("HUD layout save rejected: expected an object with version 1 and a groups object");
+            return;
+        }
+        std::uint64_t saveGeneration = 0;
+        {
+            std::lock_guard lock(layoutWriteMutex);
+            saveGeneration = ++layoutGeneration;
+        }
+        std::thread([text, saveGeneration] { WriteLayout(text, saveGeneration); }).detach();
+    } catch (const std::exception& e) {
+        spdlog::error("HUD layout save failed: {}", e.what());
+    } catch (...) {}
+}
+
+void EditorClosed(const char*) noexcept {
+    try { Queue([] { if (editorOpen) EndEditor(); }); } catch (...) {}
+}
+
 void ConsoleMessage(PrismaView source, PRISMA_UI_API::ConsoleMessageLevel level, const char* message) noexcept {
     try {
         if (level == PRISMA_UI_API::ConsoleMessageLevel::Error) {
@@ -121,14 +234,18 @@ void ConsoleMessage(PrismaView source, PRISMA_UI_API::ConsoleMessageLevel level,
 
 void DomReady(PrismaView readyView) noexcept {
     try {
-        Queue([readyView] {
+        const auto layout = ReadLayout();
+        Queue([readyView, layout] {
             if (readyView != g_view || !ViewValid() || !dataReady) return;
             domReady = true;
             StopLive();
             api->SetViewRole(g_view, PRISMA_UI_API::ViewRole::kWidget);
             api->RegisterConsoleCallback(g_view, ConsoleMessage);
+            api->BindUIEvent(g_view, "saveLayout", SaveLayout);
+            api->BindUIEvent(g_view, "editorClosed", EditorClosed);
             api->Hide(g_view);
             SendSettings();
+            if (!layout.empty()) api->InteropCall(g_view, "hudLayoutApply", layout.c_str());
             spdlog::info("HUD DOM ready; Ctrl+F10 replays after loading a save");
         });
     } catch (...) {}
@@ -137,6 +254,7 @@ void DomReady(PrismaView readyView) noexcept {
 
 void CreateView() {
     if (!dataReady || ViewValid()) return;
+    if (editorOpen) EndEditor();
     const auto now = Clock::now();
     if (now < nextViewAttempt) return;
     nextViewAttempt = now + std::chrono::seconds(1);
@@ -169,7 +287,7 @@ bool BlockingMenu() {
 }
 
 void ToggleReplay() {
-    if (!session || !domReady || !ViewValid() || BlockingMenu()) return;
+    if (!session || !domReady || !ViewValid() || BlockingMenu() || editorOpen) return;
     if (displaying) {
         HideReplay();
         spdlog::info("Replay hidden");
@@ -197,6 +315,46 @@ void ToggleReplay() {
     replay.Start(std::move(loaded.messages), Clock::now());
     displaying = true;
     api->Show(g_view);
+}
+
+void ToggleEditor() {
+    if (!session || !domReady || !ViewValid()) return;
+    if (editorOpen) {
+        CloseEditor();
+        return;
+    }
+    if (displaying || BlockingMenu()) return;
+    api->Show(g_view);
+    api->SetViewOwnsEscape(g_view, true);
+    if (!api->Focus(g_view, false, false)) {
+        EndEditor();
+        spdlog::error("HUD editor focus failed; rolled back closed");
+        return;
+    }
+    editorOpen = true;
+    liveShown = true;
+    api->InteropCall(g_view, "hudEditorOpen", "");
+    spdlog::info("HUD editor opened");
+}
+
+void CloseEditor() {
+    EndEditor();
+    if (ViewValid()) api->InteropCall(g_view, "hudEditorClose", "");
+    spdlog::info("HUD editor closed");
+}
+
+void SetEditorKey(int code, int modifiers) {
+    editorKeyCode.store(code);
+    editorKeyModifiers.store(modifiers);
+}
+
+void PollEditorKey(bool foreground) {
+    const int code = editorKeyCode.load(), modifiers = editorKeyModifiers.load();
+    const auto held = [](int key) { return (GetAsyncKeyState(key) & 0x8000) != 0; };
+    const bool down = foreground && code > 0 && held(code) && (!(modifiers & 1) || held(VK_SHIFT)) &&
+                      (!(modifiers & 2) || held(VK_CONTROL)) && (!(modifiers & 4) || held(VK_MENU));
+    if (down && !editorWasDown) editorRequested.store(true);
+    editorWasDown = down;
 }
 
 namespace {

@@ -345,6 +345,8 @@ void Tick() {
     if (ui && ui->GetMenuOpen(RE::BSFixedString("MainMenu")) && session) EndSession();
     if (settingsDirty) SendSettings();
     if (toggleRequested.exchange(false)) ToggleReplay();
+    if (editorRequested.exchange(false)) ToggleEditor();
+    if (editorOpen && (BlockingMenu() || !api->HasFocus(g_view))) CloseEditor();
     if (!session) return;
     if (probeRequested.exchange(false) && liveStarted && options.engineProbe)
         Phosphor::EngineProbe::Run(Phosphor::Pipboy::Latest(), "Ctrl+F11");
@@ -384,6 +386,7 @@ void Poll(std::stop_token stop) {
         if (probeDown && !probeWasDown) probeRequested.store(true);
         probeWasDown = probeDown;
         Phosphor::QuickLootFirst::Update(foregroundPID == GetCurrentProcessId());
+        PollEditorKey(foregroundPID == GetCurrentProcessId());
         if (!tickQueued.exchange(true)) {
             const auto epoch = generation.load();
             if (!Queue([epoch] {

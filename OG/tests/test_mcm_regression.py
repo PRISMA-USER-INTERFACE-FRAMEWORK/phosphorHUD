@@ -15,7 +15,7 @@ HUD = MOD / "PrismaUI_F4/views/PhosphorHUD/hud.html"
 MCM = MOD / "MCM/Config/PhosphorHUD"
 ALL_CONTROLS = [c for c in json.loads((MCM / "config.json").read_text(encoding="utf-8"))["content"] if "id" in c]
 # Plugin-side controls: they change game behavior, not the HUD page, and are checked separately below.
-PLUGIN_ONLY = {"bQuickLootFirst", "PerkChoicesKey"}
+PLUGIN_ONLY = {"bQuickLootFirst", "PerkChoicesKey", "EditorKey"}
 CONTROLS = [c for c in ALL_CONTROLS if c["id"].split(":")[0] not in PLUGIN_ONLY]
 BOOLS = dict(zip(
     "bHideThirdPersonAimCrosshair bShowLevelBar bHideFullVitals bLocationOnArrival bHideHealthyFigure bShowArmorPieces bShowAdrenaline bNeedStageNames bHideSatisfiedNeeds bSurvivalEnemyMarkers bMineWarnings bMineCompass bKarmaReadout bLocalReputation bChallengeTracker bLegendaryDropMarkers bLevelUpBanner bPerkReminder iClockFormat".split(),
@@ -157,7 +157,7 @@ class McmRegressionTests(unittest.TestCase):
             self.assertEqual(result["settings"], self.defaults, "The switch never changes the HUD page")
         binds = json.loads((MCM / "keybinds.json").read_text(encoding="utf-8"))
         self.assertEqual(binds["modName"], "PhosphorHUD")
-        self.assertEqual([b["id"] for b in binds["keybinds"]], ["PerkChoicesKey"])
+        self.assertEqual([b["id"] for b in binds["keybinds"]], ["PerkChoicesKey", "EditorKey"])
         self.assertNotIn("PerkChoicesKey", (MCM / "settings.ini").read_text(encoding="utf-8"), "No default key: the player picks it")
 
     def test_calm_defaults_and_each_native_rule_in_browser(self):

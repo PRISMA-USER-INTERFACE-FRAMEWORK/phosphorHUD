@@ -30,6 +30,11 @@ void SendSettings() {
         Phosphor::QuickLootFirst::Configure(Phosphor::QuickLootFirstEnabled(defaults, overrides),
                                             key ? key->code : 0, key ? key->modifiers : 0);
     }
+    {
+        std::ifstream keybinds("Data/MCM/Settings/Keybinds.json", std::ios::binary);
+        const auto key = keybinds ? Phosphor::FindKeybind(keybinds, "PhosphorHUD", "EditorKey") : std::nullopt;
+        SetEditorKey(key ? key->code : 0, key ? key->modifiers : 0);
+    }
     dropMarkers = settings.value("legendaryDropMarkers", true);
     if (settings.contains("contextRules") && settings["contextRules"].is_object())
         dialogueRule = settings["contextRules"].value("dialogue", std::string("recommended"));
