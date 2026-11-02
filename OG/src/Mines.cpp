@@ -150,7 +150,15 @@ void RegisterSinks() {
     if (!source) { AE::Observe("bMines event source", false); return; }
     source->RegisterSink(&attachWatch);
 #else
-    RE::RegisterForCellAttachDetach(&attachWatch);
+    if (REL::Module::IsNG()) {
+        using func_t = RE::BSTEventSource<RE::TESCellAttachDetachEvent>* (*)();
+        static REL::Relocation<func_t> func{ REL::RelocationID(311270, 2201823) };
+        auto* source = func();
+        if (!source) return;
+        source->RegisterSink(&attachWatch);
+    } else {
+        RE::RegisterForCellAttachDetach(&attachWatch);
+    }
 #endif
     sinkRegistered = true;
 }
