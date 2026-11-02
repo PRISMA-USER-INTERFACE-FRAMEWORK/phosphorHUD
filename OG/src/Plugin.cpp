@@ -81,20 +81,12 @@ double HourGap(double a, double b) {
     return d;
 }
 
-bool EngineQuestsOn() {
-#if defined(PHOSPHOR_AE)
-    return options.engineQuests;
-#else
-    return options.engineQuests && !REL::Module::IsNG();
-#endif
-}
-
 Phosphor::Pipboy::Snapshot QuestData() {
 #if defined(PHOSPHOR_AE)
     if (!Phosphor::AE::Enabled("bCompass") || !Phosphor::AE::Enabled("bEngineQuests"))
         return Phosphor::Pipboy::Latest();
 #endif
-    if (EngineQuestsOn()) {
+    if (options.engineQuests) {
         static Phosphor::Pipboy::Snapshot cached;
         static Clock::time_point cachedAt{};
         const auto now = Clock::now();
@@ -202,7 +194,7 @@ void LiveTick() {
         current["party"] = Phosphor::Live::ReadParty(&allies);
         for (auto& ally : allies) current["markers"].push_back(std::move(ally));
         static Clock::time_point lastCompare{};
-        if (EngineQuestsOn() && now - liveStartedAt > std::chrono::seconds(10) && now - lastCompare > std::chrono::seconds(15)) {
+        if (options.engineQuests && now - liveStartedAt > std::chrono::seconds(10) && now - lastCompare > std::chrono::seconds(15)) {
             lastCompare = now;
             if (const auto feed = Phosphor::Pipboy::Latest(); feed.connected) Phosphor::EngineQuests::Compare(pip, feed);
         }
