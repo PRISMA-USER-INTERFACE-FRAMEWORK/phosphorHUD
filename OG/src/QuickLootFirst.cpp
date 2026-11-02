@@ -130,7 +130,6 @@ void Update(bool foreground) {
 }
 
 static void Install() {
-    if (REL::Module::IsNG()) { spdlog::warn("Quick loot first: not verified on NG; perk choices unchanged"); return; }
     auto* data = RE::TESDataHandler::GetSingleton();
     auto* player = RE::PlayerCharacter::GetSingleton();
     auto* factory = RE::ConcreteFormFactory<RE::TESGlobal>::GetFormFactory();
