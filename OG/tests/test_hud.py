@@ -268,6 +268,24 @@ class HudTests(unittest.TestCase):
         self.send({"heading": 0})
         self.assertFalse(shown(), "Once dropped, the name needs the marker back within 8 degrees")
 
+    def test_compass_bar_fades_its_ends_per_element_without_a_mask(self):
+        """Detects the tick strip vanishing when the GPU backend renders a masked, layer-promoted subtree as empty."""
+        css = (HUD.parent / "hud.css").read_text(encoding="utf-8")
+        self.assertNotIn("mask-image:linear-gradient(90deg", css.replace(" ", ""), "The compass bar must not be masked")
+        self.assertNotIn("will-change", css[css.index("#tstrip"):].split("}")[0], "The tick strip must not be layer-promoted")
+        for heading in (0, 137):
+            self.send({"snapshot": True, "heading": heading, "markers": []})
+            self.assertEqual(self.page.locator(".cbar").evaluate("e => getComputedStyle(e).webkitMaskImage + getComputedStyle(e).maskImage"), "nonenone")
+            rows = self.page.locator("#tstrip > *").evaluate_all("""els => {
+                const tx = new DOMMatrix(getComputedStyle(document.getElementById('tstrip')).transform).m41;
+                return els.map(e => [parseFloat(e.style.left) + tx, parseFloat(e.style.opacity)]);
+            }""")
+            self.assertEqual(len(rows), 109)
+            for x, opacity in rows:
+                expected = min(1, max(0, (320 - abs(x - 320)) / 102.4))
+                self.assertAlmostEqual(opacity, expected, delta=0.03, msg="Element at %.1f fades with its distance from centre" % x)
+            self.assertTrue(any(o == 1 for _, o in rows) and any(0 < o < 1 for _, o in rows) and any(o == 0 for _, o in rows))
+
     def test_compass_icons_and_lines_keep_a_dark_outline_on_bright_ground(self):
         self.send({"snapshot": True, "heading": 0, "markers": [
             {"id": "pl7", "t": "landmark", "b": 2, "dist": 50, "label": "Nahant Chapel", "disc": True}]})
