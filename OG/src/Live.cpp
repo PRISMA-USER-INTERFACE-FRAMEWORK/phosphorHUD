@@ -64,6 +64,9 @@ Equipped ReadEquipped(RE::Actor& actor) {
     auto* process = actor.currentProcess;
     auto* middleHigh = process ? process->middleHigh : nullptr;
     if (!middleHigh) return out;
+#if !defined(PHOSPHOR_AE)
+    if (!Phosphor::EngineLayout::EquippedItemsPlausible(*middleHigh)) return out;
+#endif
     RE::BSAutoLock lock{Phosphor::EngineLayout::EquippedItemsLock(*middleHigh)};
     for (auto& equipped : Phosphor::EngineLayout::EquippedItems(*middleHigh)) {
         auto* weapon = equipped.item.object ? equipped.item.object->As<RE::TESObjectWEAP>() : nullptr;
@@ -76,7 +79,11 @@ Equipped ReadEquipped(RE::Actor& actor) {
         out.weapon = weapon;
         out.instance = static_cast<RE::TESObjectWEAP::InstanceData*>(equipped.item.instanceData.get());
         const RE::TESObjectWEAP::InstanceData& data = out.instance ? *out.instance : weapon->weaponData;
+#if defined(PHOSPHOR_AE)
         auto* state = equipped.data ? RE::fallout_cast<RE::EquippedWeaponData*>(equipped.data.get()) : nullptr;
+#else
+        auto* state = equipped.data ? Phosphor::EngineLayout::NgSafeCast<RE::EquippedWeaponData*>(equipped.data.get()) : nullptr;
+#endif
         out.ammo = state && state->ammo ? state->ammo : data.ammo;
         if (out.ammo && IsGun(*weapon)) {
             out.clipMax = data.ammoCapacity;
@@ -648,7 +655,12 @@ Json ReadLoot(const std::function<std::string(const char*)>& keyFor, std::string
     AE_GATE("bQuickLoot", nullptr);
 #endif
     auto* player = RE::PlayerCharacter::GetSingleton();
+#if defined(PHOSPHOR_AE)
     auto* favorites = RE::FavoritesManager::GetSingleton();
+#else
+    static REL::Relocation<RE::FavoritesManager**> singleton{ REL::RelocationID(198281, 2694399) };
+    auto* favorites = *singleton;
+#endif
 #if defined(PHOSPHOR_AE)
     if (!player || !favorites) aeReadScope.Fail();
 #endif
@@ -983,6 +995,9 @@ Json ReadGear() {
     auto* process = player ? player->currentProcess : nullptr;
     auto* middleHigh = process ? process->middleHigh : nullptr;
     std::uint32_t slots = 0;
+#if !defined(PHOSPHOR_AE)
+    if (middleHigh && !Phosphor::EngineLayout::EquippedItemsPlausible(*middleHigh)) middleHigh = nullptr;
+#endif
     if (middleHigh) {
         RE::BSAutoLock lock{Phosphor::EngineLayout::EquippedItemsLock(*middleHigh)};
         for (auto& equipped : Phosphor::EngineLayout::EquippedItems(*middleHigh)) {
@@ -1005,7 +1020,13 @@ Json ReadWeight() {
     auto* player = RE::PlayerCharacter::GetSingleton();
     auto* av = RE::ActorValue::GetSingleton();
     if (!player || !av) return nullptr;
+#if defined(PHOSPHOR_AE)
     return Json{{"cur", std::lround(player->GetWeightInContainer())}, {"max", std::lround(Value(*player, av->carryWeight))}};
+#else
+    using func_t = float (*)(RE::TESObjectREFR*);
+    static REL::Relocation<func_t> func{ REL::RelocationID(1377567, 2201001) };
+    return Json{{"cur", std::lround(func(player))}, {"max", std::lround(Value(*player, av->carryWeight))}};
+#endif
 }
 
 namespace {

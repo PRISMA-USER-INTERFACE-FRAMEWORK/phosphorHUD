@@ -1,6 +1,9 @@
 #include "Mines.h"
 #include "Live.h"
 #include "EventInbox.h"
+#if !defined(PHOSPHOR_AE)
+#include "EngineLayout.h"
+#endif
 #include <F4SE/F4SE.h>
 #include <RE/Fallout.h>
 #include <Windows.h>
@@ -31,7 +34,11 @@ bool sinkRegistered = false;
 
 RE::Projectile* AsMine(RE::TESObjectREFR* ref) {
     if (!ref) return nullptr;
+#if defined(PHOSPHOR_AE)
     auto* projectile = RE::fallout_cast<RE::Projectile*>(ref);
+#else
+    auto* projectile = Phosphor::EngineLayout::NgSafeCast<RE::Projectile*>(ref);
+#endif
     return projectile && projectile->IsMine() ? projectile : nullptr;
 }
 
@@ -165,7 +172,15 @@ void RegisterSinks() {
     if (!source) { AE::Observe("bMines event source", false); return; }
     source->RegisterSink(&attachWatch);
 #else
-    RE::RegisterForCellAttachDetach(&attachWatch);
+    if (REL::Module::IsNG()) {
+        using func_t = RE::BSTEventSource<RE::TESCellAttachDetachEvent>* (*)();
+        static REL::Relocation<func_t> func{ REL::RelocationID(311270, 2201823) };
+        auto* source = func();
+        if (!source) return;
+        source->RegisterSink(&attachWatch);
+    } else {
+        RE::RegisterForCellAttachDetach(&attachWatch);
+    }
 #endif
     sinkRegistered = true;
 }

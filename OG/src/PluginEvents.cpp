@@ -13,7 +13,7 @@ RE::BSTEventSource<RE::TESHitEvent>* HitEventSource() {
     return RE::TESHitEvent::GetEventSource();
 #else
     using func_t = RE::BSTEventSource<RE::TESHitEvent>* (*)();
-    static REL::Relocation<func_t> func{ REL::ID(1411899) };
+    static REL::Relocation<func_t> func{ REL::RelocationID(1411899, 2201886) };
     return func();
 #endif
 }

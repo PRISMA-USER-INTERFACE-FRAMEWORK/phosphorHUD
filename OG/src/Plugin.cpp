@@ -518,7 +518,7 @@ extern "C" __declspec(dllexport) constinit auto F4SEPlugin_Version = []() noexce
     version.MinimumRequiredXSEVersion({0, 7, 9, 0});
 #else
     version.IsLayoutDependent(true);
-    version.CompatibleVersions({F4SE::RUNTIME_1_10_163});
+    version.CompatibleVersions({F4SE::RUNTIME_1_10_163, F4SE::RUNTIME_1_10_984});
 #endif
     return version;
 }();
@@ -532,7 +532,7 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Query(
 #if defined(PHOSPHOR_AE)
     return !f4se->IsEditor() && Phosphor::AE::RuntimeAllowed(f4se->RuntimeVersion());
 #else
-    return !f4se->IsEditor() && f4se->RuntimeVersion() == F4SE::RUNTIME_1_10_163;
+    return !f4se->IsEditor() && (f4se->RuntimeVersion() == F4SE::RUNTIME_1_10_163 || f4se->RuntimeVersion() == F4SE::RUNTIME_1_10_984);
 #endif
 }
 
@@ -540,7 +540,7 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadIn
 #if defined(PHOSPHOR_AE)
     if (!f4se || f4se->IsEditor()) return false;
 #else
-    if (!f4se || f4se->IsEditor() || f4se->RuntimeVersion() != F4SE::RUNTIME_1_10_163) return false;
+    if (!f4se || f4se->IsEditor() || (f4se->RuntimeVersion() != F4SE::RUNTIME_1_10_163 && f4se->RuntimeVersion() != F4SE::RUNTIME_1_10_984)) return false;
 #endif
     try {
         std::filesystem::create_directories("Data/F4SE/Plugins/PhosphorHUD");
@@ -569,7 +569,8 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadIn
 #if defined(PHOSPHOR_AE)
         spdlog::info("Phosphor HUD 0.9.26-ae1 EXPERIMENTAL built for AE 1.11.240; in-game behavior UNVERIFIED");
 #else
-        spdlog::info("Phosphor HUD 0.9.26 loaded for OG 1.10.163; live HUD");
+        if (f4se->RuntimeVersion() == F4SE::RUNTIME_1_10_984) spdlog::info("Phosphor HUD 0.9.26 loaded for NG 1.10.984; live HUD");
+        else spdlog::info("Phosphor HUD 0.9.26 loaded for OG 1.10.163; live HUD");
 #endif
         return true;
     } catch (const std::exception& e) {

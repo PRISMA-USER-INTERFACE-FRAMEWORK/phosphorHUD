@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <type_traits>
 
 namespace Phosphor::EngineLayout {
 struct TeleportLinkM {
@@ -138,6 +139,23 @@ inline RE::BSTValueEventSource<RE::PlayerAutoAimActorEvent>& AutoAimActor(RE::Pl
 inline std::int8_t& PerkCount(RE::PlayerCharacter& player) { return AtFlatPosition<std::int8_t>(&player, kPlayerPerkCount); }
 inline RE::ObjectRefHandle& PlayerMapMarker(RE::PlayerCharacter& player) {
     return AtFlatPosition<RE::ObjectRefHandle>(&player, kPlayerMapMarker);
+}
+template <class To, class From>
+To NgSafeCast(From* from) {
+    if (!from) return nullptr;
+    using Fn = decltype(&RE::RTDynamicCast);
+    static const REL::Relocation<Fn> func{REL::RelocationID(84112, 2725673)};
+    REL::Relocation<void*> src{From::RTTI};
+    REL::Relocation<void*> dst{std::remove_pointer_t<To>::RTTI};
+    return static_cast<To>(func(const_cast<void*>(static_cast<const volatile void*>(from)), 0, src.get(), dst.get(), false));
+}
+inline bool EquippedItemsPlausible(RE::MiddleHighProcessData& middleHigh) {
+    if (!REL::Module::IsNG()) return true;
+    auto& items = EquippedItems(middleHigh);
+    if (!Readable(&items, sizeof(items)) || !Readable(&EquippedItemsLock(middleHigh), sizeof(RE::BSSpinLock))) return false;
+    const auto size = items.size();
+    if (size > items.capacity() || items.capacity() > 0x1000) return false;
+    return size == 0 || Readable(static_cast<const void*>(items.data()), size * sizeof(RE::EquippedItem));
 }
 #if defined(ENABLE_FALLOUT_VR)
 static_assert(offsetof(RE::MiddleHighProcessData, equippedItemsLock) == kMiddleHighEquippedLock + 0x8);
