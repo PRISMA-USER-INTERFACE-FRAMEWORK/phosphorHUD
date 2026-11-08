@@ -67,6 +67,9 @@ Equipped ReadEquipped(RE::Actor& actor) {
     auto* process = actor.currentProcess;
     auto* middleHigh = process ? process->middleHigh : nullptr;
     if (!middleHigh) return out;
+#if !defined(PHOSPHOR_AE)
+    if (!Phosphor::EngineLayout::EquippedItemsPlausible(*middleHigh)) return out;
+#endif
     RE::BSAutoLock lock{middleHigh->equippedItemsLock};
     for (auto& equipped : middleHigh->equippedItems) {
         auto* weapon = equipped.item.object ? equipped.item.object->As<RE::TESObjectWEAP>() : nullptr;
@@ -79,7 +82,11 @@ Equipped ReadEquipped(RE::Actor& actor) {
         out.weapon = weapon;
         out.instance = static_cast<RE::TESObjectWEAP::InstanceData*>(equipped.item.instanceData.get());
         const RE::TESObjectWEAP::InstanceData& data = out.instance ? *out.instance : weapon->weaponData;
+#if defined(PHOSPHOR_AE)
         auto* state = equipped.data ? RE::fallout_cast<RE::EquippedWeaponData*>(equipped.data.get()) : nullptr;
+#else
+        auto* state = equipped.data ? Phosphor::EngineLayout::NgSafeCast<RE::EquippedWeaponData*>(equipped.data.get()) : nullptr;
+#endif
         out.ammo = state && state->ammo ? state->ammo : data.ammo;
         if (out.ammo && IsGun(*weapon)) {
             out.clipMax = data.ammoCapacity;
@@ -1019,6 +1026,9 @@ Json ReadGear() {
     auto* process = player ? player->currentProcess : nullptr;
     auto* middleHigh = process ? process->middleHigh : nullptr;
     std::uint32_t slots = 0;
+#if !defined(PHOSPHOR_AE)
+    if (middleHigh && !Phosphor::EngineLayout::EquippedItemsPlausible(*middleHigh)) middleHigh = nullptr;
+#endif
     if (middleHigh) {
         RE::BSAutoLock lock{middleHigh->equippedItemsLock};
         for (auto& equipped : middleHigh->equippedItems) {

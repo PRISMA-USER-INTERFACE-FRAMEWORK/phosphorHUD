@@ -1,6 +1,9 @@
 #include "Mines.h"
 #include "Live.h"
 #include "EventInbox.h"
+#if !defined(PHOSPHOR_AE)
+#include "EngineLayout.h"
+#endif
 #include <F4SE/F4SE.h>
 #include <RE/Fallout.h>
 #include <Windows.h>
@@ -32,7 +35,11 @@ bool sinkRegistered = false;
 
 RE::Projectile* AsMine(RE::TESObjectREFR* ref) {
     if (!ref) return nullptr;
+#if defined(PHOSPHOR_AE)
     auto* projectile = RE::fallout_cast<RE::Projectile*>(ref);
+#else
+    auto* projectile = Phosphor::EngineLayout::NgSafeCast<RE::Projectile*>(ref);
+#endif
     return projectile && projectile->IsMine() ? projectile : nullptr;
 }
 
