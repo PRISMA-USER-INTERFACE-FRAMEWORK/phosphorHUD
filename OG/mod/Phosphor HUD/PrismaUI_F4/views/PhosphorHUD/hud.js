@@ -594,15 +594,33 @@
     return m >= 1000 ? (m / 1000).toFixed(1) + " km" : Math.round(m) + " m";
   }
 
+  var stripEls = [];
+
   function buildTickStrip() {
-    var html = "";
+    var html = "",
+      xs = [];
     for (var d = -90; d <= 450; d += 5) {
       var x = ((d + 90) * PX).toFixed(1),
         n = norm(d);
+      xs.push(+x);
       if (CARD[n] !== undefined) html += '<span class="cd' + (n % 90 ? " minor" : "") + (n === 0 ? " n" : "") + '" style="left:' + x + 'px">' + CARD[n] + "</span>";
       else html += '<i class="tk' + (n % 15 ? "" : " mid") + '" style="left:' + x + 'px"></i>';
     }
     $("ticks").innerHTML = '<div id="tstrip">' + html + '</div>';
+    stripEls = Array.prototype.map.call($("tstrip").children, function(el, i) {
+      return { el: el, x: xs[i], o: -1 };
+    });
+  }
+
+  function fadeStrip(tx) {
+    for (var i = 0; i < stripEls.length; i++) {
+      var s = stripEls[i],
+        o = Math.round(clamp((320 - Math.abs(s.x + tx - 320)) / 102.4, 0, 1) * 20) / 20;
+      if (o !== s.o) {
+        s.o = o;
+        s.el.style.opacity = o;
+      }
+    }
   }
 
   function renderCompass(force) {
@@ -611,7 +629,9 @@
     lastHdg = h;
     if (!$("tstrip")) buildTickStrip();
     var hn = norm(h);
-    $("tstrip").style.transform = "translate3d(" + (320 - (hn + 90) * PX).toFixed(1) + "px,0,0)";
+    var tx = 320 - (hn + 90) * PX;
+    $("tstrip").style.transform = "translate3d(" + tx.toFixed(1) + "px,0,0)";
+    fadeStrip(tx);
     var layer = $("marks"),
       seen = {},
       focus = null,
