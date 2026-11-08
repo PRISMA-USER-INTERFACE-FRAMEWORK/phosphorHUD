@@ -959,7 +959,7 @@
     S.limbStatus[k] = list;
   }
 
-  function setBar(bar, v) {
+  function setLimbBar(bar, v) {
     var pct = Math.round(v * 100);
     bar.className = bar.className.replace(/ ?\b(ok|hurt|bad|crip)\b/g, "") + " " + limbClass(v);
     bar.querySelector("u").style.width = pct + "%";
@@ -976,7 +976,7 @@
       if (!bar) return;
       var v = clamp(S.limbs[k], 0, 1);
       var cls = limbClass(v);
-      setBar(bar, v);
+      setLimbBar(bar, v);
       sum += v;
       n++;
       if (v < 0.98) anyHurt = true;
@@ -988,7 +988,7 @@
       if (limbWas[k] !== undefined && limbWas[k] > 0 && v <= 0) notify(LIMB_NAME[k] + " crippled", "Use a Stimpak or a doctor to heal it", "bad", 6000, "warn");
       limbWas[k] = v;
     });
-    if (n && $("lb-all")) setBar($("lb-all"), sum / n);
+    if (n && $("lb-all")) setLimbBar($("lb-all"), sum / n);
     var fig = document.querySelector(".limbs");
     fig.classList.toggle("healthy", !anyHurt && S.figure.hideHealthy);
     fig.parentNode.classList.toggle("pinned", anyCrip);
