@@ -279,13 +279,13 @@ In survival the HUD drops `enemy` markers unless the "Enemies on compass in surv
 
 ## Stealth
 
-The sneak-freeze hotfix disables the live multiplier calculation and sends `mult:null`. The HUD still accepts
-numeric multipliers for compatibility, but live play shows "Sneak attack" without a number. Detection and
+The sneak-freeze hotfix disables the live multiplier calculation and sends `mult:null`. The "Sneak attack" label
+only shows when `mult` is a number above 0, so live play currently shows detection but no label. Detection and
 actual game damage are unchanged.
 
 | Field | Type | Notes |
 |---|---|---|
-| `stealth` | `{sneaking, level?, state?, mult?}` | `level` 0–100 is the highest detection on the player (the value vanilla uses for its HIDDEN/CAUTION/DANGER/DETECTED text). `state` (`hidden` `caution` `danger` `detected`) overrides the thresholds (<20, <50, <85). While sneaking the HUD dims and the crosshair tightens; hidden + a target shows "Sneak attack ×N", where `mult` is the game's sneak attack multiplier for the equipped weapon and target (perks included); without `mult` it reads "Sneak attack". |
+| `stealth` | `{sneaking, level?, state?, mult?}` | `level` 0–100 is the highest detection on the player (the value vanilla uses for its HIDDEN/CAUTION/DANGER/DETECTED text). `state` (`hidden` `caution` `danger` `detected`) overrides the thresholds (<20, <50, <85). While sneaking the HUD dims and the crosshair tightens; hidden + a target + `mult` above 0 shows "Sneak attack ×N", where `mult` is the game's sneak attack multiplier for the equipped weapon and target (perks included); with `mult` missing, null or 0 the label stays hidden. |
 
 ```json
 {"stealth":{"sneaking":true,"level":35}}
@@ -317,7 +317,7 @@ Up to 12 portraits show; with 13 or more the HUD shows 11 and folds the rest int
 | Field | Type | Notes |
 |---|---|---|
 | `settlementAttack` | object \| `null` | `id`, `name`, `faction?`, `total?` (attackers), `remaining?`, `defense?`, `state` (`pending` on the way, `active` fighting, then `won`, `lost` (didn't make it), `ended` (called off)), `b`/`dist` (pulsing defend marker on the compass), `hoursLeft?` (when vanilla will resolve it without you), `vertibird?`. Updates merge by `id`; an end state clears itself after 6 s. |
-| `mines` | array | Every armed mine currently counting down at the player. Send 10–20 times a second while the list is non-empty, then `[]` once. Fields: `id`, `name`, `dist`, `left`/`total` (fuse seconds), `disarm` (in reach), and either `x`/`y` (stage pixels on a 1920×1080 canvas, from projecting the mine) or `onScreen:false` + `bearing` (degrees relative to the camera, 0 = ahead, 90 = right). Optional `b` adds a compass marker. |
+| `mines` | array | Mines currently counting down at the player, or close to their trigger radius (nearest 8, within 30 m). Send once per frame while the list is non-empty (only when it changed), then `[]` once. The HUD shows one small marker per on-screen mine (14–26 px, larger when closer) and, for an off-screen mine, a small arrow on the screen edge. Fields: `id`, `name`, `dist`, `left`/`total` (fuse seconds), `disarm` (in reach), and either `x`/`y` (stage pixels on a 1920×1080 canvas, from projecting the mine) or `onScreen:false` + `bearing` (degrees relative to the camera, 0 = ahead, 90 = right). Optional `b` adds a compass marker. |
 | `mineExploded` | string \| string[] | Plays the blast at those mines' last positions. Send with the new `mines` list. |
 
 ```json

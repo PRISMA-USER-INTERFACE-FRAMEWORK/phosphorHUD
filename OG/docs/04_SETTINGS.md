@@ -44,7 +44,7 @@ Calm starts after the chosen delay outside combat and ends immediately when comb
 | `bNeedStageNames` | 0/1 | `needStageNames` | |
 | `bHideSatisfiedNeeds` | 0 Off (default), 1 On | `hideSatisfiedNeeds` (bool) | Each need circle hides at stage 0 and appears from stage 1 (Peckish / Parched / Tired). Existing survival and context visibility rules still apply. |
 | `bSurvivalEnemyMarkers` | 0/1 | `survivalEnemyMarkers` | |
-| `bMineWarnings` | 0/1 | `mineWarnings` | When 0, skip the mine scan entirely (it's the most expensive read). |
+| `bMineWarnings` | 0/1 | `mineWarnings` | When 0, the plugin skips the mine scan entirely (it's the most expensive read) and sends no mines. |
 | `bMineCompass` | 0/1 | `mineCompass` | |
 | `bKarmaReadout` | 0/1 | `karmaReadout` | |
 | `bLocalReputation` | 0/1 | `localReputation` | |

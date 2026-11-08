@@ -442,9 +442,16 @@ class HudTests(unittest.TestCase):
         self.send({"snapshot": True, "target": {"name": "Raider", "level": 5, "pct": .8},
                    "stealth": {"sneaking": True, "level": 0, "mult": 3.5}})
         self.assertEqual(self.page.locator("#sneakAtk").text_content(), "Sneak attack ×3.5")
+        shown = lambda: self.page.locator("#sneakAtk").evaluate("e => e.classList.contains('show')")
+        self.assertTrue(shown())
+        for mult in (None, 0):
+            self.send({"stealth": {"sneaking": True, "level": 0, "mult": mult}})
+            self.assertEqual(self.page.locator("#sneakAtk").text_content(), "")
+            self.assertFalse(shown(), "The label needs a multiplier above 0; bare words must not show while crouched")
+        self.send({"stealth": {"sneaking": True, "level": 0, "mult": 2}})
+        self.assertEqual(self.page.locator("#sneakAtk").text_content(), "Sneak attack ×2")
+        self.assertTrue(shown())
         self.send({"stealth": {"sneaking": True, "level": 0, "mult": None}})
-        self.assertEqual(self.page.locator("#sneakAtk").text_content(), "Sneak attack")
-        self.assertTrue(self.page.locator("#sneakAtk").evaluate("e => e.classList.contains('show')"))
         for level, label in [(35, "Caution"), (70, "Danger"), (95, "Detected")]:
             self.send({"stealth": {"sneaking": True, "level": level, "mult": None}})
             self.assertEqual(self.page.locator("#stLabel").text_content(), label)
@@ -883,11 +890,48 @@ class HudTests(unittest.TestCase):
                 self.assertAlmostEqual(layer["width"], 2560, delta=.1)
                 mine = self.page.locator("#mineLayer .mn").evaluate("""e => {
                     const r = e.parentNode.getBoundingClientRect();
-                    return {x:r.left + parseFloat(e.style.left)*r.width/1920,
-                            y:r.top + parseFloat(e.style.top)*r.height/1080};
+                    const t = new DOMMatrix(getComputedStyle(e).transform);
+                    return {x:r.left + t.m41*r.width/1920, y:r.top + t.m42*r.height/1080};
                 }""")
                 self.assertAlmostEqual(mine["x"], width / 2 + 320, delta=.1)
                 self.assertAlmostEqual(mine["y"], 800, delta=.1)
+
+    def test_mines_are_small_pooled_and_clamp_off_screen_ones_to_the_edge(self):
+        # Detects the oversized, per-update-rebuilt mine markers: 44-64 px sprites, left/top layout writes and a
+        # rebuilt arrow list on every message.
+        self.send({"snapshot": True, "heading": 0})
+        mine = lambda i, x, dist: {"id": "m%d" % i, "x": x, "y": 500, "dist": dist, "left": 2, "total": 4, "b": 10}
+        near, far = mine(1, 900, 3), mine(2, 1000, 29)
+        self.send({"mines": [near, far]})
+        size = lambda n: self.page.locator("#mineLayer .mn svg").nth(n).evaluate("e => e.getBoundingClientRect().width")
+        self.assertLessEqual(size(0), 26.5, "Near marker stays a modest size")
+        self.assertGreaterEqual(size(1), 13.5)
+        self.assertLess(size(1), size(0), "Farther mines draw smaller")
+        tag = "els => { els.forEach(e => e.dataset.k = '1'); return els.length; }"
+        first = self.page.locator("#mineLayer .mn").evaluate_all(tag)
+        self.send({"mines": [dict(near, x=910), dict(far, x=1010)]})
+        self.assertEqual(self.page.locator("#mineLayer .mn[data-k]").count(), first,
+                         "A position update reuses the same elements")
+        self.send({"mines": [mine(i, 900 + i, 5 + i) for i in range(12)]})
+        self.assertEqual(self.page.locator("#mineLayer .mn").count(), 8, "At most the nearest 8 are drawn")
+        self.page.locator("#mineLayer .mn").evaluate_all(tag)
+        self.send({"mines": []})
+        self.assertEqual(self.page.locator("#mineLayer .mn").count(), 0)
+        self.send({"mines": [mine(3, 960, 6)]})
+        self.assertEqual(self.page.locator("#mineLayer .mn[data-k]").count(), 1,
+                         "A released element comes back from the pool instead of being rebuilt")
+        ahead = {"id": "off", "onScreen": False, "bearing": 90, "dist": 8}
+        self.send({"mines": [ahead]})
+        arrow = self.page.locator("#mineDir i")
+        self.assertEqual(arrow.count(), 1)
+        box = arrow.evaluate("e => e.getBoundingClientRect().toJSON()")
+        self.assertGreater(box["left"], 1920 * 0.8, "A mine to the right puts its arrow at the right edge")
+        self.assertLess(box["width"], 20)
+        self.send({"mines": [dict(ahead, bearing=270)]})
+        self.assertLess(arrow.evaluate("e => e.getBoundingClientRect().left"), 1920 * 0.2)
+        self.send({"mines": []})
+        self.assertEqual(self.page.locator("#mineDir i").count(), 0)
+        self.assertGreater(self.page.evaluate("window.hud.perf.n"), 5, "The timing probe counts every update")
 
     def test_ultrawide_power_armor_keeps_original_widget_placement(self):
         self.resize_hud(3440, 1440)

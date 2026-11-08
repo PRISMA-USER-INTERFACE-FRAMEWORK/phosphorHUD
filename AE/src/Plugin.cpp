@@ -11,6 +11,9 @@ bool dropMarkers = true;
 std::string dialogueRule = "recommended";
 namespace {
 std::atomic<bool> tickQueued{false};
+std::atomic<bool> mineQueued{false};
+Json lastMines = Json::array();
+bool lastAds = false, lastSneak = false;
 bool pausedSent = false;
 Phosphor::Delta delta;
 Phosphor::RadiationEvents radiation;
@@ -64,6 +67,7 @@ void StopLive() {
     delta.Clear();
     Phosphor::Mods::ResetSession();
     Phosphor::Mines::Reset();
+    lastMines = Json::array();
     Phosphor::Live::ResetCompass();
     localFactionSeen.reset();
     localFactionBaseline = false;
@@ -74,6 +78,18 @@ void StopLive() {
 }
 
 namespace {
+void PumpMines() {
+    std::vector<std::string> exploded;
+    Json list = Phosphor::Mines::Read(&exploded);
+    Json message = Json::object();
+    if (list != lastMines) {
+        lastMines = list;
+        message["mines"] = std::move(list);
+    }
+    if (!exploded.empty()) message["mineExploded"] = exploded.size() == 1 ? Json(exploded.front()) : Json(exploded);
+    if (!message.empty()) Send(message);
+}
+
 double HourGap(double a, double b) {
     double d = std::fmod(a - b, 24.0);
     if (d > 12) d -= 24;
@@ -138,6 +154,7 @@ void LiveTick() {
         snap["paused"] = raw.menuOpen;
         snap["time"] = Json{{"hour", std::round(raw.hour * 1000) / 1000}, {"timescale", raw.timescale}};
         snap["mines"] = Json::array();
+        lastMines = Json::array();
         Send(Json{{"reset", true}});
         if (localFactionSeen) {
             Json status;
@@ -227,18 +244,23 @@ void LiveTick() {
     }
     current.update(Phosphor::Live::ReadFast(raw));
     if (!raw.valid) return;
+    const bool ads = Phosphor::Live::IsAds(), sneak = Phosphor::Live::IsSneaking();
+    if (!slow && ads != lastAds) {
+        if (auto context = Phosphor::Live::ReadContext(raw); !context.is_null()) current["context"] = std::move(context);
+    }
+    if (!slow && sneak != lastSneak) current["stealth"] = Phosphor::Live::ReadStealth(nullptr);
+    lastAds = ads;
+    lastSneak = sneak;
+    PumpMines();
     current["loot"] = LootNow();
     current["target"] = Phosphor::Live::ReadTarget(lastHitId.load(), NowMs() - lastHitAt.load() < 6000);
     const auto nativeHud = Phosphor::Live::LatestNativeHud();
     current["crosshair"] = nativeHud.crosshair;
     current["flashlight"] = nativeHud.flashlight;
-    std::vector<std::string> exploded;
-    current["mines"] = Phosphor::Mines::Read(&exploded);
     Json feedLines = Json::object();
     HudTextFields(current, feedLines, nativeHud.text);
     Json message = delta.Changes(current);
     if (feedLines.contains("notify") && !message.contains("notify")) message["notify"] = feedLines["notify"];
-    if (!exploded.empty()) message["mineExploded"] = exploded.size() == 1 ? Json(exploded.front()) : Json(exploded);
     if (message.contains("karma") && message["karma"].is_object()) {
         const double value = message["karma"].value("value", 0.0);
         if (karmaSeen && std::abs(value - *karmaSeen) >= 1) {
@@ -367,12 +389,59 @@ void Tick() {
 }
 }
 
+namespace {
+void MineTick() {
+    if (!session || !options.live || displaying || !domReady || !liveStarted || !liveShown || !ViewValid()) return;
+    PumpMines();
+}
+
+struct TickPerf {
+    Clock::time_point windowStart{}, lastEnd{};
+    int ticks = 0;
+    double sumMs = 0, maxMs = 0, maxGapMs = 0;
+};
+TickPerf tickPerf;
+
+void SamplePerf(Clock::time_point begin, Clock::time_point end) {
+    auto& p = tickPerf;
+    const auto ms = [](Clock::duration d) { return std::chrono::duration<double, std::milli>(d).count(); };
+    if (p.windowStart == Clock::time_point{}) p.windowStart = end;
+    if (p.lastEnd != Clock::time_point{}) p.maxGapMs = std::max(p.maxGapMs, ms(begin - p.lastEnd));
+    p.lastEnd = end;
+    const double spent = ms(end - begin);
+    ++p.ticks;
+    p.sumMs += spent;
+    p.maxMs = std::max(p.maxMs, spent);
+    if (end - p.windowStart < std::chrono::seconds(5)) return;
+    spdlog::info("Perf: {} ticks, tick mean {:.2f} ms max {:.2f} ms, longest gap between ticks {:.1f} ms, {} sends {} KB, send mean {:.2f} ms max {:.2f} ms, mines {}",
+                 p.ticks, p.sumMs / std::max(1, p.ticks), p.maxMs, p.maxGapMs, perfSends, perfBytes / 1024,
+                 perfSendMs / std::max<std::size_t>(1, perfSends), perfSendMaxMs, Phosphor::Mines::Active() ? "active" : "idle");
+    p = TickPerf{};
+    p.windowStart = end;
+    perfSends = 0;
+    perfBytes = 0;
+    perfSendMs = perfSendMaxMs = 0;
+}
+}
+
 void Poll(std::stop_token stop) {
     bool wasDown = false, probeWasDown = false;
+    Clock::time_point lastFull{};
     timeBeginPeriod(1);
     while (!stop.stop_requested()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        const bool minesActive = Phosphor::Mines::Active();
+        std::this_thread::sleep_for(std::chrono::milliseconds(minesActive ? 5 : 20));
         if (stop.stop_requested()) break;
+        if (minesActive && !mineQueued.exchange(true)) {
+            const auto epoch = generation.load();
+            if (!Queue([epoch] {
+                Guard([epoch] { if (epoch == generation.load()) MineTick(); });
+                mineQueued.store(false);
+            })) mineQueued.store(false);
+        }
+        const auto polled = Clock::now();
+        if (polled - lastFull < std::chrono::milliseconds(19)) continue;
+        lastFull = polled;
         DWORD foregroundPID = 0;
         GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPID);
         const bool down = foregroundPID == GetCurrentProcessId() &&
@@ -387,7 +456,12 @@ void Poll(std::stop_token stop) {
         if (!tickQueued.exchange(true)) {
             const auto epoch = generation.load();
             if (!Queue([epoch] {
-                Guard([epoch] { if (epoch == generation.load()) Tick(); });
+                Guard([epoch] {
+                    if (epoch != generation.load()) return;
+                    const auto begin = Clock::now();
+                    Tick();
+                    if (options.perfLog) SamplePerf(begin, Clock::now());
+                });
                 tickQueued.store(false);
             })) tickQueued.store(false);
         }

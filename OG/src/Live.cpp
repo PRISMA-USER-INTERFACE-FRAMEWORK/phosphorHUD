@@ -233,6 +233,48 @@ Json ReadVitals(Raw& raw) {
     return out;
 }
 
+bool IsAds() {
+    auto* player = RE::PlayerCharacter::GetSingleton();
+    if (!player) return false;
+    const auto gun = static_cast<RE::GUN_STATE>(player->gunState);
+    return gun == RE::GUN_STATE::kSighted || gun == RE::GUN_STATE::kFireSighted;
+}
+
+bool IsSneaking() {
+    auto* player = RE::PlayerCharacter::GetSingleton();
+    return player && player->IsSneaking();
+}
+
+Json ReadContext(Raw& raw) {
+    auto* player = RE::PlayerCharacter::GetSingleton();
+    if (!player) return nullptr;
+    Json menus = Json::array();
+    raw.menuOpen = false;
+    if (auto* ui = RE::UI::GetSingleton()) {
+        for (const auto* name : kKnownMenus) {
+            if (!ui->GetMenuOpen(RE::BSFixedString(name))) continue;
+            menus.push_back(name);
+            for (auto pausing : kPausingMenus) if (pausing == name) raw.menuOpen = true;
+        }
+    }
+    raw.powerArmor = RE::PowerArmor::PlayerInPowerArmor();
+    const bool ads = IsAds();
+    bool photo = false;
+    for (const auto& m : menus) if (m == "PhotoMenu" || m == "ScreenArcherMenu") photo = true;
+#if defined(PHOSPHOR_AE)
+    const bool thirdPerson = AE::options.ReadIf("bCrosshair", [] {
+        auto* camera = RE::PlayerCamera::GetSingleton();
+        return camera && camera->currentState && camera->currentState->id.get() == RE::CameraStates::k3rdPerson;
+    }, false);
+#else
+    auto* camera = RE::PlayerCamera::GetSingleton();
+    const bool thirdPerson = camera && camera->currentState && camera->currentState->id.get() == RE::CameraStates::k3rdPerson;
+#endif
+    return Json{{"menus", menus}, {"powerArmor", raw.powerArmor},
+                {"ads", ads}, {"thirdPerson", thirdPerson},
+                {"scene", Mods::PlayerInScene()}, {"photo", photo}, {"hudHidden", LatestNativeHud().hidden}};
+}
+
 Json ReadSlow(Raw& raw) {
     Json out = Json::object();
     auto* player = RE::PlayerCharacter::GetSingleton();
@@ -288,32 +330,7 @@ Json ReadSlow(Raw& raw) {
         if (calendar->timeScale) raw.timescale = calendar->timeScale->value;
     }
 
-    Json menus = Json::array();
-    raw.menuOpen = false;
-    if (auto* ui = RE::UI::GetSingleton()) {
-        for (const auto* name : kKnownMenus) {
-            if (!ui->GetMenuOpen(RE::BSFixedString(name))) continue;
-            menus.push_back(name);
-            for (auto pausing : kPausingMenus) if (pausing == name) raw.menuOpen = true;
-        }
-    }
-    raw.powerArmor = RE::PowerArmor::PlayerInPowerArmor();
-    const auto gun = static_cast<RE::GUN_STATE>(player->gunState);
-    bool photo = false;
-    for (const auto& m : menus) if (m == "PhotoMenu" || m == "ScreenArcherMenu") photo = true;
-#if defined(PHOSPHOR_AE)
-    const bool thirdPerson = AE::options.ReadIf("bCrosshair", [] {
-        auto* camera = RE::PlayerCamera::GetSingleton();
-        return camera && camera->currentState && camera->currentState->id.get() == RE::CameraStates::k3rdPerson;
-    }, false);
-#else
-    auto* camera = RE::PlayerCamera::GetSingleton();
-    const bool thirdPerson = camera && camera->currentState && camera->currentState->id.get() == RE::CameraStates::k3rdPerson;
-#endif
-    out["context"] = Json{{"menus", menus}, {"powerArmor", raw.powerArmor},
-                          {"ads", gun == RE::GUN_STATE::kSighted || gun == RE::GUN_STATE::kFireSighted},
-                          {"thirdPerson", thirdPerson},
-                          {"scene", Mods::PlayerInScene()}, {"photo", photo}, {"hudHidden", LatestNativeHud().hidden}};
+    out["context"] = ReadContext(raw);
     return out;
 }
 

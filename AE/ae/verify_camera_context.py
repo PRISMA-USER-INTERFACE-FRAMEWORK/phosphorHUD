@@ -10,7 +10,7 @@ root = Path(__file__).resolve().parents[1]
 out = root / '.build/ae-camera-context'
 out.mkdir(parents=True, exist_ok=True)
 live = (root / 'src/Live.cpp').read_text(encoding='utf-8')
-block = live.split('    out["context"] =', 1)[0].rsplit('photo = true;', 1)[1]
+block = live.split('    return Json{{"menus", menus}', 1)[0].rsplit('photo = true;', 1)[1]
 source = r'''
 #include "AeOptions.h"
 #include <sstream>

@@ -9,6 +9,7 @@
 #include "../ae/AeRuntime.h"
 #endif
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -60,15 +61,25 @@ struct Seen {
     double x = 0, y = 0;
     Clock::time_point logged{};
     float lastTimer = -1;
+    bool info = false;
+    std::string name;
 };
 std::map<std::uint32_t, Seen> seen;
 Clock::time_point lastScan{};
+constexpr auto kNeighborScan = std::chrono::seconds(5);
+std::set<std::uint32_t> neighborFound;  // game thread only; refreshed on a cell change or every kNeighborScan
+const RE::TESObjectCELL* neighborCell = nullptr;  // compared, never dereferenced
+Clock::time_point lastNeighborScan{};
+bool enabled = true;
+std::atomic<bool> active{false};
+int slowScans = 0;
 
 void DrainAttachEvents() {
     auto batch = attachEvents.Take();
     if (batch.dropped) {
         spdlog::warn("Cell event queue full: skipped {} events; rescanning attached cells", batch.dropped);
         lastScan = {};
+        lastNeighborScan = {};
     }
     for (const auto& note : batch.events) {
         if (!note.attached) { tracked.erase(note.id); continue; }
@@ -78,30 +89,39 @@ void DrainAttachEvents() {
 }
 
 // Rebuild from attached cells, including exterior neighbors: reset/overflow can lose attach events.
-void ScanAttachedCells() {
+void ScanAttachedCells(Clock::time_point now) {
     auto* player = RE::PlayerCharacter::GetSingleton();
     auto* cell = player ? player->GetParentCell() : nullptr;
     if (!cell) return;
     std::set<std::uint32_t> found;
-    const auto scan = [&found](RE::TESObjectCELL* current) {
+    const auto scan = [](RE::TESObjectCELL* current, std::set<std::uint32_t>& into) {
         RE::BSAutoLock guard{current->spinLock};
         for (auto& ref : current->references) {
-            if (AsMine(ref.get())) found.insert(ref->GetFormID());
+            if (AsMine(ref.get())) into.insert(ref->GetFormID());
         }
     };
-    scan(cell);
+    scan(cell, found);
     if (cell->IsExterior()) {
-        if (auto* data = RE::TESDataHandler::GetSingleton()) {
-            for (auto* neighbor : data->GetFormArray<RE::TESObjectCELL>()) {
-                if (!neighbor || neighbor == cell || !neighbor->IsExterior() ||
+        if (cell != neighborCell || now - lastNeighborScan >= kNeighborScan) {
+            neighborFound.clear();
+            if (auto* data = RE::TESDataHandler::GetSingleton()) {
+                for (auto* neighbor : data->GetFormArray<RE::TESObjectCELL>()) {
+                    if (!neighbor || neighbor == cell || !neighbor->IsExterior() ||
 #if defined(PHOSPHOR_AE)
-                    neighbor->cellState != RE::TESObjectCELL::CELL_STATE::kAttached) continue;
+                        neighbor->cellState != RE::TESObjectCELL::CELL_STATE::kAttached) continue;
 #else
-                    neighbor->cellState.get() != RE::TESObjectCELL::CELL_STATE::kAttached) continue;
+                        neighbor->cellState.get() != RE::TESObjectCELL::CELL_STATE::kAttached) continue;
 #endif
-                if (neighbor->worldSpace == cell->worldSpace) scan(neighbor);
+                    if (neighbor->worldSpace == cell->worldSpace) scan(neighbor, neighborFound);
+                }
             }
+            neighborCell = cell;
+            lastNeighborScan = now;
         }
+        found.insert(neighborFound.begin(), neighborFound.end());
+    } else {
+        neighborFound.clear();
+        neighborCell = nullptr;
     }
     tracked = std::move(found);  // also recover missed detach events after inbox overflow
 }
@@ -159,24 +179,45 @@ void Reset() {
     SetEventCapture(false);
     seen.clear();
     tracked.clear();
+    neighborFound.clear();
+    neighborCell = nullptr;
     lastScan = {};
+    lastNeighborScan = {};
+    active.store(false);
 }
 
-void SetEventCapture(bool enabled) { attachEvents.SetEnabled(enabled); }
+void SetEventCapture(bool capture) { attachEvents.SetEnabled(capture); }
+
+void SetEnabled(bool on) { enabled = on; }
+
+bool Active() { return active.load(); }
 
 Json Read(std::vector<std::string>* exploded) {
 #if defined(PHOSPHOR_AE)
     AE_GATE("bMines", Json::array());
 #endif
-    DrainAttachEvents();
     Json out = Json::array();
+    if (!enabled) {
+        if (!seen.empty() || !tracked.empty()) { seen.clear(); tracked.clear(); }
+        active.store(false);
+        return out;
+    }
+    DrainAttachEvents();
     auto* player = RE::PlayerCharacter::GetSingleton();
 #if defined(PHOSPHOR_AE)
     if (!player) aeReadScope.Fail();
 #endif
-    if (!player) return out;
+    if (!player) { active.store(false); return out; }
     const auto now = Clock::now();
-    if (now - lastScan > std::chrono::seconds(1)) { ScanAttachedCells(); lastScan = now; }
+    if (now - lastScan > std::chrono::seconds(1)) {
+        ScanAttachedCells(now);
+        lastScan = now;
+        const auto spent = std::chrono::duration<double, std::milli>(Clock::now() - now).count();
+        if (spent >= 3.0 && slowScans < 5) {
+            ++slowScans;
+            spdlog::info("Mine scan took {:.1f} ms ({} tracked)", spent, tracked.size());
+        }
+    }
 
     const std::vector<std::uint32_t> ids(tracked.begin(), tracked.end());
     const auto [ww, wh] = WindowSize();
@@ -222,11 +263,13 @@ Json Read(std::vector<std::string>* exploded) {
         double b = Norm(std::atan2(dx, dy) * 180.0 / std::numbers::pi);
         char key[16];
         std::snprintf(key, sizeof(key), "%08x", id);
-        std::string name;
-        if (mine->weaponSource.object) name = Live::CleanName(Live::ToUtf8(RE::TESFullName::GetFullName(*mine->weaponSource.object)), true);
-        if (name.empty() && base) name = Live::CleanName(Live::ToUtf8(RE::TESFullName::GetFullName(*base)), true);
-        if (name.empty()) name = "Mine";
-        Json m{{"id", key}, {"name", name}, {"dist", std::round(dist * 10) / 10}, {"disarm", dist <= 2.2},
+        if (!s.info) {
+            s.info = true;
+            if (mine->weaponSource.object) s.name = Live::CleanName(Live::ToUtf8(RE::TESFullName::GetFullName(*mine->weaponSource.object)), true);
+            if (s.name.empty() && base) s.name = Live::CleanName(Live::ToUtf8(RE::TESFullName::GetFullName(*base)), true);
+            if (s.name.empty()) s.name = "Mine";
+        }
+        Json m{{"id", key}, {"name", s.name}, {"dist", std::round(dist * 10) / 10}, {"disarm", dist <= 2.2},
                {"b", std::round(b)}};
         if (triggered && total > 0) {
             m["total"] = std::round(total * 10) / 10;
@@ -258,6 +301,7 @@ Json Read(std::vector<std::string>* exploded) {
     }
     std::sort(out.begin(), out.end(), [](const Json& a, const Json& b) { return a["dist"].get<double>() < b["dist"].get<double>(); });
     if (out.size() > 8) out.erase(out.begin() + 8, out.end());
+    active.store(!out.empty() || (exploded && !exploded->empty()));
     return out;
 }
 }
