@@ -1085,9 +1085,6 @@ Json ReadTarget(std::uint32_t lastHitId, bool recentHit) {
     auto* av = RE::ActorValue::GetSingleton();
     if (!player || !av) return nullptr;
     RE::NiPointer<RE::Actor> aimed;
-#if !defined(PHOSPHOR_AE)
-    if (!REL::Module::IsNG())
-#endif
     {
         auto& autoAim = Phosphor::EngineLayout::AutoAimActor(*player);
         RE::BSAutoLock lock{autoAim.dataLock};

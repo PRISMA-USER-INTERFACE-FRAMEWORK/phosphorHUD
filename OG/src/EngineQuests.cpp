@@ -310,9 +310,6 @@ Pipboy::Snapshot Read() {
     Step("quests built");
     // Compass targets of tracked quests, pointed at the first door when the target is in another space.
     std::vector<std::pair<RE::TESQuest*, QuestTargetArrayM*>> targets;
-#if !defined(PHOSPHOR_AE)
-    if (!REL::Module::IsNG())
-#endif
     {
         RE::BSAutoLock lock{player->questTargetLock};
         for (auto& entry : player->questTargets)
