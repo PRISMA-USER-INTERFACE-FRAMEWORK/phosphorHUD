@@ -11,7 +11,7 @@ CommonLib diff `696f5f5..57eb7a55`: only `.github/workflows/code-notes-guard.yml
 | `MiddleHighProcessData::equippedItemsLock` | 0x280 | 0x280 verified | DEC: the getter at NG RVA 0x0CB76E0 returns `middleHigh + 0x280` |
 | `MiddleHighProcessData::equippedItems` | 0x288 | 0x288 verified (data +0x288, size +0x298) | DEC: the consumer of that getter reads the array at +0x288 and its size at +0x298 |
 | `PlayerCharacter::perkCount` | 0xCF1 | 0xCF1 verified | DEC: NG RVA 0x0CEFFB0 (id 2233187, the perk-count setter) writes `player + 0xCF1` |
-| `PlayerCharacter::autoAimActor` | 0xC50 | UNVERIFIED | GL flat tree has one layout for OG and NG (`PlayerCharacter.h`, `sizeof == 0xE10`, no NG conditional), which is circumstantial only. No NG function touching +0xC50 was decompiled. |
+| `PlayerCharacter::autoAimActor` | 0xC50 | UNVERIFIED, lock read skipped on NG | GL flat tree has one layout for OG and NG (`PlayerCharacter.h`, `sizeof == 0xE10`, no NG conditional), which is circumstantial only. No NG function touching +0xC50 was decompiled. |
 | `PlayerCharacter::playerMapMarker` | 0xBC4 | UNVERIFIED | same as above |
 | `PlayerCharacter::questTargetLock` 0x630, `questTargets` 0x7F0, `objectives` 0x7D8, `currentMapMarkers` 0x738, `cachedWorldspace` 0x8B0, `exteriorPosition` 0x8B8 | as listed | UNVERIFIED | read by `EngineQuests::Read` (runs on NG, `Plugin.cpp`) and the engine probe; not decompiled on NG |
 
@@ -22,7 +22,13 @@ Guard added for the equipped-items reads: `EngineLayout::EquippedItemsPlausible`
 - the capacity is above 0x1000
 - the size is non-zero and the `size * sizeof(EquippedItem)` bytes at `data` are not readable
 
-It is read-only and never takes the lock before the checks pass. It does not guard `autoAimActor`: that read locks `autoAim.dataLock`, and a wrong NG offset there would spin. This remains an open risk until a NG function touching +0xC50 is decompiled.
+It is read-only and never takes the lock before the checks pass. The reads that take a lock on an UNVERIFIED NG offset are skipped on NG instead: a wrong offset would make `BSAutoLock` spin the game thread.
+
+- `ReadTarget` (`Live.cpp`): the `autoAimActor` lock read is skipped, so the auto-aim target is empty and the existing fallbacks run.
+- `EngineQuests::Read` (`EngineQuests.cpp`): the `questTargetLock` and `questTargets` copy is skipped, so the compass target list stays empty.
+- `EngineProbe::Run` (`EngineProbe.cpp`): the same `questTargets` block is skipped.
+
+Why skipped: one attempt to verify +0xC50 on NG found nothing. The NG vtable of `BSTValueEventSource<PlayerAutoAimActorEvent>` (RTTI id 2773493, COL found in the NG exe, vtable RVA 0x2369AC0) has no rip-relative reference in `.text`, and the one function named `ApplyAutoAimActor` (NG id 2233944) does not touch player+0xC50. Plain reads of the other unverified members are not gated: a wrong offset there reads garbage, guarded by `Readable`, and does not spin. `playerMapMarker` 0xBC4 is such a plain read and is UNVERIFIED on NG. Remove the skips once a NG decompile confirms +0xC50 and +0x630.
 
 ## Engine calls reachable on NG (finding B)
 

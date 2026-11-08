@@ -206,6 +206,9 @@ void Run(const Pipboy::Snapshot& pip, const char* why) {
 
     // 2. Quest targets the player is guided to.
     std::vector<std::pair<RE::TESQuest*, void*>> targetMap;
+#if !defined(PHOSPHOR_AE)
+    if (!REL::Module::IsNG())
+#endif
     {
         RE::BSAutoLock lock{player->questTargetLock};
         for (auto& entry : player->questTargets) targetMap.emplace_back(entry.first, entry.second);
