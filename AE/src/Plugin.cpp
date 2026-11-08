@@ -425,9 +425,9 @@ void F4SEAPI OnCoSaveLoad(const F4SE::SerializationInterface* serialization) {
 extern "C" __declspec(dllexport) constinit auto F4SEPlugin_Version = []() noexcept {
     F4SE::PluginVersionData version{};
 #if defined(PHOSPHOR_AE)
-    version.PluginVersion({0, 9, 24, 0});
+    version.PluginVersion({0, 9, 26, 0});
 #else
-    version.PluginVersion({0, 9, 24, 0});
+    version.PluginVersion({0, 9, 26, 0});
 #endif
     version.PluginName("PhosphorHUD");
     version.AuthorName("Phosphor HUD");
@@ -489,9 +489,9 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadIn
             serialization->SetLoadCallback(OnCoSaveLoad);
         } else spdlog::warn("Co-save unavailable: survival stages from game messages will not survive a save load");
 #if defined(PHOSPHOR_AE)
-        spdlog::info("Phosphor HUD 0.9.25-ae1 EXPERIMENTAL built for AE 1.11.240; in-game behavior UNVERIFIED");
+        spdlog::info("Phosphor HUD 0.9.26-ae1 EXPERIMENTAL built for AE 1.11.240; in-game behavior UNVERIFIED");
 #else
-        spdlog::info("Phosphor HUD 0.9.25 loaded for OG 1.10.163; live HUD");
+        spdlog::info("Phosphor HUD 0.9.26 loaded for OG 1.10.163; live HUD");
 #endif
         return true;
     } catch (const std::exception& e) {
