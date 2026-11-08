@@ -3,8 +3,8 @@
 
 #if defined(PHOSPHOR_AE)
 #include "../ae/AeRuntime.h"
-#include "EngineLayout.h"
 #endif
+#include "EngineLayout.h"
 #include <F4SE/F4SE.h>
 #include <RE/Fallout.h>
 #include <Windows.h>

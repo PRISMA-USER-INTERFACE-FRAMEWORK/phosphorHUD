@@ -3,10 +3,6 @@
 // 1.10.163 with the engine probe (2026-10-20: quest targets, door paths, objectives, map marker data all matched
 // the Pip-Boy feed). Pointers coming from these mirrors are tested with Readable() before use.
 #include <RE/Fallout.h>
-#include <RE/A/AIProcess.h>
-#include <RE/A/Actor.h>
-#include <RE/M/MiddleHighProcessData.h>
-#include <RE/P/PlayerCharacter.h>
 #include <Windows.h>
 
 #include <cstddef>
