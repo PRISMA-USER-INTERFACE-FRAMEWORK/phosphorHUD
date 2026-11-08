@@ -260,6 +260,7 @@ void LiveTick() {
     Json feedLines = Json::object();
     HudTextFields(current, feedLines, nativeHud.text);
     Json message = delta.Changes(current);
+    if (message.contains("limbs") && current.contains("limbStatus")) message["limbStatus"] = current["limbStatus"];
     if (feedLines.contains("notify") && !message.contains("notify")) message["notify"] = feedLines["notify"];
     if (message.contains("karma") && message["karma"].is_object()) {
         const double value = message["karma"].value("value", 0.0);

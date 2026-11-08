@@ -358,6 +358,25 @@ int main(int argc, char** argv) {
         const auto noMods = bind(R"({"keybinds":[{"id":"PerkChoicesKey","keycode":20,"modName":"PhosphorHUD"}]})");
         Check(noMods && noMods->code == 20 && noMods->modifiers == 0, "Missing modifiers mean none");
     }
+    {
+        const auto status = [](LimbFractions limbs, bool infected, std::vector<std::string> effects) {
+            return MakeLimbStatus(limbs, infected, effects);
+        };
+        Check(status({}, false, {"Well Rested", "Radiation Poisoning"}) == Json::object(),
+              "No broken limb and no matching effect sends an empty limbStatus so the HUD clears its markers");
+        const auto broken = status({1.0F, 0.4F, 1.0F, 1.0F, 0.0F, 0.001F}, false, {});
+        Check(broken == Json{{"lleg", Json::array({"broken"})}}, "Only a limb at zero is broken, a barely alive limb is not");
+        const auto bleed = status({}, false, {"Right Arm Bleeding", "Bleed (Left Leg)", "Head bleed", "Bleeding", "Chest wound bleeding", "Bleeding"});
+        Check(bleed == Json{{"rarm", Json::array({"bleed"})}, {"lleg", Json::array({"bleed"})}, {"head", Json::array({"bleed"})},
+                            {"torso", Json::array({"bleed"})}},
+              "A bleed effect lands on the limb its name mentions, torso otherwise, and never twice");
+        Check(status({}, false, {"Bleeding Alarm Legion", "Bleeding Left"}) == Json{{"torso", Json::array({"bleed"})}},
+              "Limb words match whole words, and a side without a limb falls back to the torso");
+        Check(status({}, false, {"Legendary Armor Bonus", "Weakness"}) == Json::object(), "Effects without bleed in the name add nothing");
+        Check(status({}, true, {}) == Json{{"torso", Json::array({"infection"})}}, "Infection goes on the torso");
+        Check(status({1.0F, 0.0F, 1.0F, 1.0F, 1.0F, 1.0F}, true, {"Bleeding"}) == Json{{"torso", Json::array({"bleed", "broken", "infection"})}},
+              "Tokens stack on one zone in the order the HUD draws them");
+    }
     if (failures) { std::cerr << failures << " failures\n"; return 1; }
     std::cout << "All core tests passed\n";
 }

@@ -781,60 +781,88 @@
   var limbWas = {};
   var FIG_PARTS = ["torso", "lleg", "rleg", "larm", "rarm", "head"];
   var FIG_TINT = {
-    ok: "#cfe9d3",
+    ok: "#93e8a4",
     hurt: "#f2c46a",
     bad: "#ff9a52",
+    crip: "#ff5a40",
+    hit: "#ffffff"
+  };
+  var FIG_PULSE = {
+    ok: "#d8ffe0",
+    hurt: "#ffe6a8",
+    bad: "#ffc7a0",
     crip: "#ff5a40"
   };
+  var FIG_BOX = {
+    head: [3, 45],
+    torso: [48, 156],
+    larm: [63, 179],
+    rarm: [63, 179],
+    lleg: [144, 315],
+    rleg: [144, 315]
+  };
+  var LIMB_STATUS = ["bleed", "broken", "infection", "armor"];
+  var STATUS_MAX = 3;
+  var STATUS_GLYPH = {
+    bleed: '<svg class="lsi bleed" viewBox="0 0 10 10" role="img" aria-label="Bleeding"><path d="M5 .8C3.4 3.2 2 4.8 2 6.4a3 3 0 0 0 6 0C8 4.8 6.6 3.2 5 .8z"/></svg>',
+    broken: '<svg class="lsi broken" viewBox="0 0 10 10" role="img" aria-label="Broken"><path d="M2 1.5L5.2 4.6L3.6 5.6L8 8.5"/></svg>',
+    infection: '<svg class="lsi infection" viewBox="0 0 10 10" role="img" aria-label="Infected"><circle cx="5" cy="5" r="2.2"/><path d="M5 .8v1.6M5 7.6v1.6M.8 5h1.6M7.6 5h1.6"/></svg>',
+    armor: '<svg class="lsi armor" viewBox="0 0 10 10" role="img" aria-label="Armored"><path d="M5 .9L8.6 2.1V5C8.6 7 7 8.4 5 9.2C3 8.4 1.4 7 1.4 5V2.1z"/></svg>'
+  };
   S.figure = {
-    type: "silhouette",
     hideHealthy: true
   };
-  S.gear = {
-    clothed: true,
-    armor: {
-      head: false,
-      torso: false,
-      larm: false,
-      rarm: false,
-      lleg: false,
-      rleg: false
-    }
-  };
+  S.limbStatus = LOCAL ? {
+    lleg: ["broken"],
+    rarm: ["bleed"]
+  } : {};
   var figImgs = {},
-    figReady = {},
+    figBox = {},
     figTmp = document.createElement("canvas"),
+    limbFlash = {},
+    limbPulse = {},
     blinkOn = true;
 
-  function loadFigure(type) {
-    if (figReady[type]) return figReady[type];
-    figReady[type] = new Promise(function(res, rej) {
-      var list = [],
-        left = 0,
-        failed = false;
-      ["naked", "clothed", "armor"].forEach(function(layer) {
-        FIG_PARTS.forEach(function(part) {
-          list.push(type + "-" + layer + "-" + part);
-        });
-      });
-      left = list.length;
-      list.forEach(function(k) {
-        var img = new Image();
-        img.onload = function() {
-          figImgs[k] = img;
-          if (--left === 0 && !failed) res();
-        };
-        img.onerror = function() {
-          if (!failed) {
-            failed = true;
-            figReady[type] = null;
-            rej(new Error("missing " + k));
+  function measureBox(img, W, H) {
+    try {
+      figTmp.width = W;
+      figTmp.height = H;
+      var c = figTmp.getContext("2d");
+      c.drawImage(img, 0, 0, W, H);
+      var d = c.getImageData(0, 0, W, H).data,
+        top = -1,
+        bot = -1;
+      for (var y = 0; y < H; y++) {
+        for (var x = 0; x < W; x++) {
+          if (d[(y * W + x) * 4 + 3] > 8) {
+            if (top < 0) top = y;
+            bot = y + 1;
+            break;
           }
+        }
+      }
+      return top < 0 ? null : [top, bot];
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function loadFigure() {
+    var left = FIG_PARTS.length,
+      cv = $("limbCv");
+    FIG_PARTS.forEach(function(part) {
+      var img = new Image(),
+        done = function() {
+          if (--left === 0) drawFigure();
         };
-        img.src = "figures/" + k + ".png";
-      });
+      img.onload = function() {
+        figImgs[part] = img;
+        figBox[part] = (cv && measureBox(img, cv.width, cv.height)) || FIG_BOX[part];
+        done();
+      };
+      img.onerror = done;
+      img.src = "figures/" + part + ".png";
     });
-    return figReady[type];
   }
 
   function limbClass(v) {
@@ -857,80 +885,115 @@
   }
 
   function drawFigure() {
-    var type = S.figure.type,
-      cv = $("limbFig");
-    var useImg = type !== "silhouette" && figImgs[type + "-naked-torso"];
-    document.querySelector(".limbs").toggleAttribute("hidden", !!useImg);
-    cv.hidden = !useImg;
-    if (!useImg) return;
+    var cv = $("limbCv");
+    if (!cv) return;
     var W = cv.width,
       H = cv.height,
       ctx = cv.getContext("2d");
     ctx.clearRect(0, 0, W, H);
-    var base = S.gear.clothed ? "clothed" : "naked";
-    [base, "armor"].forEach(function(layer) {
-      FIG_PARTS.forEach(function(part) {
-        if (layer === "armor" && (!S.gear.armor[part] || !S.settings.armorPieces)) return;
-        var img = figImgs[type + "-" + layer + "-" + part];
-        if (!img) return;
-        var cls = limbClass(clamp(S.limbs[part], 0, 1));
-        ctx.globalAlpha = (cls === "crip" && !blinkOn) ? 0.35 : 1;
-        ctx.drawImage(tintPart(img, FIG_TINT[cls], W, H), 0, 0);
-      });
+    FIG_PARTS.forEach(function(part) {
+      var img = figImgs[part];
+      if (!img) return;
+      var v = clamp(S.limbs[part], 0, 1),
+        cls = limbClass(v);
+      ctx.globalAlpha = 1;
+      if (limbFlash[part] || limbPulse[part]) {
+        ctx.drawImage(tintPart(img, limbFlash[part] ? FIG_TINT.hit : FIG_PULSE[cls], W, H), 0, 0);
+        return;
+      }
+      var tint = tintPart(img, FIG_TINT[cls], W, H);
+      if (cls === "ok") {
+        ctx.drawImage(tint, 0, 0);
+        return;
+      }
+      ctx.globalAlpha = cls === "crip" ? (blinkOn ? 0.45 : 0.15) : 0.25;
+      ctx.drawImage(tint, 0, 0);
+      if (cls === "crip") return;
+      var box = figBox[part] || [0, H],
+        top = Math.round(box[1] - v * (box[1] - box[0]));
+      ctx.globalAlpha = 1;
+      ctx.drawImage(tint, 0, top, W, H - top, 0, top, W, H - top);
     });
     ctx.globalAlpha = 1;
   }
+  loadFigure();
   setInterval(function() {
-    if (S.anyCrip && S.figure.type !== "silhouette") {
+    if (S.anyCrip && !reduce) {
       blinkOn = !blinkOn;
       drawFigure();
     } else blinkOn = true;
   }, 700);
 
-  function setFigure(f) {
-    Object.assign(S.figure, f);
-    var type = S.figure.type;
-    if (type === "silhouette") {
-      renderLimbs();
-      return Promise.resolve(true);
-    }
-    return loadFigure(type).then(function() {
-      renderLimbs();
-      return true;
-    }, function() {
-      S.figure.type = "silhouette";
-      renderLimbs();
-      return false;
+  function hitFlash(k) {
+    clearTimeout(limbFlash[k]);
+    limbFlash[k] = setTimeout(function() {
+      limbFlash[k] = 0;
+      drawFigure();
+    }, 250);
+  }
+
+  function healPulse(k) {
+    clearTimeout(limbPulse[k]);
+    limbPulse[k] = setTimeout(function() {
+      limbPulse[k] = 0;
+      drawFigure();
+    }, 350);
+  }
+
+  function renderLimbStatus() {
+    FIG_PARTS.forEach(function(k) {
+      var el = $("ls-" + k),
+        list = S.limbStatus[k];
+      if (!el) return;
+      el.innerHTML = Array.isArray(list) ? LIMB_STATUS.filter(function(t) {
+        return list.indexOf(t) >= 0;
+      }).slice(0, STATUS_MAX).map(function(t) {
+        return STATUS_GLYPH[t];
+      }).join("") : "";
     });
   }
 
-  function setGear(g) {
-    if (g.clothed !== undefined) S.gear.clothed = !!g.clothed;
-    if (g.armor) Object.assign(S.gear.armor, g.armor);
-    drawFigure();
+  function addLimbStatus(k, t) {
+    var list = Array.isArray(S.limbStatus[k]) ? S.limbStatus[k] : [];
+    if (list.indexOf(t) < 0) list.push(t);
+    S.limbStatus[k] = list;
   }
 
-  function renderLimbs() {
+  function setLimbBar(bar, v) {
+    var pct = Math.round(v * 100);
+    bar.className = bar.className.replace(/ ?\b(ok|hurt|bad|crip)\b/g, "") + " " + limbClass(v);
+    bar.querySelector("u").style.width = pct + "%";
+    bar.setAttribute("aria-valuenow", pct);
+  }
+
+  function renderLimbs(quiet) {
     var anyHurt = false,
-      anyCrip = false;
+      anyCrip = false,
+      sum = 0,
+      n = 0;
     Object.keys(S.limbs).forEach(function(k) {
-      var el = $("l-" + k);
-      if (!el) return;
+      var bar = $("lb-" + k);
+      if (!bar) return;
       var v = clamp(S.limbs[k], 0, 1);
-      var cls = v <= 0 ? "crip" : v < 0.35 ? "bad" : v < 0.75 ? "hurt" : "";
-      el.setAttribute("class", cls);
+      var cls = limbClass(v);
+      setLimbBar(bar, v);
+      sum += v;
+      n++;
       if (v < 0.98) anyHurt = true;
       if (cls === "crip") anyCrip = true;
+      if (!quiet && !reduce && limbWas[k] !== undefined) {
+        if (v < limbWas[k] - 0.001) hitFlash(k);
+        else if (v > limbWas[k] + 0.001) healPulse(k);
+      }
       if (limbWas[k] !== undefined && limbWas[k] > 0 && v <= 0) notify(LIMB_NAME[k] + " crippled", "Use a Stimpak or a doctor to heal it", "bad", 6000, "warn");
       limbWas[k] = v;
     });
-    var fig = document.querySelector(".limbs"),
-      cv = $("limbFig");
-    var hide = !anyHurt && S.figure.hideHealthy;
-    fig.classList.toggle("healthy", hide);
-    cv.classList.toggle("healthy", hide);
+    if (n && $("lb-all")) setLimbBar($("lb-all"), sum / n);
+    var fig = document.querySelector(".limbs");
+    fig.classList.toggle("healthy", !anyHurt && S.figure.hideHealthy);
     fig.parentNode.classList.toggle("pinned", anyCrip);
     S.anyCrip = anyCrip;
+    renderLimbStatus();
     drawFigure();
   }
 
@@ -1023,6 +1086,8 @@
       level: 0
     });
     renderCompass(true);
+    S.limbStatus = {};
+    renderLimbs(true);
   }
 
   function enqueueBanner(show, ms) {
@@ -2860,9 +2925,6 @@
       renderClock();
     }
     if (x.hideHealthyFigure !== undefined) S.figure.hideHealthy = !!x.hideHealthyFigure;
-    if (x.limbFigure !== undefined) setFigure({
-      type: x.limbFigure
-    });
     if (x.showWeight !== undefined) S.weight.show = x.showWeight;
     if (x.showAdrenaline !== undefined) S.survival.showAdrenaline = !!x.showAdrenaline;
     if (x.needStageNames !== undefined) S.survival.stageNames = !!x.needStageNames;
@@ -3004,13 +3066,12 @@
       Object.assign(S.needs, d.needs);
       renderNeeds();
     }
-    if (d.limbs) {
-      Object.assign(S.limbs, d.limbs);
-      renderLimbs();
+    if (d.limbs || d.limbStatus !== undefined) {
+      if (d.limbs) Object.assign(S.limbs, d.limbs);
+      S.limbStatus = d.limbStatus && typeof d.limbStatus === "object" ? d.limbStatus : {};
+      renderLimbs(!!d.snapshot);
       wake($("kit"));
     }
-    if (d.figure) setFigure(d.figure);
-    if (d.gear) setGear(d.gear);
     if (d.combat !== undefined) setCombat(d.combat);
     if (d.location !== undefined) setLocation(d.location, d.region, d.faction);
     else if (d.faction !== undefined) {
@@ -3090,8 +3151,6 @@
     addEffect: addEffect,
     removeEffect: removeEffect,
     setStealth: setStealth,
-    setFigure: setFigure,
-    setGear: setGear,
     setContext: setContext,
     setSurvival: setSurvival,
     setAttack: setAttack,
@@ -3248,6 +3307,7 @@
     Object.keys(S.limbs).forEach(function(k) {
       S.limbs[k] = 1;
     });
+    S.limbStatus = {};
     renderLimbs();
   }
   if (IN_GAME) {
@@ -3700,6 +3760,9 @@
           if (hit === 1) {
             S.limbs.lleg = clamp(S.limbs.lleg - .45, 0, 1);
             S.limbs.rleg = clamp(S.limbs.rleg - .45, 0, 1);
+            addLimbStatus("lleg", "bleed");
+            addLimbStatus("rleg", "bleed");
+            addLimbStatus("rleg", "broken");
             renderLimbs();
             wake($("kit"));
           }
@@ -3780,6 +3843,7 @@
     if (key === "stim") {
       Object.keys(S.limbs).forEach(function(k) {
         S.limbs[k] = clamp(S.limbs[k] + .5, 0, 1);
+        if (S.limbs[k] > 0.97) delete S.limbStatus[k];
       });
       renderLimbs();
       wake($("kit"));
@@ -3818,6 +3882,7 @@
       var keys = Object.keys(S.limbs),
         k = keys[Math.floor(Math.random() * keys.length)];
       S.limbs[k] = clamp(S.limbs[k] - .4, 0, 1);
+      addLimbStatus(k, k === "lleg" || k === "rleg" ? "bleed" : k === "larm" || k === "rarm" ? "broken" : "infection");
       renderLimbs();
       S.ap = clamp(S.ap - 6, 0, S.apMax);
       renderVitals();
@@ -3828,6 +3893,7 @@
       S.hp += 90;
       Object.keys(S.limbs).forEach(function(k) {
         S.limbs[k] = clamp(S.limbs[k] + .5, 0, 1);
+        if (S.limbs[k] > 0.97) delete S.limbStatus[k];
       });
       renderVitals();
       renderLimbs();
@@ -4299,42 +4365,6 @@
     combat: function() {
       setCombat(!S.combat);
     },
-    figure: function(b) {
-      var want = b.dataset.fig;
-      setFigure({
-        type: want
-      }).then(function(ok) {
-        if (!ok) notify("Figure files not found", "Open hud.html#preview from the PhosphorHUD folder", "bad", 6000, "warn");
-        ["silhouette", "vaultboy", "vaultgirl"].forEach(function(k) {
-          $("b-fig-" + k).setAttribute("aria-pressed", S.figure.type === k ? "true" : "false");
-        });
-        wake($("kit"));
-      });
-    },
-    clothes: function(b) {
-      setGear({
-        clothed: !S.gear.clothed
-      });
-      b.setAttribute("aria-pressed", S.gear.clothed ? "true" : "false");
-      b.textContent = "Clothing: " + (S.gear.clothed ? "on" : "off");
-      wake($("kit"));
-    },
-    armor: function(b) {
-      var on = !S.gear.armor.torso;
-      setGear({
-        armor: {
-          head: on,
-          torso: on,
-          larm: on,
-          rarm: on,
-          lleg: on,
-          rleg: on
-        }
-      });
-      b.setAttribute("aria-pressed", on ? "true" : "false");
-      b.textContent = "Armor pieces: " + (on ? "on" : "off");
-      wake($("kit"));
-    },
     crouch: function() {
       var on = !S.stealth.sneaking;
       setStealth({
@@ -4797,7 +4827,6 @@
     cur: 262,
     max: 300
   });
-  if (LOCAL) ACT.figure($("b-fig-vaultboy"));
   setParty(ROSTER.slice(0, 3).map(function(c) {
     return {
       name: c.name,

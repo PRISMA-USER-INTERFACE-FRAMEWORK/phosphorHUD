@@ -6,6 +6,17 @@
   "type": "object",
   "additionalProperties": false,
   "$defs": {
+    "limbStatusList": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "bleed",
+          "broken",
+          "infection",
+          "armor"
+        ]
+      }
+    },
     "fraction": {
       "type": "number",
       "minimum": 0,
@@ -263,11 +274,8 @@
       "additionalProperties": false,
       "properties": {
         "limbFigure": {
-          "enum": [
-            "silhouette",
-            "vaultboy",
-            "vaultgirl"
-          ]
+          "type": "string",
+          "description": "Deprecated, ignored by the HUD."
         },
         "hideHealthyFigure": {
           "type": "boolean"
@@ -807,54 +815,33 @@
         }
       }
     },
-    "figure": {
+    "limbStatus": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "type": {
-          "enum": [
-            "silhouette",
-            "vaultboy",
-            "vaultgirl"
-          ]
+        "head": {
+          "$ref": "#/$defs/limbStatusList"
         },
-        "hideHealthy": {
-          "type": "boolean"
+        "torso": {
+          "$ref": "#/$defs/limbStatusList"
+        },
+        "larm": {
+          "$ref": "#/$defs/limbStatusList"
+        },
+        "rarm": {
+          "$ref": "#/$defs/limbStatusList"
+        },
+        "lleg": {
+          "$ref": "#/$defs/limbStatusList"
+        },
+        "rleg": {
+          "$ref": "#/$defs/limbStatusList"
         }
       }
     },
     "gear": {
       "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "clothed": {
-          "type": "boolean"
-        },
-        "armor": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "head": {
-              "type": "boolean"
-            },
-            "torso": {
-              "type": "boolean"
-            },
-            "larm": {
-              "type": "boolean"
-            },
-            "rarm": {
-              "type": "boolean"
-            },
-            "lleg": {
-              "type": "boolean"
-            },
-            "rleg": {
-              "type": "boolean"
-            }
-          }
-        }
-      }
+      "description": "Deprecated, ignored by the HUD."
     },
     "effect": {
       "$ref": "#/$defs/effect"

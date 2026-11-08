@@ -279,11 +279,14 @@ Json ReadSlow(Raw& raw) {
 
     const auto limb = [&](RE::ActorValueInfo* info) {
         const float max = std::max(1.0F, Permanent(*player, info));
-        return Round1(std::clamp(Value(*player, info) / max, 0.0F, 1.0F), 0.01);
+        return std::clamp(Value(*player, info) / max, 0.0F, 1.0F);
     };
-    out["limbs"] = Json{{"head", limb(av->perceptionCondition)}, {"torso", limb(av->enduranceCondition)},
-                        {"larm", limb(av->leftAttackCondition)}, {"rarm", limb(av->rightAttackCondition)},
-                        {"lleg", limb(av->leftMobiltyCondition)}, {"rleg", limb(av->rightMobilityCondition)}};
+    const LimbFractions fractions{limb(av->perceptionCondition), limb(av->enduranceCondition), limb(av->leftAttackCondition),
+                                  limb(av->rightAttackCondition), limb(av->leftMobiltyCondition), limb(av->rightMobilityCondition)};
+    out["limbs"] = Json{{"head", Round1(fractions.head, 0.01)}, {"torso", Round1(fractions.torso, 0.01)},
+                        {"larm", Round1(fractions.larm, 0.01)}, {"rarm", Round1(fractions.rarm, 0.01)},
+                        {"lleg", Round1(fractions.lleg, 0.01)}, {"rleg", Round1(fractions.rleg, 0.01)}};
+    out["limbStatus"] = ReadLimbStatus(fractions);
 
     raw.level = player->GetLevel();
     raw.experience = Value(*player, av->experience);
@@ -812,32 +815,56 @@ Json ReadEnemies() {
     return out;
 }
 
-std::map<std::string, float> ReadIllnesses(float timescale) {
-#if defined(PHOSPHOR_AE)
-    AE_GATE("bSurvival", {});
-#endif
-    std::map<std::string, float> out;
+namespace {
+constexpr std::string_view kInfectKeyword = "infect";
+
+template <class Visit>
+void ForEachActiveSpell(Visit&& visit) {
     auto* player = RE::PlayerCharacter::GetSingleton();
     auto* list = player ? player->GetActiveEffectList() : nullptr;
-    if (!list) return out;
-    constexpr std::pair<std::string_view, const char*> kNames[] = {
-        {"infect", "infection"}, {"parasit", "parasites"}, {"insomni", "insomnia"},
-        {"letharg", "lethargy"}, {"weak", "weakness"}, {"fatigue", "fatigue"}};
+    if (!list) return;
     using Flag = RE::ActiveEffect::Flags;
     for (auto& entry : list->data) {
         auto* effect = entry.get();
         if (!effect || !effect->spell || effect->flags.any(Flag::kInactive, Flag::kDispelled, Flag::kWornOff)) continue;
         if (!effect->spell->As<RE::SpellItem>()) continue;
-        const auto name = Name(effect->spell);
+        visit(*effect, Name(effect->spell));
+    }
+}
+}
+
+std::map<std::string, float> ReadIllnesses(float timescale) {
+#if defined(PHOSPHOR_AE)
+    AE_GATE("bSurvival", {});
+#endif
+    std::map<std::string, float> out;
+    constexpr std::pair<std::string_view, const char*> kNames[] = {
+        {kInfectKeyword, "infection"}, {"parasit", "parasites"}, {"insomni", "insomnia"},
+        {"letharg", "lethargy"}, {"weak", "weakness"}, {"fatigue", "fatigue"}};
+    ForEachActiveSpell([&](const RE::ActiveEffect& effect, const std::string& name) {
         for (const auto& [part, id] : kNames) {
             if (!Contains(name, part)) continue;
-            const float left = effect->duration > 0 ? std::max(0.0F, effect->duration - effect->elapsedSeconds) * timescale / 3600.0F : -1.0F;
+            const float left = effect.duration > 0 ? std::max(0.0F, effect.duration - effect.elapsedSeconds) * timescale / 3600.0F : -1.0F;
             auto it = out.find(id);
             if (it == out.end() || left > it->second) out[id] = left;
             break;
         }
-    }
+    });
     return out;
+}
+
+Json ReadLimbStatus(const LimbFractions& limbs) {
+    bool infectionVisible = true;
+#if defined(PHOSPHOR_AE)
+    infectionVisible = AE::Enabled("bSurvival");
+#endif
+    bool infected = false;
+    std::vector<std::string> names;
+    ForEachActiveSpell([&](const RE::ActiveEffect&, const std::string& name) {
+        if (infectionVisible && Contains(name, kInfectKeyword)) infected = true;
+        if (Contains(name, "bleed")) names.push_back(name);
+    });
+    return MakeLimbStatus(limbs, infected, names);
 }
 
 Json ReadParty(Json* allyMarkers) {
