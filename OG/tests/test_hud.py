@@ -2,11 +2,42 @@
 import json
 import os
 import pathlib
+import re
+import struct
 import unittest
+import zlib
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 HUD = pathlib.Path(os.environ.get("PHOSPHOR_TEST_MOD", ROOT / "mod/Phosphor HUD")) / "PrismaUI_F4/views/PhosphorHUD/hud.html"
+
+
+def png_alpha_rows(data):
+    pos, idat = 8, b""
+    while pos < len(data):
+        length, kind = struct.unpack(">I4s", data[pos:pos + 8])
+        if kind == b"IDAT":
+            idat += data[pos + 8:pos + 8 + length]
+        pos += 12 + length
+    raw, stride, prev, solid = zlib.decompress(idat), 180 * 4, bytearray(180 * 4), []
+    for y in range(330):
+        kind, line = raw[y * (stride + 1)], bytearray(raw[y * (stride + 1) + 1:(y + 1) * (stride + 1)])
+        for x in range(stride):
+            a, b, c = (line[x - 4] if x >= 4 else 0), prev[x], (prev[x - 4] if x >= 4 else 0)
+            if kind == 1:
+                line[x] = (line[x] + a) & 255
+            elif kind == 2:
+                line[x] = (line[x] + b) & 255
+            elif kind == 3:
+                line[x] = (line[x] + ((a + b) >> 1)) & 255
+            elif kind == 4:
+                pa, pb, pc = abs(b - c), abs(a - c), abs(a + b - 2 * c)
+                line[x] = (line[x] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 255
+        if any(v > 8 for v in line[3::4]):
+            solid.append(y)
+        prev = line
+    return solid[0], solid[-1] + 1
+
 
 
 class HudTests(unittest.TestCase):
@@ -347,7 +378,7 @@ class HudTests(unittest.TestCase):
 
     def test_hidden_until_snapshot_and_settings_do_not_reveal_demo(self):
         self.assertTrue(self.page.locator("#stage").evaluate("e => e.classList.contains('awaiting')"))
-        self.send({"settings": {"limbFigure": "silhouette"}})
+        self.send({"settings": {"hideHealthyFigure": True}})
         self.assertTrue(self.page.locator("#stage").evaluate("e => e.classList.contains('awaiting')"))
         self.send({"snapshot": True, "hp": 88, "hpMax": 100, "rads": 0})
         self.assertFalse(self.page.locator("#stage").evaluate("e => e.classList.contains('awaiting')"))
@@ -1024,6 +1055,199 @@ class HudTests(unittest.TestCase):
         self.assertTrue(self.page.locator("#k-armor").evaluate("e => e.classList.contains('off')"))
         before_weight = self.page.locator("#cores .core").evaluate_all("els => els.map(e => e.id)")
         self.assertLess(before_weight.index("k-armor"), before_weight.index("k-wt"))
+
+    def test_limb_figure_zone_pngs_are_complete_and_match_between_og_and_ae(self):
+        """Catches a missing, resized or OG/AE-drifted zone PNG that leaves the limb figure half drawn, or a gauge fallback box left stale by an art swap."""
+        parts = ["head", "torso", "larm", "rarm", "lleg", "rleg"]
+        figures = HUD.parent / "figures"
+        for part in parts:
+            data = (figures / (part + ".png")).read_bytes()
+            self.assertEqual(data[:8], b"\x89PNG\r\n\x1a\n", part)
+            self.assertEqual(struct.unpack(">II", data[16:24]), (180, 330), part)
+            self.assertEqual(data[25], 6, part + " must be RGBA")
+            self.assertEqual((data[24], data[28]), (8, 0), part + " must be 8-bit and not interlaced")
+            table = re.search(r"FIG_BOX = \{[^}]*\}", (HUD.parent / "hud.js").read_text(encoding="utf-8")).group()
+            box = re.search(part + r": \[(\d+), (\d+)\]", table)
+            self.assertEqual(tuple(map(int, box.groups())), png_alpha_rows(data), part + " fallback gauge box must match the art's alpha")
+        other = ROOT.parent / ("AE" if ROOT.name == "OG" else "OG") / "mod/Phosphor HUD/PrismaUI_F4/views/PhosphorHUD/figures"
+        if not other.is_dir():
+            self.skipTest("sibling tree not present")
+        for part in parts:
+            self.assertEqual((figures / (part + ".png")).read_bytes(), (other / (part + ".png")).read_bytes(), part)
+
+    def test_vault_boy_and_figure_type_setting_stay_removed(self):
+        """Catches the Vault Boy / Vault Girl canvas, its figure/gear data keys or its settings control coming back."""
+        views = HUD.parent
+        text = (views / "hud.js").read_text(encoding="utf-8") + (views / "hud.html").read_text(encoding="utf-8")
+        for token in ("vaultboy", "vaultgirl", "Vault Boy", "Vault Girl", "limbFigure", "setFigure", "setGear", "b-fig-", "d.figure", "d.gear"):
+            self.assertNotIn(token, text)
+        self.assertEqual(self.page.evaluate("Object.keys(window.hud.state.figure)"), ["hideHealthy"])
+
+    def test_limb_bars_show_value_and_state_and_follow_the_healthy_rule(self):
+        """Catches bars that stay full, miss the state colour class, or show while every limb is healthy."""
+        self.send({"snapshot": True, "settings": {"hideHealthyFigure": False},
+                   "limbs": {"head": 1, "torso": 0.2, "rarm": 0, "larm": 0.5, "rleg": 0.8, "lleg": 0.1}})
+        bars = self.page.evaluate("""() => Object.fromEntries(['head','torso','rarm','larm','rleg','lleg'].map(k => {
+            const b = document.getElementById('lb-' + k);
+            return [k, [b.className, b.querySelector('u').style.width, b.querySelector('b').textContent]];
+        }))""")
+        self.assertEqual(bars, {"head": ["lb ok", "100%", "H"], "torso": ["lb bad", "20%", "T"], "rarm": ["lb crip", "0%", "RA"],
+                                "larm": ["lb hurt", "50%", "LA"], "rleg": ["lb ok", "80%", "RL"], "lleg": ["lb bad", "10%", "LL"]})
+        meters = self.page.evaluate("""() => ['head','torso','rarm','larm','rleg','lleg','all'].map(k => {
+            const b = document.getElementById('lb-' + k);
+            return [b.getAttribute('role'), b.getAttribute('aria-label'), b.getAttribute('aria-valuemin'), b.getAttribute('aria-valuemax'), b.getAttribute('aria-valuenow')];
+        })""")
+        self.assertEqual(meters, [["meter", "Head", "0", "100", "100"], ["meter", "Torso", "0", "100", "20"], ["meter", "Right arm", "0", "100", "0"],
+                                  ["meter", "Left arm", "0", "100", "50"], ["meter", "Right leg", "0", "100", "80"], ["meter", "Left leg", "0", "100", "10"],
+                                  ["meter", "All limbs", "0", "100", "43"]])
+        overall = self.page.evaluate("() => { const b = document.getElementById('lb-all'); return [b.className, b.querySelector('u').style.width]; }")
+        self.assertEqual(overall, ["lb lb-all hurt", "43%"], "ALL bar shows the average of the six limbs in the shared state colours")
+        healthy = lambda: self.page.locator(".limbs").evaluate("e => e.classList.contains('healthy')")
+        self.assertFalse(healthy())
+        self.send({"settings": {"hideHealthyFigure": True}})
+        self.send({"limbs": {k: 1 for k in ("head", "torso", "rarm", "larm", "rleg", "lleg")}})
+        self.assertTrue(healthy())
+        self.send({"limbs": {"rarm": 0}})
+        self.assertFalse(healthy())
+        self.assertTrue(self.page.locator(".kit-row").evaluate("e => e.classList.contains('pinned')"))
+
+    def test_limb_status_markers_follow_the_host_key_and_ignore_unknown_tokens(self):
+        """Catches markers that never clear, show unknown tokens or land on the wrong zone."""
+        glyphs = lambda: self.page.evaluate("""() => Object.fromEntries(['head','torso','rarm','larm','rleg','lleg'].map(k =>
+            [k, Array.from(document.querySelectorAll('#ls-' + k + ' .lsi')).map(e => e.getAttribute('class'))]))""")
+        none = {k: [] for k in ("head", "torso", "rarm", "larm", "rleg", "lleg")}
+        self.send({"snapshot": True, "settings": {"hideHealthyFigure": False},
+                   "limbs": {"torso": 0.6, "rleg": 0.3},
+                   "limbStatus": {"rleg": ["broken", "bleed", "bogus"], "torso": ["infection"], "nonsense": ["bleed"]}})
+        self.assertEqual(glyphs(), dict(none, rleg=["lsi bleed", "lsi broken"], torso=["lsi infection"]))
+        self.send({"limbs": {"torso": 0.5}})
+        self.assertEqual(glyphs(), none, "limbs without limbStatus clears the markers")
+        self.send({"limbStatus": {"head": ["bleed"]}})
+        self.assertEqual(glyphs(), dict(none, head=["lsi bleed"]))
+        self.send({"limbStatus": {}})
+        self.assertEqual(glyphs(), none)
+        self.send({"limbStatus": {"rleg": ["armor", "infection", "broken", "bleed"], "head": ["armor"]}})
+        self.assertEqual(glyphs(), dict(none, rleg=["lsi bleed", "lsi broken", "lsi infection"], head=["lsi armor"]),
+                         "At most three markers per zone, armor last")
+        self.send({"limbStatus": {"torso": ["bleed"]}})
+        self.assertEqual(glyphs(), dict(none, torso=["lsi bleed"]))
+        self.send({"reset": True})
+        self.assertEqual(glyphs(), none, "reset clears the markers")
+
+    def test_hit_flash_whitens_a_zone_for_a_moment_and_not_on_snapshot(self):
+        """Catches a missing damage flash, a flash that sticks white, or a flash on save-load snapshots."""
+        self.page.evaluate("""() => {
+            window.__fills = [];
+            const fill = CanvasRenderingContext2D.prototype.fillRect;
+            CanvasRenderingContext2D.prototype.fillRect = function(...a) { window.__fills.push(this.fillStyle); return fill.apply(this, a); };
+        }""")
+        full = {k: 1 for k in ("head", "torso", "rarm", "larm", "rleg", "lleg")}
+        self.send({"snapshot": True, "settings": {"hideHealthyFigure": False}, "limbs": full})
+        self.page.wait_for_function("() => { window.__fills = []; window.hudUpdate(JSON.stringify({limbs: {head: 1}})); return window.__fills.length === 6; }")
+        fills = lambda: self.page.evaluate("window.__fills")
+        self.page.evaluate("window.__fills = []")
+        self.send({"limbs": {"torso": 0.5}})
+        self.assertIn("#ffffff", fills())
+        self.page.wait_for_timeout(450)
+        self.page.evaluate("window.__fills = []")
+        self.send({"limbs": {"torso": 0.5}})
+        self.assertNotIn("#ffffff", fills())
+        self.assertIn("#f2c46a", fills())
+        self.page.evaluate("window.__fills = []")
+        self.send({"snapshot": True, "limbs": {"torso": 0.1}})
+        self.assertNotIn("#ffffff", fills())
+
+    def spy_limb_draws(self):
+        self.page.evaluate("""() => {
+            window.__fills = [];
+            window.__clips = [];
+            const fill = CanvasRenderingContext2D.prototype.fillRect;
+            CanvasRenderingContext2D.prototype.fillRect = function(...a) { window.__fills.push(this.fillStyle); return fill.apply(this, a); };
+            const draw = CanvasRenderingContext2D.prototype.drawImage;
+            CanvasRenderingContext2D.prototype.drawImage = function(...a) {
+                if (a.length === 9 && this.canvas.id === 'limbCv') window.__clips.push(a[2]);
+                return draw.apply(this, a);
+            };
+        }""")
+        self.send({"snapshot": True, "settings": {"hideHealthyFigure": False}, "limbs": {k: 1 for k in ("head", "torso", "rarm", "larm", "rleg", "lleg")}})
+        self.page.wait_for_function("() => { window.__fills = []; window.hudUpdate(JSON.stringify({limbs: {head: 1}})); return window.__fills.length === 6; }")
+        self.page.evaluate("() => { window.__fills = []; window.__clips = []; }")
+
+    def test_limb_gauge_fills_a_zone_from_the_bottom_by_its_value(self):
+        """Catches a gauge that fills the whole zone, fills from the top, ignores the value, or fills a crippled zone."""
+        self.spy_limb_draws()
+        self.send({"limbs": {"torso": 0.5}})
+        self.page.wait_for_timeout(450)
+        self.page.evaluate("window.__clips = []")
+        self.send({"limbs": {"torso": 0.5}})
+        clips = self.page.evaluate("window.__clips")
+        self.assertEqual(len(clips), 1, "Only the hurt zone is drawn as a gauge; healthy zones stay solid")
+        self.assertAlmostEqual(clips[0], 102, delta=4, msg="Half value fills from the bottom to the middle of the zone's own box")
+        self.send({"limbs": {"torso": 0.25}})
+        self.page.wait_for_timeout(450)
+        self.page.evaluate("window.__clips = []")
+        self.send({"limbs": {"torso": 0.25}})
+        self.assertAlmostEqual(self.page.evaluate("window.__clips")[0], 129, delta=4, msg="A lower value leaves a shorter fill")
+        self.send({"limbs": {"torso": 0}})
+        self.page.wait_for_timeout(450)
+        self.page.evaluate("window.__clips = []")
+        self.send({"limbs": {"torso": 0}})
+        self.assertEqual(self.page.evaluate("window.__clips"), [], "A crippled zone is fully dim, with no fill")
+
+    def test_heal_pulse_brightens_a_zone_briefly_and_not_on_snapshot(self):
+        """Catches a missing heal pulse, a pulse that sticks, or a pulse on save-load snapshots."""
+        self.spy_limb_draws()
+        fills = lambda: self.page.evaluate("window.__fills")
+        self.send({"limbs": {"torso": 0.5}})
+        self.page.wait_for_timeout(450)
+        self.page.evaluate("window.__fills = []")
+        self.send({"limbs": {"torso": 1}})
+        self.assertIn("#d8ffe0", fills())
+        self.page.wait_for_timeout(550)
+        self.page.evaluate("window.__fills = []")
+        self.send({"limbs": {"torso": 1}})
+        self.assertNotIn("#d8ffe0", fills())
+        self.send({"snapshot": True, "limbs": {"torso": 0.3}})
+        self.page.evaluate("window.__fills = []")
+        self.send({"snapshot": True, "limbs": {"torso": 0.9}})
+        self.assertNotIn("#d8ffe0", fills())
+
+    def test_limb_bar_slots_do_not_touch_at_any_text_scale(self):
+        """Catches head, torso, arm, leg or ALL bar slots overlapping, or the ALL bar spilling out of the limb block, when the text scale grows."""
+        self.send({"snapshot": True, "settings": {"hideHealthyFigure": False}, "limbs": {"torso": 0.5}})
+        for scale in (0.8, 1, 1.5):
+            self.send({"settings": {"textScale": scale}})
+            rect = lambda k: self.page.evaluate("k => { const r = document.getElementById('lb-' + k).getBoundingClientRect(); return [r.top, r.bottom]; }", k)
+            head, torso, larm, lleg = rect("head"), rect("torso"), rect("larm"), rect("lleg")
+            self.assertLessEqual(head[1], torso[0], "head bar clears torso bar at scale %s" % scale)
+            self.assertLessEqual(torso[1], larm[0], "torso bar clears left-arm bar at scale %s" % scale)
+            self.assertLessEqual(larm[1], lleg[0], "left-arm bar clears left-leg bar at scale %s" % scale)
+            box = self.page.evaluate("() => { const r = document.getElementById('limbs').getBoundingClientRect(); return [r.top, r.bottom]; }")
+            allbar = rect("all")
+            self.assertLessEqual(lleg[1], allbar[0], "left-leg bar clears the ALL bar at scale %s" % scale)
+            self.assertLessEqual(allbar[1], box[1] + 0.5, "ALL bar stays inside the limb block at scale %s" % scale)
+
+    def test_limb_source_wires_bars_status_flash_and_reduced_motion(self):
+        """Catches renderLimbs losing its bar, status or flash wiring, or a flash ignoring reduced motion."""
+        js = (HUD.parent / "hud.js").read_text(encoding="utf-8")
+        css = (HUD.parent / "hud.css").read_text(encoding="utf-8")
+        body = js[js.index("function renderLimbs("):js.index("var ICON = {")]
+        for needle in ('$("lb-" + k)', "renderLimbStatus()", "hitFlash(k)", "drawFigure()", "!reduce", "crippled"):
+            self.assertIn(needle, body)
+        self.assertRegex(js, r"function hitFlash\(k\)[\s\S]*?\}, 250\)")
+        self.assertRegex(js, r"function healPulse\(k\)[\s\S]*?\}, 350\)")
+        self.assertIn("function measureBox(", js)
+        self.assertIn('"figures/" + part + ".png"', js)
+        self.assertIn("img.onerror = done", js)
+        self.assertIn("if (!img) return;", js)
+        self.assertIn('var LIMB_STATUS = ["bleed", "broken", "infection", "armor"]', js)
+        for glyph in ("bleed", "broken", "infection", "armor"):
+            self.assertIn('class="lsi %s"' % glyph, js)
+            self.assertIn(".lsi.%s{" % glyph, css)
+        for zone in ("head", "torso", "rarm", "larm", "rleg", "lleg"):
+            self.assertIn("#ls-%s{" % zone, css)
+            self.assertIn("#lb-%s" % zone, css)
+        self.assertIn(".lb.crip i{animation:none!important}", css)
 
 
 if __name__ == "__main__":

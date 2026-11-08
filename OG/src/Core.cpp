@@ -4,6 +4,7 @@
 #include <cmath>
 #include <numbers>
 #include <cctype>
+#include <sstream>
 #include <string_view>
 #include <valijson/adapters/nlohmann_json_adapter.hpp>
 #include <valijson/schema.hpp>
@@ -244,6 +245,49 @@ Json RadiationEvents::Update(int rads, Clock::time_point now) {
     Json out{{"rads", rads}, {"radsGain", pending_}};
     pending_ = 0;
     sent_ = now;
+    return out;
+}
+
+namespace {
+bool HasText(std::string_view text, std::string_view part) {
+    return std::search(text.begin(), text.end(), part.begin(), part.end(), [](char a, char b) {
+               return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b));
+           }) != text.end();
+}
+const char* BleedZone(std::string_view name) {
+    std::string spaced(name);
+    for (auto& c : spaced) c = std::isalpha(static_cast<unsigned char>(c)) ? static_cast<char>(std::tolower(static_cast<unsigned char>(c))) : ' ';
+    std::istringstream words(spaced);
+    std::string word;
+    bool left = false, right = false, arm = false, leg = false, head = false;
+    while (words >> word) {
+        left |= word == "left";
+        right |= word == "right";
+        arm |= word == "arm" || word == "arms";
+        leg |= word == "leg" || word == "legs";
+        head |= word == "head";
+    }
+    if (head) return "head";
+    if (arm && (left || right)) return left ? "larm" : "rarm";
+    if (leg && (left || right)) return left ? "lleg" : "rleg";
+    return "torso";
+}
+}
+
+Json MakeLimbStatus(const LimbFractions& limbs, bool infected, const std::vector<std::string>& effectNames) {
+    Json out = Json::object();
+    const auto add = [&](const char* zone, const char* token) {
+        auto& list = out[zone];
+        if (!list.is_array()) list = Json::array();
+        if (std::find(list.begin(), list.end(), Json(token)) == list.end()) list.push_back(token);
+    };
+    for (const auto& name : effectNames)
+        if (HasText(name, "bleed")) add(BleedZone(name), "bleed");
+    const std::pair<const char*, float> zones[] = {{"head", limbs.head}, {"torso", limbs.torso}, {"larm", limbs.larm},
+                                                  {"rarm", limbs.rarm}, {"lleg", limbs.lleg}, {"rleg", limbs.rleg}};
+    for (const auto& [zone, fraction] : zones)
+        if (fraction <= 0) add(zone, "broken");
+    if (infected) add("torso", "infection");
     return out;
 }
 

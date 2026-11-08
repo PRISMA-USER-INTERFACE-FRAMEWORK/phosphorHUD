@@ -140,15 +140,24 @@
       <div class="w kit" id="kit">
         <div data-g="effects" class="cgi effects" id="effects" aria-label="Active effects"></div>
         <div class="cgi" data-g="kit"><div class="kit-row" data-dim>
-          <canvas class="limbfig" id="limbFig" width="232" height="232" aria-label="Limb condition" hidden></canvas>
-          <svg class="limbs" viewBox="0 0 60 110" aria-label="Limb condition">
-            <circle id="l-head" cx="30" cy="11" r="8"/>
-            <rect id="l-torso" x="20" y="22" width="20" height="35" rx="5"/>
-            <rect id="l-rarm" x="8" y="23" width="8" height="33" rx="4" transform="rotate(8 12 23)"/>
-            <rect id="l-larm" x="44" y="23" width="8" height="33" rx="4" transform="rotate(-8 48 23)"/>
-            <rect id="l-rleg" x="20" y="60" width="9" height="45" rx="4.5"/>
-            <rect id="l-lleg" x="31" y="60" width="9" height="45" rx="4.5"/>
-          </svg>
+          <div class="limbs" id="limbs" role="group" aria-label="Limb condition">
+            <div class="lfig">
+              <canvas id="limbCv" aria-hidden="true" width="180" height="330"></canvas>
+              <div class="lstat" id="ls-head"></div>
+              <div class="lstat" id="ls-torso"></div>
+              <div class="lstat" id="ls-rarm"></div>
+              <div class="lstat" id="ls-larm"></div>
+              <div class="lstat" id="ls-rleg"></div>
+              <div class="lstat" id="ls-lleg"></div>
+            </div>
+            <div class="lb ok" id="lb-head" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-label="Head"><b>H</b><i><u></u></i></div>
+            <div class="lb ok" id="lb-rarm" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-label="Right arm"><b>RA</b><i><u></u></i></div>
+            <div class="lb ok" id="lb-rleg" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-label="Right leg"><b>RL</b><i><u></u></i></div>
+            <div class="lb ok" id="lb-torso" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-label="Torso"><b>T</b><i><u></u></i></div>
+            <div class="lb ok" id="lb-larm" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-label="Left arm"><b>LA</b><i><u></u></i></div>
+            <div class="lb ok" id="lb-lleg" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-label="Left leg"><b>LL</b><i><u></u></i></div>
+            <div class="lb lb-all ok" id="lb-all" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-label="All limbs"><b>ALL</b><i><u></u></i></div>
+          </div>
           <div class="ammo" id="ammo">
             <div class="adren" id="adren" hidden><span class="ad-segs" id="adSegs"></span><small>Adrenaline <b id="adRank">0</b></small></div>
             <div class="wleg" id="wLeg" hidden><svg viewBox="0 0 12 12"><path d="M6 .8l1.6 3.3 3.6.5-2.6 2.5.6 3.6L6 9l-3.2 1.7.6-3.6L.8 4.6l3.6-.5z"/></svg><span id="wLegTxt"></span></div>
@@ -239,13 +248,6 @@
       <button type="button" id="b-spotted" data-act="spotted">Get spotted</button>
       <button type="button" id="b-lose" data-act="lose">Break line of sight</button>
     </div>
-    <div class="ctl-group"><span>Limb figure</span>
-      <button type="button" id="b-fig-silhouette" data-act="figure" data-fig="silhouette" aria-pressed="true">Silhouette</button>
-      <button type="button" id="b-fig-vaultboy" data-act="figure" data-fig="vaultboy" aria-pressed="false">Vault Boy</button>
-      <button type="button" id="b-fig-vaultgirl" data-act="figure" data-fig="vaultgirl" aria-pressed="false">Vault Girl</button>
-      <button type="button" id="b-clothes" data-act="clothes" aria-pressed="true">Clothing: on</button>
-      <button type="button" id="b-armor" data-act="armor" aria-pressed="false">Armor pieces: off</button>
-    </div>
     <div class="ctl-group"><span>Companion</span>
       <button type="button" id="b-cadd" data-act="cadd">Add companion</button>
       <button type="button" id="b-cwait" data-act="cwait">Team wait / follow</button>
@@ -309,10 +311,8 @@ prisma-&gt;InteropCall(view, "hudUpdate", R"({"snapshot":true,"hp":212,"hpMax":3
 // after a save loads send {"reset":true} and then a fresh snapshot.
 // limbs: each condition value / 100 (PerceptionCondition, EnduranceCondition, Left/RightAttackCondition,
 // Left/RightMobilityCondition). 0 = crippled. The figure hides when every limb is healthy.
-// figure: silhouette | vaultboy | vaultgirl (from the MCM "Limb figure" setting; resolve Auto in the plugin
-// from Condition Boy's iCharacterType). gear: which layer each part uses, refreshed on equip/unequip.
-hudUpdate('{"figure":{"type":"vaultgirl","hideHealthy":true}}')
-hudUpdate('{"gear":{"clothed":true,"armor":{"torso":true,"larm":true,"rarm":false}}}')
+// limbStatus (optional, send with limbs; absent or empty clears the markers): zone -> tokens bleed, broken, infection, armor (at most 3 markers show per zone, in that order). The plugin sends bleed, broken (limb at 0) and infection; it does not send armor.
+hudUpdate('{"limbs":{"rleg":0.3,"torso":0.6},"limbStatus":{"rleg":["bleed","broken"],"torso":["infection"]}}')
 
 // events: fire once
 hudUpdate('{"notify":{"text":"Purified Water","sub":"+1  ·  WT 1.0","kind":"item"}}')
@@ -366,7 +366,7 @@ hudUpdate('{"explosive":null}')    // nothing equipped: the grenade row hides
 hudUpdate('{"flashlight":true}')    // Pip-Boy light on: the lamp row shows under the ammo
 
 // settings: forward Phosphor's MCM values once at load and whenever MCM closes (see 04_SETTINGS.md in the handoff)
-hudUpdate('{"settings":{"limbFigure":"vaultboy","hideHealthyFigure":true,"armorPieces":true,"showWeight":"near","showAdrenaline":true,"needStageNames":true,"survivalEnemyMarkers":false,"mineWarnings":true,"mineCompass":true,"karmaReadout":true,"localReputation":true,"challengeTracker":true,"mutationNotices":"bar","legendaryDropMarkers":true,"levelUpBanner":true,"perkReminder":true,"contextRules":{"scope":"recommended"}}}')
+hudUpdate('{"settings":{"hideHealthyFigure":true,"armorPieces":true,"showWeight":"near","showAdrenaline":true,"needStageNames":true,"survivalEnemyMarkers":false,"mineWarnings":true,"mineCompass":true,"karmaReadout":true,"localReputation":true,"challengeTracker":true,"mutationNotices":"bar","legendaryDropMarkers":true,"levelUpBanner":true,"perkReminder":true,"contextRules":{"scope":"recommended"}}}')
 hudUpdate('{"notify":{"text":"Purified Water","sub":"+1","kind":"item","icon":"bottle"}}')   // icon optional
 
 // leveling: xpGain does the whole moment (bar rollover, banner, perk reminder). perkPoints/skillPoints keep the

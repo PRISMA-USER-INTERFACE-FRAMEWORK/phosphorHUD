@@ -40,6 +40,7 @@ Json ReadLoot(const std::function<std::string(const char*)>& keyFor, std::string
 Json ReadEnemies();
 void LogCompassSettings();
 std::map<std::string, float> ReadIllnesses(float timescale);
+Json ReadLimbStatus(const LimbFractions& limbs);
 Json ReadParty(Json* allyMarkers = nullptr);
 Json ReadSurvival();
 bool NoteSurvivalMessage(const std::string& text);

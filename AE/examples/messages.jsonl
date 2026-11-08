@@ -1,4 +1,4 @@
-{"settings":{"limbFigure":"vaultboy","hideHealthyFigure":true,"armorPieces":true,"contextRules":{"ads":"recommended","scope":"recommended","vats":"recommended","dialogue":"recommended","wheel":"recommended","workshop":"recommended","powerarmor":"recommended","scene":"recommended"},"showWeight":"near","showAdrenaline":true,"needStageNames":true,"survivalEnemyMarkers":false,"mineWarnings":true,"mineCompass":true,"karmaReadout":true,"localReputation":true,"challengeTracker":true,"mutationNotices":"bar","legendaryDropMarkers":true,"levelUpBanner":true,"perkReminder":true}}
+{"settings":{"hideHealthyFigure":true,"armorPieces":true,"contextRules":{"ads":"recommended","scope":"recommended","vats":"recommended","dialogue":"recommended","wheel":"recommended","workshop":"recommended","powerarmor":"recommended","scene":"recommended"},"showWeight":"near","showAdrenaline":true,"needStageNames":true,"survivalEnemyMarkers":false,"mineWarnings":true,"mineCompass":true,"karmaReadout":true,"localReputation":true,"challengeTracker":true,"mutationNotices":"bar","legendaryDropMarkers":true,"levelUpBanner":true,"perkReminder":true}}
 {"reset":true}
 {"snapshot":true,"hp":212,"hpMax":310,"ap":64,"apMax":90,"rads":140,"level":23,"xp":0.72,"heading":27,"location":"Sanctuary Hills","region":"Commonwealth"}
 {"xpGain":150,"xp":0.31,"level":24}
@@ -17,9 +17,9 @@
 {"explosive":{"name":"Plasma Grenade","short":"PLSM","count":2}}
 {"explosive":null}
 {"flashlight":true}
-{"limbs":{"head":1,"torso":0.6,"larm":0.2,"rarm":1,"lleg":0,"rleg":0.9}}
-{"figure":{"type":"vaultgirl","hideHealthy":true}}
-{"gear":{"clothed":true,"armor":{"torso":true,"larm":true,"rarm":false}}}
+{"limbs":{"head":1,"torso":0.6,"larm":0.2,"rarm":1,"lleg":0,"rleg":0.9},"limbStatus":{"lleg":["bleed","broken"],"torso":["infection"]}}
+{"limbs":{"head":1,"torso":1,"larm":1,"rarm":1,"lleg":1,"rleg":1},"limbStatus":{}}
+{"limbStatus":{"torso":["infection","armor"]}}
 {"effect":{"id":"psycho","name":"Psycho","kind":"chem","icon":"bolt","duration":480,"remaining":480}}
 {"effect":{"id":"wellrested","name":"Well Rested","kind":"med","icon":"bed","hours":8}}
 {"effect":{"id":"0003f2c1","name":"Grilled Radstag","kind":"food","icon":"food","duration":3600,"remaining":3600}}
