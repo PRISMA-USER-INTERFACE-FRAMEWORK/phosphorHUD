@@ -2258,11 +2258,12 @@
         layer.appendChild(el);
       }
       keep[m.id] = 1;
-      var r = Math.round(clamp(15 - m.dist * 0.3, 7, 13)),
+      var dist = +m.dist || 0,
+        r = Math.round(clamp(15 - dist * 0.3, 7, 13)),
         tf = "translate3d(" + (+m.x || 0).toFixed(0) + "px," + (+m.y || 0).toFixed(0) + "px,0)",
         beep = (0.12 + 0.55 * frac).toFixed(2) + "s",
         dash = (frac * 100).toFixed(1) + " 100",
-        lbl = Math.round(m.dist) + " m";
+        lbl = Math.round(dist) + " m";
       if (el._r !== r) {
         el._r = r;
         el.style.setProperty("--r", r + "px");
@@ -2321,7 +2322,7 @@
         S.markers.push(mk);
         changed = true;
       }
-      var meters = Math.round(m.dist);
+      var meters = Math.round(+m.dist || 0);
       if (mk.b !== m.b || mk._m !== meters) changed = true;
       mk.b = m.b;
       mk.dist = m.dist;

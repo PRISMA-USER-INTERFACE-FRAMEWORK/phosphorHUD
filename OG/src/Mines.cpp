@@ -82,9 +82,9 @@ void DrainAttachEvents() {
         lastNeighborScan = {};
     }
     for (const auto& note : batch.events) {
-        if (!note.attached) { tracked.erase(note.id); continue; }
+        if (!note.attached) { tracked.erase(note.id); neighborFound.erase(note.id); continue; }
         auto* ref = RE::TESForm::GetFormByID<RE::TESObjectREFR>(note.id);
-        if (ref && !ref->IsDeleted() && AsMine(ref)) tracked.insert(note.id);
+        if (ref && !ref->IsDeleted() && AsMine(ref)) { tracked.insert(note.id); neighborFound.insert(note.id); }
     }
 }
 
@@ -186,9 +186,12 @@ void Reset() {
     active.store(false);
 }
 
-void SetEventCapture(bool capture) { attachEvents.SetEnabled(capture); }
+void SetEventCapture(bool capture) { attachEvents.SetEnabled(capture && enabled); }
 
-void SetEnabled(bool on) { enabled = on; }
+void SetEnabled(bool on) {
+    if (on && !enabled) { lastScan = {}; lastNeighborScan = {}; }
+    enabled = on;
+}
 
 bool Active() { return active.load(); }
 

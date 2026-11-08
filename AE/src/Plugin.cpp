@@ -392,6 +392,10 @@ void Tick() {
 namespace {
 void MineTick() {
     if (!session || !options.live || displaying || !domReady || !liveStarted || !liveShown || !ViewValid()) return;
+    auto* ui = RE::UI::GetSingleton();
+    if (ui && (ui->GetMenuOpen(RE::BSFixedString("LoadingMenu")) || ui->GetMenuOpen(RE::BSFixedString("FaderMenu")))) return;
+    auto* player = RE::PlayerCharacter::GetSingleton();
+    if (!player || !player->GetParentCell()) return;
     PumpMines();
 }
 
