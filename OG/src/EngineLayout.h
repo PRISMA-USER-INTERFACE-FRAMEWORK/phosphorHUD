@@ -145,6 +145,28 @@ inline std::int8_t& PerkCount(RE::PlayerCharacter& player) { return AtFlatPositi
 inline RE::ObjectRefHandle& PlayerMapMarker(RE::PlayerCharacter& player) {
     return AtFlatPosition<RE::ObjectRefHandle>(&player, kPlayerMapMarker);
 }
+// The flat offsets must match the 1.10.163 layout; a CommonLib pin that moves one fails the build here.
+#if defined(ENABLE_FALLOUT_VR)
+static_assert(offsetof(RE::MiddleHighProcessData, equippedItemsLock) == kMiddleHighEquippedLock + 0x8);
+static_assert(offsetof(RE::MiddleHighProcessData, equippedItems) == kMiddleHighEquippedItems + 0x8);
+static_assert(offsetof(RE::PlayerCharacter, autoAimActor) == kPlayerAutoAimActor + 0x470);
+static_assert(offsetof(RE::PlayerCharacter, perkCount) == kPlayerPerkCount + 0x470);
+static_assert(offsetof(RE::PlayerCharacter, playerMapMarker) == kPlayerMapMarker + 0x470);
+#else
+static_assert(offsetof(RE::MiddleHighProcessData, equippedItemsLock) == kMiddleHighEquippedLock);
+static_assert(offsetof(RE::MiddleHighProcessData, equippedItems) == kMiddleHighEquippedItems);
+static_assert(offsetof(RE::PlayerCharacter, autoAimActor) == kPlayerAutoAimActor);
+static_assert(offsetof(RE::PlayerCharacter, perkCount) == kPlayerPerkCount);
+static_assert(offsetof(RE::PlayerCharacter, playerMapMarker) == kPlayerMapMarker);
+#endif
+static_assert(offsetof(RE::PlayerCharacter, questTargetLock) == 0x630);
+static_assert(offsetof(RE::PlayerCharacter, questTargets) == 0x7F0);
+static_assert(offsetof(RE::PlayerCharacter, objectives) == 0x7D8);
+static_assert(offsetof(RE::PlayerCharacter, currentMapMarkers) == 0x738);
+static_assert(offsetof(RE::PlayerCharacter, cachedWorldspace) == 0x8B0);
+static_assert(offsetof(RE::PlayerCharacter, exteriorPosition) == 0x8B8);
+static_assert(offsetof(RE::Actor, currentProcess) == 0x300);
+static_assert(offsetof(RE::AIProcess, middleHigh) == 0x08);
 #endif
 }  // namespace Phosphor::EngineLayout
 #if defined(PHOSPHOR_AE)

@@ -32,7 +32,9 @@ Instead of trusting the VR header offsets for these fields, the code reads the f
 - Call sites changed to use the accessors:
   - `src/Live.cpp`: `ReadEquipped` and `ReadGear` (lock and iteration), `perks` read, auto-aim actor read. The file now includes `EngineLayout.h`.
   - `src/EngineProbe.cpp` and `src/EngineQuests.cpp`: `playerMapMarker` reads.
+- The offsets are pinned by `static_assert`s at the end of the non-AE branch of `OG/src/EngineLayout.h`, so a CommonLib pin bump that moves one of them fails the build instead of reading the wrong bytes.
 - `AE/src` is a separate copy of these sources and keeps direct header access. Its vendored headers are the correct ones for that build.
+- The `PHOSPHOR_AE` branch of the `OG/src` accessors is not compiled by any CI job: the AE build compiles `AE/src` (`AE/ae/build.py`), and the OG build never defines `PHOSPHOR_AE`.
 
 ## Checked for other VR-vs-flat differences
 
@@ -44,7 +46,7 @@ Used by OG sources, with the result:
 - `Actor::currentProcess` (+0x300), `AIProcess::middleHigh` (+0x08): the VR headers do not shift these.
 - `Actor` `gunState` read: lives in the `ActorState` base, which has no VR conditional and is identical in both trees.
 - `EquippedItem`: `sizeof` 0x28 in both trees, no VR conditional.
-- `UI`: VR `sizeof` 0x250 against flat 0x260, because the flat tree carries an AE-only tail. OG uses only `UI` methods (`GetMenuOpen`, `GetMenu`, `RegisterSink`), so no member is read.
+- `UI`: `sizeof(BSTimer)` is 0x40 in VR and 0x50 in flat, so the members after `uiTimer` (+0x208) shift by 0x10: `menuSystemVisible` is +0x248 in VR and +0x258 in flat, `closingAllMenus` +0x249 / +0x259, `freezeFrameScreenshotReady` +0x24A / +0x25A (`sizeof(UI)` 0x250 VR, 0x260 flat). OG's inline `UI::GetMenu` and `UI::GetMenuOpen` read `menuMap` (+0x1A8, the same in both trees), and `RegisterSink` uses the event sources at the same base offsets (+0x018, +0x070, +0x0C8, +0x120). OG touches nothing past the divergence, so it is safe.
 - `TESDataHandler`: VR size conditionals differ, but OG uses only its methods.
 - `BSFadeNode`, `BSGeometry`, `NiNode`, `BSTriShape`: VR conditionals exist, but OG sources do not reference these types.
 
