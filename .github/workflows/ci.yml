@@ -131,7 +131,7 @@ jobs:
         run: |
           $version = $env:GITHUB_REF_NAME.TrimStart('v')
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          foreach ($v in @(@{Dir='OG'; Dll='dl/og/PhosphorHUD.dll'; Name="PhosphorHUD-$version-OG-1.10.163.zip"}, @{Dir='AE'; Dll='dl/ae/PhosphorHUD.dll'; Name="PhosphorHUD-$version-AE-1.11.240-experimental.zip"})) {
+          foreach ($v in @(@{Dir='OG'; Dll='dl/og/PhosphorHUD.dll'; Name="PhosphorHUD-$version-OG-1.10.163-NG-1.10.984.zip"}, @{Dir='AE'; Dll='dl/ae/PhosphorHUD.dll'; Name="PhosphorHUD-$version-AE-1.11.240-experimental.zip"})) {
             $mod = Join-Path $v.Dir 'mod/Phosphor HUD'
             $plugins = Join-Path $mod 'F4SE/Plugins'
             New-Item -ItemType Directory -Force -Path (Join-Path $plugins 'PhosphorHUD') | Out-Null
