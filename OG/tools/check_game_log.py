@@ -14,8 +14,10 @@ def main():
     start = text.rfind("Phosphor HUD 0.")
     if start >= 0:
         text = text[start:]
-    required = ["loaded for OG 1.10.163", "Connected to PrismaUI V12 (ABI 139)",
+    required = ["Connected to PrismaUI V12 (ABI 139)",
                 "HUD view created", "HUD DOM ready", "MCM settings refreshed"]
+    if "loaded for OG 1.10.163" not in text and "loaded for NG 1.10.984" not in text:
+        required.insert(0, "loaded for OG 1.10.163 or NG 1.10.984")
     if args.replay:
         required.extend(["Starting replay: 58 messages", "Replay complete"])
     problems = [f"missing milestone: {marker}" for marker in required if marker not in text]

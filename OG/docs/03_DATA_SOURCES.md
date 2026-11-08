@@ -4,7 +4,7 @@ How to read this: **✔** means confirmed from the mod's own files or the Creati
 
 Function names are described, not quoted, unless they are certain. Look up the exact CommonLibF4 call when implementing.
 
-Target: Fallout 4 OG 1.10.163 (this load order runs Backported Archive2 Support and several OG-only plugins). PrismaUI's `SuppressHUDWidget` only supports OG 1.10.163 and AE 1.11.137+.
+Target: Fallout 4 OG 1.10.163 and NG 1.10.984 (same DLL; this load order runs Backported Archive2 Support and several OG-only plugins). PrismaUI's `SuppressHUDWidget` is verified only on OG 1.10.163 and AE 1.11.137+; on NG it is unverified and is logged as refused if it fails.
 
 ## Vanilla game data
 
