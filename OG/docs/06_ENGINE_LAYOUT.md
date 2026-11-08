@@ -56,4 +56,6 @@ Other VR-only members or conditionals in classes the plugin does not read are ou
 
 ## Status
 
-Unverified in game. Nothing was compiled locally. The CI `og-build` job is the first compile of this change. Before calling it fixed, the rebuilt DLL needs a run on OG 1.10.163 with no hang in `ReadEquipped` or `ReadGear`.
+Built locally with xmake against the pinned commonlib VR tree (696f5f5): `PhosphorHUD.dll` and `phosphor-tests` build, and the core tests pass. The `PHOSPHOR_AE` branch of `EngineLayout.h` was syntax-checked against the AE vendored headers. The AE build compiles `AE/src`, which this change does not touch.
+
+Unverified in game. Before calling it fixed, the rebuilt DLL needs a run on OG 1.10.163 with no hang in `ReadEquipped` or `ReadGear`.
