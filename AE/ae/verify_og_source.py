@@ -14,7 +14,6 @@ def og(text):
  assert not stack
  return ''.join(out)
 def tokens(text):
- # Preserve strings (including whitespace); discard comments and insignificant whitespace.
  return [t for t in re.findall(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|//[^\n]*|/\*[\s\S]*?\*/|\w+|[^\s]', text)
          if not t.startswith('//') and not t.startswith('/*')]
 

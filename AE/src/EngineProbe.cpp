@@ -21,8 +21,6 @@
 
 namespace Phosphor::EngineProbe {
 namespace {
-// Mirrors of layouts that CommonLibF4-NG leaves opaque, taken from libxse/commonlibf4 (AE). Unverified on OG:
-// checking them is the point of this probe. Every pointer is tested for readability before use.
 #if defined(PHOSPHOR_AE)
 using Phosphor::EngineLayout::TeleportLinkM;
 using Phosphor::EngineLayout::SpaceNodeM;
@@ -44,41 +42,41 @@ struct SpaceNodeM {
 };
 static_assert(sizeof(SpaceNodeM) == 0x18);
 struct TeleportPathM {
-    RE::BSTArray<SpaceNodeM> spaces;     // 00
-    RE::BSTArray<TeleportLinkM> doors;   // 18
-    RE::NiPoint3 start;                  // 30
-    RE::NiPoint3 end;                    // 3C
-    bool worldMapOnly;                   // 48
+    RE::BSTArray<SpaceNodeM> spaces;
+    RE::BSTArray<TeleportLinkM> doors;
+    RE::NiPoint3 start;
+    RE::NiPoint3 end;
+    bool worldMapOnly;
 };
 static_assert(sizeof(TeleportPathM) == 0x50);
 struct RefDataM {
-    TeleportPathM teleportPath;          // 00
-    RE::ObjectRefHandle reference;       // 50
-    void* pathMessageQueue;              // 58
-    bool forceRebuildQueued;             // 60
+    TeleportPathM teleportPath;
+    RE::ObjectRefHandle reference;
+    void* pathMessageQueue;
+    bool forceRebuildQueued;
 };
 struct QuestTargetM {
-    std::uint8_t flags;                  // 00
-    void* conditions;                    // 08
-    std::uint32_t targetAlias;           // 10
-    RE::BGSKeyword* keyword;             // 18
-    RE::BSTArray<RefDataM*> target;      // 20
+    std::uint8_t flags;
+    void* conditions;
+    std::uint32_t targetAlias;
+    RE::BGSKeyword* keyword;
+    RE::BSTArray<RefDataM*> target;
 };
 static_assert(sizeof(QuestTargetM) == 0x38);
 struct QuestTargetArrayM {
-    RE::BSTArray<QuestTargetM*> targets; // 00
-    std::uint64_t nextRepath;            // 18
+    RE::BSTArray<QuestTargetM*> targets;
+    std::uint64_t nextRepath;
 };
 static_assert(sizeof(QuestTargetArrayM) == 0x20);
 struct QuestObjectiveM {
-    void* displayText;                   // 00 BGSLocalizedString (pool entry)
-    RE::TESQuest* ownerQuest;            // 08
-    QuestTargetM** targets;              // 10
-    std::uint32_t numTargets;            // 18
-    std::uint16_t index;                 // 1C
-    bool initialized;                    // 1E
-    char state;                          // 1F
-    std::uint32_t flags;                 // 20
+    void* displayText;
+    RE::TESQuest* ownerQuest;
+    QuestTargetM** targets;
+    std::uint32_t numTargets;
+    std::uint16_t index;
+    bool initialized;
+    char state;
+    std::uint32_t flags;
 };
 static_assert(sizeof(QuestObjectiveM) == 0x28);
 
@@ -115,7 +113,6 @@ std::string Hex(const void* p, std::size_t n) {
     return out;
 }
 
-// A pool string by entry pointer, as BSFixedString does it, with readability checks.
 std::string PoolText(void* entry) {
 #if defined(PHOSPHOR_AE)
     return Phosphor::EngineLayout::PoolText(entry).substr(0, 160);
@@ -170,7 +167,7 @@ void LogMapMarker(const char* tag, RE::TESObjectREFR* ref, double px, double py)
     spdlog::info("Engine probe: {} {} | marker '{}' bytes10 {}", tag, RefLine(ref, px, py), name,
         data ? Hex(static_cast<char*>(data) + 0x10, 8) : std::string("-"));
 }
-}  // namespace
+}
 
 void Run(const Pipboy::Snapshot& pip, const char* why) {
 #if defined(PHOSPHOR_AE)
@@ -185,7 +182,6 @@ void Run(const Pipboy::Snapshot& pip, const char* why) {
         cell ? (cell->IsInterior() ? std::format("interior {:08X} '{}'", cell->GetFormID(), FormName(cell)) : std::string("exterior")) : "nocell",
         player->data.angle.z * 180.0 / std::numbers::pi);
 
-    // 1. Displayed objectives.
     struct Obj { void* objective; std::uint32_t instance; std::int32_t state; };
     std::vector<Obj> objectives;
     for (const auto& o : player->objectives)
@@ -204,7 +200,6 @@ void Run(const Pipboy::Snapshot& pip, const char* why) {
             PoolText(m->displayText));
     }
 
-    // 2. Quest targets the player is guided to.
     std::vector<std::pair<RE::TESQuest*, void*>> targetMap;
     {
         RE::BSAutoLock lock{player->questTargetLock};
@@ -247,11 +242,9 @@ void Run(const Pipboy::Snapshot& pip, const char* why) {
         }
     }
 
-    // 3. Custom map marker.
     if (auto marker = player->playerMapMarker.get()) spdlog::info("Engine probe: custom marker {}", RefLine(marker.get(), px, py));
     else spdlog::info("Engine probe: no custom marker");
 
-    // 4. Map markers: the player's current list and the worldspace's persistent cell.
     std::vector<RE::ObjectRefHandle> current(player->currentMapMarkers.begin(), player->currentMapMarkers.end());
     spdlog::info("Engine probe: {} currentMapMarkers", current.size());
     int m = 0;
@@ -289,7 +282,6 @@ void Run(const Pipboy::Snapshot& pip, const char* why) {
         for (std::size_t i = 0; i < markers.size() && i < 12; ++i) LogMapMarker("persistent", markers[i], px, py);
     }
 
-    // 5. What the Pip-Boy feed says, for comparison.
     spdlog::info("Engine probe: Pip-Boy feed connected {} quests {} markers {} locations {}", pip.connected, pip.quests.size(),
         pip.markers.size(), pip.locations.size());
     for (const auto& q : pip.quests) {
@@ -313,4 +305,4 @@ void Run(const Pipboy::Snapshot& pip, const char* why) {
             nearby[i]->x, nearby[i]->y, std::hypot(nearby[i]->x - px, nearby[i]->y - py) / 70.0);
     spdlog::info("Engine probe: done");
 }
-}  // namespace Phosphor::EngineProbe
+}

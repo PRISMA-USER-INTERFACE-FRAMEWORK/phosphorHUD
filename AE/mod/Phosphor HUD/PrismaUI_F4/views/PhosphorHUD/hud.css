@@ -1,4 +1,3 @@
-/* Layout: one 1920×1080 HUD stage scaled to fit; widgets pinned to a 56px safe margin and dimmed until something changes */
 :root{
   --ground:#0a0f0c; --panel:#111915; --ink:#dcf5df; --muted:#8fa996; --line:rgba(205,255,214,.16);
   --pip:#93e8a4; --pip-soft:rgba(147,232,164,.34);
@@ -20,7 +19,6 @@ body{font-family:var(--f-label)}
 
 .viewport{position:relative;width:100%;max-width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:6px;border:1px solid var(--line);background:#050806}
 .stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;color:var(--ink);font-family:var(--f-label);text-shadow:var(--readability-shadow,0 0 2px rgba(0,0,0,.85),0 1px 4px rgba(0,0,0,.75));--idle:.85}
-/* Optional text-only contrast; custom properties inherit without changing widget layout or visibility. */
 .stage[data-readability="subtle"]{--icon-shadow:drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000) drop-shadow(0 1px 2px #000);--line-shadow:0 0 0 1px rgba(0,0,0,.55),0 0 3px rgba(0,0,0,.8);--readability-shadow:-1px 0 1px rgba(0,0,0,.85),1px 0 1px rgba(0,0,0,.85),0 -1px 1px rgba(0,0,0,.85),0 1px 3px #000}
 .stage[data-readability="strong"]{--icon-shadow:drop-shadow(1px 0 0 #000) drop-shadow(-1px 0 0 #000) drop-shadow(0 1px 0 #000) drop-shadow(0 -1px 0 #000) drop-shadow(0 2px 3px #000);--line-shadow:0 0 0 1px #000,0 1px 3px #000;--readability-shadow:-1px -1px 0 #000,0 -1px 0 #000,1px -1px 0 #000,-1px 0 0 #000,1px 0 0 #000,-1px 1px 0 #000,0 1px 0 #000,1px 1px 0 #000,0 2px 5px #000}
 #scene{position:absolute;left:0;top:0;width:1920px;height:1080px}
@@ -29,7 +27,6 @@ body{font-family:var(--f-label)}
 .fx-jet{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .8s;background:radial-gradient(ellipse at center,rgba(134,230,234,.05) 40%,rgba(60,150,170,.28));box-shadow:inset 0 0 0 1px rgba(134,230,234,.12)}
 .fx-jet.on{opacity:1}
 
-/* widgets */
 .w{position:absolute;transition:opacity .6s ease}
 [data-dim]{opacity:var(--idle);transition:opacity .6s ease}
 [data-dim].awake,[data-dim].pinned,.combat [data-dim]{opacity:1}
@@ -51,14 +48,12 @@ body{font-family:var(--f-label)}
 .pop{position:absolute;font-family:var(--f-display);font-size:calc(22px*var(--ts,1));font-weight:600;white-space:nowrap;pointer-events:none;animation:rise 1.6s ease-out forwards}
 @keyframes rise{0%{opacity:0;transform:translateY(6px)}15%{opacity:1}100%{opacity:0;transform:translateY(-30px)}}
 
-/* top-left message */
 .msg{left:56px;top:56px;width:450px;padding:14px 18px;display:flex;gap:14px;opacity:0;transform:translateY(-6px);transition:opacity .4s,transform .4s}
 .msg.show{opacity:1;transform:none}
 .msg svg{flex:none;width:26px;height:26px;color:var(--cyan)}
 .msg em{display:block;font-style:normal;font-family:var(--f-mono);font-size:calc(11px*var(--ts,1));letter-spacing:.22em;text-transform:uppercase;color:var(--cyan);margin-bottom:4px}
 .msg p{margin:0;font-size:calc(17px*var(--ts,1));line-height:1.42}
 
-/* top-center target */
 .target{left:50%;top:60px;width:400px;transform:translateX(-50%);opacity:0;transition:opacity .3s}
 .target.show{opacity:1}
 .t-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
@@ -91,7 +86,6 @@ body{font-family:var(--f-label)}
 .cfocus.loot{color:var(--amber)}
 .t-bar::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 99px,rgba(0,0,0,.6) 99px 100px)}
 
-/* top-right feed */
 .feed{right:56px;top:56px;width:460px;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;align-items:flex-end;gap:9px}
 .fi{display:flex;align-items:center;gap:10px;opacity:0;transform:translateX(16px);transition:opacity .45s,transform .45s}
 .fi.in{opacity:1;transform:none}
@@ -105,7 +99,6 @@ body{font-family:var(--f-label)}
 .fi.bad svg{color:var(--rad)}
 .fi .ic{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
-/* quest banner */
 .qbanner.alert .q-eye{color:var(--rad)}
 .qbanner.alert .q-rule{background:linear-gradient(90deg,transparent,var(--rad),transparent)}
 .qbanner.alert .q-obj li::before{content:"!";color:var(--rad)}
@@ -122,7 +115,6 @@ body{font-family:var(--f-label)}
 .q-obj li.done{color:var(--muted)}
 .q-obj li.done::before{content:"✓";color:var(--pip)}
 
-/* crosshair, prompt, loot */
 .cross{left:960px;top:540px;width:0;height:0}
 .ring{position:absolute;left:0;top:0;transition:transform .16s ease-out}
 .ring.kick{transform:scale(1.9);transition:transform .05s}
@@ -146,7 +138,6 @@ body{font-family:var(--f-label)}
 .hint.crime .h-keys{color:var(--rad)}
 .hint[hidden]{display:none}
 
-/* stealth */
 .stealth{left:50%;bottom:140px;transform:translate(-50%,6px);display:flex;flex-direction:column;align-items:center;gap:3px;opacity:0;transition:opacity .35s,transform .35s;--sc:var(--pip)}
 .stealth.show{opacity:1;transform:translate(-50%,0)}
 .stealth.caution{--sc:var(--amber)}
@@ -175,15 +166,12 @@ body{font-family:var(--f-label)}
 .sneaking .ring.kick{transform:scale(1.3)}
 .cross .pop{left:0;top:-58px;font-size:calc(18px*var(--ts,1));color:var(--amber);letter-spacing:.04em;animation-name:riseC}
 .sneaking .ring i{background:rgba(220,245,223,.6)}
-/* live spread from the game: its own bloom and sneak tightening already show, so no extra scaling */
 .ring.live,.ring.live.kick,.sneaking .ring.live,.sneaking .ring.live.kick{transform:none;transition:none}
 
-/* HUD context: each widget group fades on its own wrapper so it never fights the widget's own show/hide */
 .cg,.cgi{transition:opacity .35s ease}
 .cg.ctx-hide,.cgi.ctx-hide{opacity:0;pointer-events:none}
 .cg.ctx-dim,.cgi.ctx-dim{opacity:.3}
 
-/* preview-only stand-ins for the game screens Phosphor makes room for */
 .ctxmock{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .35s}
 .ctxmock.on{opacity:1}
 .ctxmock::before,.ctxmock::after{content:"";position:absolute}
@@ -208,7 +196,6 @@ body{font-family:var(--f-label)}
 .ctxmock.pa::after{right:60px;bottom:50px;width:360px;height:120px;border:2px dashed rgba(242,196,106,.5);border-radius:6px}
 .ctxmock .cm-pa{position:absolute;left:0;right:0;bottom:180px;text-align:center;font-family:var(--f-mono);font-size:calc(12px*var(--ts,1));letter-spacing:.2em;color:rgba(242,196,106,.85)}
 
-/* rules table */
 .rules-wrap{overflow-x:auto;margin-top:10px}
 .rules{border-collapse:collapse;font-family:var(--f-mono);font-size:calc(12px*var(--ts,1));min-width:820px}
 .rules th,.rules td{padding:6px 8px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -238,7 +225,6 @@ body{font-family:var(--f-label)}
 .loot.steal .l-list li.sel::before{background:var(--rad)}
 .l-keys span{display:flex;align-items:center;gap:7px;white-space:nowrap}
 
-/* bottom-left vitals */
 .vitals{left:56px;bottom:56px;display:flex;flex-direction:column;gap:14px}
 .lmeta{display:flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:calc(11px*var(--ts,1));letter-spacing:.26em;text-transform:uppercase;color:var(--muted)}
 .lmeta .lsep{opacity:.5;letter-spacing:0}
@@ -249,7 +235,6 @@ body{font-family:var(--f-label)}
 .lname{transition:opacity .35s ease}
 .lname.arrival-hidden{opacity:0;pointer-events:none}
 
-/* companion card */
 .party{display:flex;flex-wrap:wrap;gap:12px 12px;width:calc(340px*max(1,var(--rs,1)));padding-bottom:4px}
 .party[hidden]{display:none}
 .pm{position:relative;width:calc(48px*var(--rs,1));display:flex;flex-direction:column;align-items:center;gap:5px;transition:opacity .4s}
@@ -281,7 +266,6 @@ body{font-family:var(--f-label)}
 @keyframes riseC{0%{opacity:0;transform:translate(-50%,6px)}15%{opacity:1}100%{opacity:0;transform:translate(-50%,-26px)}}
 .pm-more{align-self:flex-start;margin-top:calc(13px*var(--rs,1));font-family:var(--f-mono);font-size:calc(12px*var(--ts,1));color:var(--muted);letter-spacing:.06em}
 
-/* RDR2-style cores */
 .cores{display:flex;align-items:flex-end;gap:12px}
 .core{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px}
 .core svg{display:block;width:calc(64px*var(--rs,1));height:calc(64px*var(--rs,1));overflow:visible}
@@ -311,7 +295,6 @@ body{font-family:var(--f-label)}
 .core.over .val{stroke:var(--rad)}
 .core.over .lit{animation:blink 1s steps(2,start) infinite}
 .core.over small{color:var(--rad)}
-/* Warzone - Armor Plates (optional mod): built only when the plugin reports armor; see setArmor() */
 .core.plates .pt{fill:none;stroke:rgba(220,245,223,.13);stroke-width:4}
 .core.plates .pa{fill:none;stroke:var(--c);stroke-width:4;transition:stroke-dasharray .3s ease}
 .core.plates.broken .pa{stroke:var(--rad)}
@@ -341,14 +324,12 @@ body{font-family:var(--f-label)}
 .core.purging .val{animation:purge 1.1s ease-in-out infinite}
 @keyframes purge{50%{stroke:var(--pip)}}
 .cores .gap{width:6px}
-/* Ring size: when the row would reach the compass, food/water/rest move up to their own row (see layoutCores). */
 .cores.two-rows{flex-wrap:wrap-reverse;row-gap:10px;max-width:568px}
 .cores.two-rows #needsGap{flex-basis:100%;width:auto;height:0}
 .cores .need-hidden{display:none}
 .cores .vital-hidden{display:none}
 .cores.vitals-empty #k-wt.away,.cores.vitals-empty #k-wt.away + #needsGap{display:none}
 
-/* quest tracker */
 .rcol{position:absolute;right:56px;top:356px;display:flex;flex-direction:column;align-items:flex-end;gap:22px}
 .rcol .w{position:relative;right:auto;top:auto;left:auto}
 .rcol .tracker:not(.show){max-height:0;overflow:hidden}
@@ -383,7 +364,6 @@ body{font-family:var(--f-label)}
 .perkchip[hidden]{display:none}
 @keyframes perkGlow{50%{box-shadow:0 0 8px rgba(242,196,106,.45);background:rgba(242,196,106,.1)}}
 .xpbar.flash i{background:#fff;box-shadow:0 0 14px rgba(134,230,234,.9)}
-/* level-up moment */
 .lvlup{left:50%;top:150px;width:560px;transform:translateX(-50%);text-align:center;opacity:0;transition:opacity .45s;pointer-events:none}
 .lvlup.show{opacity:1}
 .lu-ring{position:relative;width:190px;height:190px;margin:0 auto}
@@ -405,7 +385,6 @@ body{font-family:var(--f-label)}
 .xpbar{position:relative;width:220px;height:3px;background:rgba(134,230,234,.18)}
 .xpbar i{position:absolute;left:0;top:0;bottom:0;background:var(--cyan);box-shadow:0 0 8px rgba(134,230,234,.55);transition:width .7s ease}
 .xppct{font-family:var(--f-mono);font-size:calc(13px*var(--ts,1));color:var(--cyan);font-variant-numeric:tabular-nums}
-/* karma (KARMA mod) */
 .karma{--kc:var(--muted);display:flex;align-items:center;gap:6px;margin-left:10px;font-family:var(--f-mono);font-size:calc(11px*var(--ts,1));letter-spacing:.14em;text-transform:uppercase;color:var(--kc);white-space:nowrap}
 .karma[hidden],.karma.off{display:none}
 .chal.off{display:none}
@@ -416,14 +395,12 @@ body{font-family:var(--f-label)}
 .karma.k2,.karma.k1{--kc:var(--cyan)}
 .karma.k-1,.karma.k-2{--kc:var(--rad)}
 .karma.flash svg{animation:fxpulse .6s ease-out 2}
-/* reputation with the local town (REPUTATION mod) */
 .lrep{--rc:var(--muted);display:inline-flex;align-items:center;gap:5px;color:var(--rc);letter-spacing:.16em}
 .lrep[hidden]{display:none}
 .lrep svg{width:11px;height:11px;fill:currentColor}
 .lrep.fame{--rc:var(--pip)}
 .lrep.infamy{--rc:var(--rad)}
 .lrep.mixed{--rc:var(--amber)}
-/* tracked challenges (CHALLENGES mod) */
 .chal{width:360px;text-align:right;opacity:0;transform:translateX(10px);transition:opacity .45s,transform .45s;max-height:0;overflow:hidden}
 .chal.show{opacity:1;transform:none;max-height:400px;overflow:visible}
 .combat .chal.show{opacity:.3}
@@ -442,7 +419,6 @@ body{font-family:var(--f-label)}
 .xp .pop{left:236px;top:-30px;color:var(--cyan)}
 @keyframes blink{to{opacity:.35}}
 
-/* bottom-center compass + subtitles */
 .subs{left:50%;bottom:196px;width:min(1000px,calc(1768px - 624px*var(--ts,1)));transform:translateX(-50%);text-align:center;opacity:0;transition:opacity .4s}
 .subs.show{opacity:1}
 .subs b{display:block;font-family:var(--f-mono);font-size:calc(13px*var(--ts,1));font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--pip);margin-bottom:6px}
@@ -488,7 +464,6 @@ body{font-family:var(--f-label)}
 .cfocus.quest,.cfocus.door{color:var(--cyan)}
 .cfocus.defend{color:var(--rad)}
 
-/* mines */
 .minelayer{left:0;top:0;width:1920px;height:1080px;pointer-events:none}
 .mn{position:absolute;left:0;top:0;width:0;height:0;--mc:var(--amber);--r:11px}
 .mn svg{position:absolute;left:0;top:0;width:calc(var(--r)*2);height:calc(var(--r)*2);transform:translate(-50%,-50%);overflow:visible}
@@ -513,7 +488,6 @@ body{font-family:var(--f-label)}
 .mk.mine{color:var(--amber);z-index:3}
 .mk.mine.hot{color:var(--rad)}
 
-/* settlement attack card */
 .salert{--ac:var(--rad);width:360px;text-align:right;opacity:0;transform:translateX(10px);transition:opacity .45s,transform .45s;max-height:0;overflow:hidden}
 .salert.show{opacity:1;transform:none;max-height:240px;overflow:visible}
 .salert.won{--ac:var(--pip)}
@@ -539,7 +513,6 @@ body{font-family:var(--f-label)}
 .needle{position:absolute;left:50%;top:46px;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:6px solid var(--pip);filter:var(--icon-shadow,drop-shadow(0 0 1px rgba(0,0,0,.9)))}
 .hdg{position:absolute;left:50%;top:55px;transform:translateX(-50%);font-family:var(--f-mono);font-size:calc(11px*var(--ts,1));color:var(--muted);letter-spacing:.12em;font-variant-numeric:tabular-nums}
 
-/* bottom-right kit */
 .kit{right:56px;bottom:56px;display:flex;flex-direction:column;align-items:flex-end;gap:16px}
 .effects{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;max-width:480px}
 .fx{--c:var(--amber);display:flex;flex-direction:column;align-items:center;gap:3px;width:calc(58px*var(--rs,1));opacity:0;transform:translateY(8px) scale(.9);transition:opacity .35s,transform .35s}
@@ -584,7 +557,6 @@ body{font-family:var(--f-label)}
 .nade.out b,.nade.out .nn{color:var(--rad)}
 .nade.thrown svg{animation:toss .45s ease-out}
 .nade.thrown b{animation:tick .3s ease-out}
-/* flashlight on (Pip-Boy light) */
 .lamp{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:6px;max-height:34px;overflow:hidden;transition:opacity .3s,max-height .3s,margin-top .3s;font-family:var(--f-mono);font-size:calc(12px*var(--ts,1));letter-spacing:.14em;color:var(--amber)}
 .lamp svg{width:24px;height:24px}
 .lamp.gone{opacity:0;max-height:0;margin-top:0}
@@ -592,9 +564,8 @@ body{font-family:var(--f-label)}
 @keyframes tick{0%{transform:translateY(-5px);opacity:.3}}
 .ammo.low .clip{color:var(--amber)}
 .ammo.empty .clip{color:var(--rad)}
-.ammo.nomag .mag{display:none}  /* melee, unarmed, anything without a magazine */
+.ammo.nomag .mag{display:none}
 
-/* preview controls */
 .controls{display:flex;flex-direction:column;gap:10px}
 .ctl-group{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .ctl-group > span{flex:none;width:118px;font-family:var(--f-mono);font-size:calc(11px*var(--ts,1));letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
@@ -610,12 +581,10 @@ body{font-family:var(--f-label)}
 .api code{font-family:var(--f-mono);font-size:.85em;color:var(--ink)}
 .api pre{margin:10px 0 0;overflow-x:auto;background:#070b09;border:1px solid var(--line);border-radius:4px;padding:12px 14px;font-family:var(--f-mono);font-size:calc(12.5px*var(--ts,1));line-height:1.55;color:var(--ink)}
 
-/* in-game: transparent full-screen overlay, no preview chrome */
 html.ingame,html.ingame body{background:transparent!important}
 .ingame .head,.ingame .controls,.ingame .api,.ingame #scene,.ingame .ctxmock{display:none}
 .ingame .page{padding:0;max-width:none}
 .ingame .viewport{position:fixed;inset:0;aspect-ratio:auto;border:0;border-radius:0;background:transparent}
-/* Extend only edge anchors into ultrawide space; keep the center/mine coordinate plane intact. */
 .ingame .stage.wide-layout .msg,.ingame .stage.wide-layout .vitals{left:calc(56px - var(--wide-gutter,0px))}
 .ingame .stage.wide-layout .feed,.ingame .stage.wide-layout .rcol,.ingame .stage.wide-layout .kit{right:calc(56px - var(--wide-gutter,0px))}
 .stage.awaiting{opacity:0}

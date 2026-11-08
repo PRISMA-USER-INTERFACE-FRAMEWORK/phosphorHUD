@@ -20,7 +20,6 @@ std::jthread scheduler;
 
 bool ViewValid() { return api && g_view && api->IsValid(g_view); }
 
-// No exception may unwind across the game/framework callback boundary.
 void Guard(const std::function<void()>& task) noexcept {
     try { task(); }
     catch (const std::exception& e) { spdlog::error("Phosphor task failed: {}", e.what()); }

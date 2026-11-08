@@ -40,7 +40,6 @@ def load_lines(path):
         raw = raw.strip()
         if not raw or raw.startswith("//"):
             continue
-        # accept raw log lines like `... hudUpdate {"hp":1}` by taking the first {...}
         start = raw.find("{")
         out.append((n, raw[start:] if start >= 0 else raw))
     return out
@@ -58,14 +57,12 @@ async def main():
     schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
     problems = []
 
-    # 2. drift between the spec's schema and the HUD
     in_hud, in_schema = hud_fields(js), set(schema["properties"])
     for f in sorted(in_hud - in_schema):
         problems.append(f"schema is missing a field hud.html reads: {f}")
     for f in sorted(in_schema - in_hud):
         problems.append(f"schema documents a field hud.html ignores: {f}")
 
-    # 1. JSON + schema
     try:
         import jsonschema
         validator = jsonschema.Draft202012Validator(schema)
@@ -86,7 +83,6 @@ async def main():
                 problems.append(f"line {n}: {where}: {err.message}")
         parsed.append((n, raw))
 
-    # 3. replay in the page, in-game mode (file:// with no #preview)
     from playwright.async_api import async_playwright
     async with async_playwright() as p:
         browser = await p.chromium.launch()
@@ -104,7 +100,7 @@ async def main():
             before = len(js_errors)
             try:
                 await page.evaluate("s => window.hudUpdate(s)", raw)
-            except Exception as e:  # an exception thrown inside hudUpdate lands here
+            except Exception as e:
                 js_errors.append(str(e).splitlines()[0])
             await page.wait_for_timeout(a.delay)
             for e in js_errors[before:]:

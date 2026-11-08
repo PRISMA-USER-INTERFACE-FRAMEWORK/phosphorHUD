@@ -25,7 +25,6 @@ class HudTests(unittest.TestCase):
         self.errors = []
         self.page.on("pageerror", lambda error: self.errors.append(str(error)))
         self.page.on("console", lambda msg: self.errors.append(msg.text) if msg.type == "error" and msg.text.startswith("hudUpdate") else None)
-        # Game rendering must work offline, without Google's font service.
         self.page.route("https://**/*", lambda route: route.abort())
         self.page.goto(HUD.as_uri(), wait_until="domcontentloaded")
         self.page.wait_for_function("typeof window.hudUpdate === 'function'")
@@ -366,7 +365,6 @@ class HudTests(unittest.TestCase):
         self.send({"rads": 9, "radsGain": 5})
         self.assertEqual(self.page.evaluate("window.hud.state.rads"), 9)
         self.assertEqual(self.page.locator("#k-rad .pop").last.text_content(), "+5 RADS")
-        # A batched popup can arrive after the absolute value was already sent.
         self.send({"rads": 9, "radsGain": 2})
         self.assertEqual(self.page.evaluate("window.hud.state.rads"), 9)
         self.send({"radsGain": 1})
@@ -386,12 +384,10 @@ class HudTests(unittest.TestCase):
             "paths => paths.every(p => p.getAttribute('d') === '')"))
 
     def test_radiation_total_updates_while_consuming_in_hidden_pipboy(self):
-        # Synthetic engine readings: this checks display behavior, not item-effect calculation.
         self.send({"snapshot": True, "settings": {"hideFullVitals": True},
                    "hp": 450, "hpMax": 500, "ap": 100, "apMax": 100, "rads": 0})
         self.assertFalse(self.page.locator("#k-rad").is_visible())
         self.send({"paused": True, "context": {"menus": ["PipboyMenu"]}})
-        # Healing and radiation can arrive together after consuming an item.
         self.send({"hp": 480, "rads": 6})
         self.send({"rads": 6, "radsGain": 6})
         self.send({"paused": False, "context": {"menus": []}})
@@ -399,7 +395,6 @@ class HudTests(unittest.TestCase):
         self.assertEqual(self.page.evaluate("window.hud.state.hp"), 480)
         self.assertTrue(self.page.locator("#k-rad").is_visible())
         self.assertFalse(self.page.locator("#cores").evaluate("e => e.classList.contains('ctx-hide')"))
-        # A second item increases the total; the delayed popup must not double it.
         self.send({"hp": 500, "rads": 10})
         self.send({"rads": 10, "radsGain": 4})
         self.assertEqual(self.page.locator("#k-rad small b").text_content(), "10")
@@ -511,7 +506,6 @@ class HudTests(unittest.TestCase):
         self.assertTrue(self.page.locator("#k-water").is_visible())
         self.send({"needs": {"water": 1}})
         self.assertFalse(self.page.locator("#k-water").is_visible())
-        # The authoritative stage wins over a conflicting percentage.
         self.send({"survival": {"stages": {"food": 1, "water": 0, "rest": 0}}})
         self.assertTrue(self.page.locator("#k-food").is_visible())
         self.send({"context": {"powerArmor": True}})
@@ -529,7 +523,6 @@ class HudTests(unittest.TestCase):
                            "needs": {"food": .8, "water": .8, "rest": .8}})
                 self.assertTrue(self.page.locator("#k-water").is_visible())
                 self.assertEqual(self.page.locator("#k-water small b").text_content(), "Parched")
-                # World drinking has no new consumable effect; only the recovered need changes.
                 self.send({"survival": {"stages": {"food": 1, "water": 0, "rest": 1}}, "needs": {"water": 1}})
                 self.assertEqual(self.page.locator("#k-water").is_visible(), not dynamic)
                 self.assertEqual(self.page.locator("#k-water small b").text_content(), "Hydrated")
@@ -544,7 +537,6 @@ class HudTests(unittest.TestCase):
                 self.send({"snapshot": True, "settings": {"hideSatisfiedNeeds": dynamic, "needStageNames": True},
                            "survival": {"on": True, "stages": {"food": 2, "water": 1, "rest": 1}},
                            "needs": {"food": .6, "water": .8, "rest": .8}})
-                # A partial meal helps, but must not clear the remaining hunger stage.
                 self.send({"survival": {"stages": {"food": 1, "water": 1, "rest": 1}}, "needs": {"food": .8}})
                 self.assertTrue(self.page.locator("#k-food").is_visible())
                 self.assertEqual(self.page.locator("#k-food small b").text_content(), "Peckish")
@@ -577,7 +569,6 @@ class HudTests(unittest.TestCase):
             self.assertTrue(self.page.locator("#k-" + key).is_visible())
 
     def test_dynamic_vitals_use_available_caps_and_native_rounding(self):
-        # Native fatigue must retain its fraction: 100 AP lost out of 300 is not .33.
         self.send({"snapshot": True, "settings": {"hideFullVitals": True},
                    "hp": 100, "hpMax": 100, "ap": 200, "apMax": 300,
                    "survival": {"on": True, "fatigue": 100 / 300}})
@@ -593,7 +584,6 @@ class HudTests(unittest.TestCase):
         self.send({"hp": 80, "ap": 80})
         for key in ("hp", "ap"):
             self.assertTrue(self.page.locator("#k-" + key).is_visible())
-        # Non-integer available caps can round down in the native message.
         self.send({"hpMax": 102, "apMax": 102, "hp": 71, "ap": 71, "rads": 300,
                    "survival": {"fatigue": .3}})
         for key in ("hp", "ap"):
@@ -648,7 +638,6 @@ class HudTests(unittest.TestCase):
         self.assertFalse(self.page.locator("#k-ap").is_visible())
 
     def location_opacity(self):
-        # Playwright's simulated JS clock does not advance CSS transitions.
         return self.page.locator("#locName").evaluate("""e => {
             e.getAnimations().forEach(a => a.finish());
             return getComputedStyle(e).opacity;
@@ -656,7 +645,7 @@ class HudTests(unittest.TestCase):
 
     def test_location_arrival_default_and_duplicate_updates(self):
         self.page.clock.install()
-        self.page.reload(wait_until="domcontentloaded")  # Register the HUD interval on the simulated clock.
+        self.page.reload(wait_until="domcontentloaded")
         self.send({"snapshot": True, "location": "Sanctuary Hills", "region": "Commonwealth",
                    "time": {"hour": 13, "timescale": 0}})
         self.page.clock.run_for(10000)
@@ -721,8 +710,6 @@ class HudTests(unittest.TestCase):
         self.assertFalse(wleg.is_visible(), "An unlisted weapon still hides the line")
 
     def test_location_edge_flapping_does_not_reannounce_or_wake_vitals(self):
-        # Seen in game: walking the edge of Military Checkpoint flipped to "Commonwealth" and back every few
-        # seconds, restarting the arrival name and keeping out-of-combat-hidden vitals on screen.
         self.page.clock.install()
         self.page.reload(wait_until="domcontentloaded")
         vitals_hidden = lambda: self.page.locator("#cores").evaluate("e => !!e.closest('.ctx-hide')")
@@ -784,7 +771,6 @@ class HudTests(unittest.TestCase):
 
     def resize_hud(self, width, height):
         self.page.set_viewport_size({"width": width, "height": height})
-        # Deliver the resize deterministically; do not sample before fit() runs.
         self.page.evaluate("window.dispatchEvent(new Event('resize'))")
 
     def box(self, selector):
@@ -811,12 +797,10 @@ class HudTests(unittest.TestCase):
         self.assertAlmostEqual(big["height"], 36, delta=.1)
         self.assertAlmostEqual(big["bottom"], mark["bottom"], delta=.5, msg="Icons grow upward from the same baseline")
         self.assertAlmostEqual(big["centre"], mark["centre"], delta=.5, msg="Icons stay centred on their bearing")
-        # Layout guards at the largest sizes.
         self.assertLess(self.box("#vitals")["right"], self.box(".compass")["left"], "Vitals row stays clear of the compass")
         self.assertGreater(self.box(".subs")["left"], 56 + 312 * 1.5, "Subtitles narrow to stay clear of the location name")
         for span in self.page.locator(".l-keys span").all():
             self.assertLess(span.evaluate("e => e.getBoundingClientRect().height"), 40, "Loot key hints never split across lines")
-        # Out-of-range values clamp; 1 restores the original sizes.
         self.send({"settings": {"textScale": 9, "iconScale": 0.1}})
         self.assertAlmostEqual(self.font_px(".subs p"), base[".subs p"] * 1.5, delta=.1)
         self.assertAlmostEqual(layout()["height"], 18 * .8, delta=.6)
@@ -832,7 +816,7 @@ class HudTests(unittest.TestCase):
                    "settings": {"showWeight": "always", "needStageNames": True},
                    "party": [{"name": "Piper", "type": "human", "hp": 1}],
                    "effects": [{"id": "psycho", "name": "Psycho", "kind": "chem", "icon": "bolt", "duration": 60, "remaining": 50}]})
-        size = lambda q: self.page.locator(q).first.evaluate("e => parseFloat(getComputedStyle(e).width)")  # layout size, not mid-animation
+        size = lambda q: self.page.locator(q).first.evaluate("e => parseFloat(getComputedStyle(e).width)")
         rows = lambda: self.page.locator("#cores").evaluate("e => e.classList.contains('two-rows')")
         def settle():
             self.page.clock.fast_forward(700)
@@ -863,7 +847,6 @@ class HudTests(unittest.TestCase):
 
     def test_ultrawide_edges_use_screen_margin_without_stretching_widgets(self):
         self.send({"snapshot": True, "hp": 90, "hpMax": 100, "context": {"powerArmor": False}})
-        # 56 design pixels become 74 2/3 pixels at 1440p, regardless of screen width.
         for width in (3440, 5120, 2560):
             with self.subTest(width=width):
                 self.resize_hud(width, 1440)
@@ -897,8 +880,6 @@ class HudTests(unittest.TestCase):
                 self.assertAlmostEqual(mine["y"], 800, delta=.1)
 
     def test_mines_are_small_pooled_and_clamp_off_screen_ones_to_the_edge(self):
-        # Detects the oversized, per-update-rebuilt mine markers: 44-64 px sprites, left/top layout writes and a
-        # rebuilt arrow list on every message.
         self.send({"snapshot": True, "heading": 0})
         mine = lambda i, x, dist: {"id": "m%d" % i, "x": x, "y": 500, "dist": dist, "left": 2, "total": 4, "b": 10}
         near, far = mine(1, 900, 3), mine(2, 1000, 29)

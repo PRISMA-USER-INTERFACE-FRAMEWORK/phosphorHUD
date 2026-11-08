@@ -5,8 +5,6 @@
 #include <utility>
 
 namespace Phosphor {
-// Only copied data crosses this boundary. Never hold this mutex while calling the engine.
-// One callback is queued/running; it coalesces newer requests and rejects results from old sessions.
 template <class Request, class Result>
 class UiMailbox {
 public:
@@ -27,7 +25,6 @@ public:
     bool Complete(const Work& work, std::optional<Result> result) {
         std::scoped_lock lock(mutex_);
         if (work.epoch == epoch_ && result) result_ = std::move(result);
-        // A request made while capture ran must not be lost (especially the restore request).
         if (request_ && work.revision != revision_) return true;
         queued_ = false;
         return false;
@@ -38,7 +35,6 @@ public:
         ++revision_;
         request_.reset();
         result_.reset();
-        // Keep the reservation until the already queued callback drains.
     }
     void CancelQueue() {
         std::scoped_lock lock(mutex_);

@@ -1,5 +1,4 @@
 #pragma once
-// Compiled against the pinned AE tree. No runtime probes or engine calls here.
 #include <RE/B/BGSInstancedQuestObjective.h>
 #include <RE/B/BGSQuestObjective.h>
 #include <RE/M/MapMarkerData.h>
@@ -58,7 +57,7 @@ AE_MEMBER(QuestObjectiveM, BGSQuestObjective, flags);
 #define AE_OFFSET(type, member, offset) static_assert(offsetof(RE::type, member) == offset)
 AE_OFFSET(PlayerCharacter, questTargetLock, 0x630);
 AE_OFFSET(PlayerCharacter, currentMapMarkers, 0x738);
-AE_OFFSET(PlayerCharacter, objectives, 0x7D8); // Header's 7D9 comment is a typo; compiler layout is 7D8.
+AE_OFFSET(PlayerCharacter, objectives, 0x7D8);
 AE_OFFSET(PlayerCharacter, questTargets, 0x7F0);
 AE_OFFSET(PlayerCharacter, cachedWorldspace, 0x8B0);
 AE_OFFSET(PlayerCharacter, exteriorPosition, 0x8B8);
@@ -87,8 +86,6 @@ AE_OFFSET(BGSInstancedQuestObjective, enstanceState, 0xC);
 #undef AE_OFFSET
 static_assert(sizeof(RE::MapMarkerData) == 0x18);
 
-// The pinned class omits a public: label. Explicit template instantiation may name private
-// members (C++ [temp.explicit]); use native member pointers instead of guessing byte offsets.
 struct MarkerFlagsMember { using Type = std::uint8_t RE::MapMarkerData::*; friend Type Member(MarkerFlagsMember); };
 struct MarkerTypeMember { using Type = RE::MARKER_TYPE RE::MapMarkerData::*; friend Type Member(MarkerTypeMember); };
 template<class Tag, typename Tag::Type member> struct NativeMarkerMember {
@@ -97,10 +94,6 @@ template<class Tag, typename Tag::Type member> struct NativeMarkerMember {
 template struct NativeMarkerMember<MarkerFlagsMember, &RE::MapMarkerData::flags>;
 template struct NativeMarkerMember<MarkerTypeMember, &RE::MapMarkerData::type>;
 inline auto MarkerFlags(const void* data) { return static_cast<const RE::MapMarkerData*>(data)->*Member(MarkerFlagsMember{}); }
-// Map marker type: uint16 at 0x12. The pinned header declares MARKER_TYPE as uint32, which the compiler places at
-// 0x14 (its own comment says 12). OG game memory (engine probe, 2026-10-20) has the type at 0x12 and zeros at
-// 0x14-0x17, e.g. 03 00 2D 00 00000000 = type 45, matching the Pip-Boy feed. Read the verified offset; the native
-// member stays available for the probe so AE testers can confirm.
 inline int MarkerType(const void* data) {
     std::uint16_t type = 0;
     std::memcpy(&type, static_cast<const char*>(data) + 0x12, sizeof(type));

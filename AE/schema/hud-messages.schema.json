@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "phosphor-hud/hud-messages.schema.json",
   "title": "Phosphor HUD message",
-  "description": "One argument to hudUpdate(). Every field is optional. See docs/02_MESSAGES.md.",
+  "description": "One argument to hudUpdate(). Every field is optional.",
   "type": "object",
   "additionalProperties": false,
   "$defs": {

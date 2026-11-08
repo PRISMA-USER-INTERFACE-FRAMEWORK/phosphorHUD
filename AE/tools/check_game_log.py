@@ -10,7 +10,6 @@ def main():
     parser.add_argument("--replay", action="store_true", help="also require a completed replay")
     args = parser.parse_args()
     text = args.log.read_text(encoding="utf-8", errors="replace")
-    # Rotation can retain older sessions; check only the latest load.
     start = text.rfind("Phosphor HUD 0.")
     if start >= 0:
         text = text[start:]

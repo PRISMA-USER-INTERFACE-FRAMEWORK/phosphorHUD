@@ -27,11 +27,9 @@ using Clock = std::chrono::steady_clock;
 constexpr double kUnitsPerMeter = 70.0;
 constexpr double kShowRangeMeters = 30.0;
 
-// Only form ids cross threads. Never keep the event itself: its NiPointer would hold the reference alive across a
-// save load, and dropping it after the game has torn the world down frees the reference behind the engine's back.
 struct AttachNote { std::uint32_t id = 0; bool attached = false; };
 EventInbox<AttachNote> attachEvents{4096};
-std::set<std::uint32_t> tracked;  // game thread only
+std::set<std::uint32_t> tracked;
 bool sinkRegistered = false;
 
 RE::Projectile* AsMine(RE::TESObjectREFR* ref) {
@@ -74,8 +72,8 @@ struct Seen {
 std::map<std::uint32_t, Seen> seen;
 Clock::time_point lastScan{};
 constexpr auto kNeighborScan = std::chrono::seconds(5);
-std::set<std::uint32_t> neighborFound;  // game thread only; refreshed on a cell change or every kNeighborScan
-const RE::TESObjectCELL* neighborCell = nullptr;  // compared, never dereferenced
+std::set<std::uint32_t> neighborFound;
+const RE::TESObjectCELL* neighborCell = nullptr;
 Clock::time_point lastNeighborScan{};
 bool enabled = true;
 std::atomic<bool> active{false};
@@ -95,7 +93,6 @@ void DrainAttachEvents() {
     }
 }
 
-// Rebuild from attached cells, including exterior neighbors: reset/overflow can lose attach events.
 void ScanAttachedCells(Clock::time_point now) {
     auto* player = RE::PlayerCharacter::GetSingleton();
     auto* cell = player ? player->GetParentCell() : nullptr;
@@ -130,7 +127,7 @@ void ScanAttachedCells(Clock::time_point now) {
         neighborFound.clear();
         neighborCell = nullptr;
     }
-    tracked = std::move(found);  // also recover missed detach events after inbox overflow
+    tracked = std::move(found);
 }
 
 double Norm(double degrees) {
@@ -138,7 +135,6 @@ double Norm(double degrees) {
     return degrees < 0 ? degrees + 360.0 : degrees;
 }
 
-// The game window's client size, for mapping screen fractions onto the HUD's letterboxed 1920x1080 stage.
 std::pair<double, double> WindowSize() {
     static HWND window = nullptr;
     if (!window || !IsWindow(window)) window = FindWindowA("Fallout4", nullptr);
@@ -147,7 +143,6 @@ std::pair<double, double> WindowSize() {
     return {1920.0, 1080.0};
 }
 
-// World point -> fractions of the screen (0,0 top left). False when the point is behind the camera.
 bool Project(const RE::NiPoint3& p, double& fx, double& fy) {
     auto* camera = RE::Main::WorldRootCamera();
     if (!camera) return false;
@@ -254,7 +249,6 @@ Json Read(std::vector<std::string>* exploded) {
         }
         alive.insert(id);
         auto& s = seen[id];
-        // Mines the player laid aren't a threat to the player.
         if (auto shooter = mine->shooter.get(); shooter && shooter.get() == player) continue;
         const auto& mp = mine->data.location;
         const double dx = mp.x - pp.x, dy = mp.y - pp.y, dz = mp.z - pp.z;
@@ -268,7 +262,6 @@ Json Read(std::vector<std::string>* exploded) {
         const bool counting = total > 0 && mine->explosionTimer > 0.0F && mine->explosionTimer < total - 0.01F;
         const bool triggered = sound || counting;
         const double nearRange = std::max(6.0, 2.0 * proximity / kUnitsPerMeter);
-        // Raw values, while close, to confirm how the fuse reads in game.
         if (dist < 12 && (triggered != s.triggered || (triggered && now - s.logged > std::chrono::milliseconds(500)) ||
                           (!triggered && now - s.logged > std::chrono::seconds(10)))) {
             spdlog::info("Mine {:08X} {:.1f} m: timer {:.2f} / {:.2f}, proximity {:.0f}, countdown sound {:08X}, flags {:X}, age {:.1f}",
@@ -307,7 +300,6 @@ Json Read(std::vector<std::string>* exploded) {
         }
         out.push_back(std::move(m));
     }
-    // Gone while its fuse was running: it went off.
     for (auto it = seen.begin(); it != seen.end();) {
         if (alive.contains(it->first)) { ++it; continue; }
         if (it->second.triggered && exploded) {

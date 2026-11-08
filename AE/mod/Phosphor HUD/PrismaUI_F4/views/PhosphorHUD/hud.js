@@ -1,7 +1,6 @@
 (function() {
   "use strict";
   var LOCAL = location.protocol === "file:" || /Ultralight/i.test(navigator.userAgent);
-  /* open hud.html#preview from disk to see the demo with your local portraits */
   var IN_GAME = LOCAL && location.hash !== "#preview";
   if (IN_GAME) document.documentElement.classList.add("ingame");
   var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -11,7 +10,6 @@
   var stage = $("stage"),
     vp = $("viewport");
 
-  /* ---------- scaling ---------- */
   function fit() {
     var w = vp.clientWidth,
       h = vp.clientHeight;
@@ -25,7 +23,6 @@
   window.addEventListener("resize", fit);
   fit();
 
-  /* ---------- state ---------- */
   var S = {
     hp: 212,
     hpMax: 310,
@@ -187,7 +184,6 @@
     }, 1700);
   }
 
-  /* ---------- vitals ---------- */
   function setBar(fill, ghost, frac, prop) {
     var prev = parseFloat(fill.dataset.v);
     if (isNaN(prev)) prev = frac;
@@ -203,7 +199,6 @@
     } else ghost.style[prop] = frac * 100 + "%";
     fill.dataset.v = frac;
   }
-  /* ---------- RDR2-style cores ---------- */
   var KICON = {
     hp: '<path d="M9.6 4h4.8v5.6H20v4.8h-5.6V20H9.6v-5.6H4V9.6h5.6z"/>',
     ap: '<path d="M13.6 3L6 13.4h5.2L10.2 21 18 10.4h-5.3z"/>',
@@ -236,8 +231,6 @@
     rest: "Rest",
     wt: "Weight"
   };
-  /* Segmented rings drawn as plain arcs: Ultralight (PrismaUI) has no SVG masks or pathLength.
-     A ring is n segments; each layer (track, ghost, value, bite) is n arc paths clipped to a range. */
   function arcD(cx, r, a0, a1) {
     var t0 = (a0 - 90) * Math.PI / 180,
       t1 = (a1 - 90) * Math.PI / 180;
@@ -250,7 +243,6 @@
     for (var k = 0; k < n; k++) h += '<path class="' + cls + '" d=""/>';
     return '<g data-ring="' + [cx, r, n, gap].join(",") + '">' + h + "</g>";
   }
-  /* show the layer from fraction lo to hi (0..1, clockwise from the top) */
   function setRing(g, lo, hi) {
     if (g._lo === lo && g._hi === hi) return;
     g._lo = lo;
@@ -316,7 +308,6 @@
     var c = cores[key];
     frac = clamp(frac, 0, 1);
     setRing(c.val, 0, frac);
-    /* the lost part lingers as a pale ghost for a moment */
     if (c.v !== null && frac < c.v) {
       var g = c.ghost;
       setRing(g, 0, c.v);
@@ -326,7 +317,6 @@
       }, 450);
     } else if (frac !== c.v) setRing(c.ghost, 0, frac);
     c.v = frac;
-    /* inner core: the icon empties from the top as the value drops */
     var f = clamp(fill === undefined ? 1 : fill, 0, 1),
       h = 26 * f;
     if (c.fillH !== h) {
@@ -344,7 +334,6 @@
     setCore("hp", hpF, Math.round(S.hp));
     setRing(cores.hp.bite, 1 - radFrac, 1);
     cores.hp.el.classList.toggle("low", hpF < 0.25);
-    /* survival Fatigue works like radiation for AP: it takes a red bite out of the end of the ring */
     var fat = S.survival.on ? clamp(S.survival.fatigue, 0, 0.9) : 0;
     S.ap = clamp(S.ap, 0, S.apMax * (1 - fat));
     setCore("ap", S.ap / S.apMax, Math.round(S.ap));
@@ -354,8 +343,6 @@
     cores.rad.el.classList.toggle("crit", radFrac > 0.6);
     renderVitalVisibility();
   }
-  /* Ring size / text size: keep the vitals row clear of the compass. Measure the single-row layout and, if its right
-     edge would come within 16 design px of the compass, lift food/water/rest onto their own row above the rings. */
   function layoutCores() {
     var row = $("cores"),
       comp = $("compass");
@@ -374,7 +361,7 @@
   function layoutCoresSoon() {
     layoutCores();
     clearTimeout(coresTimer);
-    coresTimer = setTimeout(layoutCores, 500); /* after the rings' .45 s width transitions settle */
+    coresTimer = setTimeout(layoutCores, 500);
   }
   var visKey = null;
 
@@ -382,7 +369,6 @@
     var dynamic = S.settings.hideFullVitals;
     var hpCap = S.hpMax * (1 - clamp(S.rads / 1000, 0, 1));
     var apCap = S.apMax * (1 - (S.survival.on ? clamp(S.survival.fatigue, 0, 0.9) : 0));
-    // The native snapshot rounds HP/AP to whole points; compare at the same precision.
     var hideHP = dynamic && S.hp > 0 && hpCap > 0 && Math.round(S.hp) >= Math.round(hpCap);
     var hideAP = dynamic && S.ap > 0 && apCap > 0 && Math.round(S.ap) >= Math.round(apCap);
     var hideRad = dynamic && S.rads <= 0;
@@ -408,18 +394,12 @@
     $("xpFill").style.width = S.xp * 100 + "%";
     $("xpPct").textContent = Math.round(S.xp * 100) + "%";
   }
-  /* Warzone - Armor Plates System (optional mod, LuBuCake). The plugin sends `armor` only while that mod's esp is
-     loaded, so without it this core is never built. Option A of the armor design: one arc per plate on a 64px ring
-     with the armor value and plates carried underneath. Sizes are in ring units (circumference 2*pi*26). */
   var PLATE_RING = 2 * Math.PI * 26,
     PLATE_GAP = 3,
     armorCore = null,
     armorLast = null;
-  /* Same 24-unit space and dim/lit wrapper as the KICON glyphs (the in-game renderer drew those but not a bare
-     64-unit glyph), with every number separated so a strict path parser reads it. */
   var PLATE_ICON = '<path d="M5.5 4.6 H18.4 L20.3 7.4 V15.7 L12 21.2 L3.7 15.7 V7.4 Z"/>' +
     '<path d="M8.3 10.2 H15.7 M8.3 13.9 H15.7"/>';
-  /* the broken state's crack (Option A design), shown only while .broken */
   var PLATE_CRACK = '<path class="crack" d="M12.9 4.6 L10.2 11.1 L13.9 12.9 L11.1 21.2"/>';
 
   function plateArcs(c, n, fracs) {
@@ -442,7 +422,6 @@
 
   function setArmor(a) {
     armorLast = a;
-    /* settings.showArmorWheel (MCM "Show armor wheel") hides the core; showing it again starts without a stale pop */
     if (!a || S.settings.showArmorWheel === false) {
       if (armorCore) {
         armorCore.el.classList.add("off");
@@ -456,11 +435,8 @@
       el.className = "core plates";
       el.id = "k-armor";
       el.style.setProperty("--c", "#a9c8e8");
-      /* join the page before the SVG is parsed, like the other cores (they fill an element already in the page) */
       $("cores").insertBefore(el, $("k-wt"));
       el.innerHTML = '<svg viewBox="0 0 64 64"><circle class="disc" cx="32" cy="32" r="24.5"/><g class="arcs"></g>' +
-        /* exactly the HP core's icon markup: a clip path on the lit layer and the faint "solid" fill. The game's renderer
-           laid the bare outline out correctly but never painted it until the lit layer had a clip path (2026-10-19). */
         '<clipPath id="kc-armor"><rect x="-2" y="-1" width="28" height="26"/></clipPath>' +
         '<g transform="translate(19 19) scale(1.083)"><g class="ic dim">' + PLATE_ICON + '</g>' +
         '<g class="ic lit solid" clip-path="url(#kc-armor)" style="clip-path:url(#kc-armor)">' + PLATE_ICON + PLATE_CRACK + '</g></g>' +
@@ -496,7 +472,6 @@
     armorCore.v = cur;
   }
 
-  /* leveling: perk points (and LevelUpMenuEx skill points) stay on screen until spent */
   S.perkPoints = 0;
   S.skillPoints = 0;
   S.skillsPerLevel = 0;
@@ -552,7 +527,6 @@
         S.perkPoints += gained;
         S.skillPoints += gained * S.skillsPerLevel;
       }
-      /* bar fills to the top, flashes, then rolls over to the new progress */
       var bar = $("xpFill"),
         wrap = bar.parentNode,
         rest = S.xp;
@@ -579,7 +553,6 @@
     wake($("vitals"));
   }
 
-  /* ---------- compass ---------- */
   var PX = 640 / 180,
     CARD = {
       0: "N",
@@ -639,7 +612,6 @@
     if (!$("tstrip")) buildTickStrip();
     var hn = norm(h);
     $("tstrip").style.transform = "translate3d(" + (320 - (hn + 90) * PX).toFixed(1) + "px,0,0)";
-    /* markers keep their own elements so pulses and transitions survive each frame */
     var layer = $("marks"),
       seen = {},
       focus = null,
@@ -684,10 +656,8 @@
       if (m.disc === false) cls += " undisc";
       if (ad > 88 && vis) cls += delta < 0 ? " edge-l" : " edge-r";
       if (questy && now - m._new < 3200) cls += " new";
-      /* the plugin sends dz only beyond the game's own height threshold (fQuestMarkerZDiffThreshold, about 3.6 m) */
       var arrow = m.dz > 0 ? "▲" : m.dz < 0 ? "▼" : "";
       if (el._el.textContent !== arrow) el._el.textContent = arrow;
-      /* a name takes focus within 8 degrees and keeps it out to 11, so small heading wobble cannot blink it */
       var held = m.id === focusId;
       if (m.label && vis && ad < (held ? 11 : 8) && ad - (held ? 3 : 0) < focusScore) {
         focusScore = ad - (held ? 3 : 0);
@@ -726,7 +696,6 @@
     }
   }
 
-  /* ---------- weapon, needs, limbs ---------- */
   function renderAmmo() {
     $("clip").textContent = S.clip;
     $("res").textContent = S.reserve;
@@ -735,7 +704,6 @@
     var nb = $("nadeName"),
       nr = nb.parentNode,
       x = S.explosive;
-    /* nothing in the throwable slot: the row folds away */
     if (!x || (S.grenades <= 0 && !nr.classList.contains("out"))) {
       nr.classList.add("gone");
     } else {
@@ -782,9 +750,6 @@
     $("needsGap").classList.toggle("need-hidden", !anyVisible);
     layoutCoresSoon();
   }
-  /* limb condition 0..1, from the game's six condition values (each out of 100):
-     head = PerceptionCondition, torso = EnduranceCondition, arms = Left/RightAttackCondition,
-     legs = Left/RightMobilityCondition. A limb is only crippled at 0, as in vanilla. */
   var LIMB_NAME = {
     head: "Head",
     torso: "Torso",
@@ -794,10 +759,6 @@
     rleg: "Right leg"
   };
   var limbWas = {};
-  /* ---------- limb figure skins ----------
-     silhouette: built in. vaultboy / vaultgirl: the parts from Condition Boy (Nexus 56602), converted to
-     figures/<who>-<layer>-<part>.png. Base layer is clothed or naked, armor pieces draw on top, and each
-     part is tinted by its condition the way Condition Boy does it. */
   var FIG_PARTS = ["torso", "lleg", "rleg", "larm", "rarm", "head"];
   var FIG_TINT = {
     ok: "#cfe9d3",
@@ -943,7 +904,6 @@
       if (limbWas[k] !== undefined && limbWas[k] > 0 && v <= 0) notify(LIMB_NAME[k] + " crippled", "Use a Stimpak or a doctor to heal it", "bad", 6000, "warn");
       limbWas[k] = v;
     });
-    /* the figure only appears when something is damaged, and stays lit while a limb is crippled */
     var fig = document.querySelector(".limbs"),
       cv = $("limbFig");
     var hide = !anyHurt && S.figure.hideHealthy;
@@ -954,7 +914,6 @@
     drawFigure();
   }
 
-  /* ---------- events ---------- */
   var ICON = {
     item: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/></svg>',
     weapon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="6"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg>',
@@ -993,11 +952,9 @@
       el.classList.remove("show");
     }, ms);
   }
-  /* banners take turns so a quest completion and a level-up never draw over each other */
   var bannerQ = [],
     bannerBusy = false,
     bannerTimer = null;
-  /* after a save loads: drop everything that belonged to the old moment; the plugin then sends a snapshot */
   function resetTransient() {
     clearTimeout(calmTimer);
     calmTimer = null;
@@ -1112,9 +1069,6 @@
     setBar($("tFill"), $("tGhost"), clamp(t.pct === undefined ? 1 : t.pct, 0, 1), "width");
     el.classList.add("show");
   }
-  /* ---------- legendary mutations (Immersive Legendary Mutations) and legendary gear (LEO) ----------
-     The mutations mod mutes vanilla's "has mutated!" message on purpose, so by default Phosphor only marks the
-     enemy bar. Feed notices are an opt-in. */
   S.mutationFeed = false;
 
   function renderMutations(t, fresh) {
@@ -1134,13 +1088,10 @@
       mx.textContent = "×" + list.length;
     } else if (mx) mx.remove();
   }
-  /* crosshair spread: the game's own crosshair radius (stage px), so the ticks sit where vanilla's would */
   function setSpread(c) {
     var g = c && c.spread !== undefined ? clamp(+c.spread, 4, 260) : 8,
       ring = $("ring");
     ring.classList.toggle("live", !!(c && c.spread !== undefined));
-    /* follow vanilla: the ring only while its ticks show (a drawn gun), the dot only with them or vanilla's own dot;
-       nothing with no weapon, a holstered weapon or melee. Missing fields (replay, older plugin) keep both. */
     $("cross").classList.toggle("noring", !!c && c.reticle === false);
     $("cross").classList.toggle("nodot", !!c && c.dot === false);
     if (ring._g === g) return;
@@ -1157,7 +1108,6 @@
   function targetMutated(m) {
     var t = S.target;
     if (!t) return;
-    // The game side sends the target with its new mutation in the same message; don't list it twice.
     var known = (t.mutations || []).some(function(x) {
       return x.name === m.name;
     });
@@ -1209,8 +1159,6 @@
     $("wLegTxt").textContent = S.weaponLegendary.join(" · ");
   }
 
-  /* activation prompt under the crosshair: key comes from PrismaUI's GetButtonPrompt (keyboard text or
-     "gp:<button>"), text is the game's activate label (Alternative Activation Prompts changes it) */
   function setPrompt(p) {
     var h = $("hint");
     if (!p) {
@@ -1218,7 +1166,6 @@
       return;
     }
     if (p.keys) {
-      /* vanilla's rollover: the target's name over one or more button hints */
       h.innerHTML = (p.name ? '<b class="h-name' + (p.crime ? " crime" : "") + '">' + esc(p.name) + "</b>" : "") +
         '<span class="h-keys">' + p.keys.map(function(k) {
           return "<span>" + (k.key ? '<span class="kbd">' + esc(String(k.key).replace(/^gp:/, "")) + "</span> " : "") + esc(k.text) + "</span>";
@@ -1248,7 +1195,6 @@
       return a + (i.w || 0) * (i.q || 1);
     }, 0);
     $("lWt").textContent = l.locked ? "LOCKED" : wt > 0 ? "WT " + wt.toFixed(1) : items.length > 7 ? items.length + " ITEMS" : "";
-    /* long containers scroll: a window of 7 rows that follows the selection */
     var start = Math.max(0, Math.min(sel - 3, items.length - 7)),
       shown = items.slice(start, start + 7);
     $("lList").innerHTML = l.locked ? '<li><span style="color:var(--muted)">Locked</span><small></small></li>' :
@@ -1275,9 +1221,6 @@
     locationRemaining = Math.max(0, locationRemaining - dt);
     renderLocationVisibility();
   }
-  /* Walking along a location's edge flips between it and the bare region ("Military Checkpoint" <->
-     "Commonwealth"). Stepping out into the region is not an arrival, and stepping back into the place
-     you left within a minute is not one either; only real arrivals restart the name and wake vitals. */
   var locationLeft = null,
     locationLeftAt = 0;
 
@@ -1310,9 +1253,6 @@
     if (announce) wake($("vitals"));
   }
 
-  /* ---------- explosives (Explosives Cycler) ---------- */
-  /* reads the player's throwable slot. Vanilla equips it from the Pip-Boy or favorites,
-     Explosives Cycler equips it from its lists; either way the HUD only sees what's equipped. */
   function setExplosive(x, announce) {
     var nr = $("nadeName").parentNode;
     if (!x) {
@@ -1349,7 +1289,6 @@
       }, 500);
     }
     if (S.grenades <= 0) {
-      /* last one thrown: show 00 in red for a moment, then fold the row away */
       nr.classList.add("out");
       clearTimeout(nr._o);
       nr._o = setTimeout(function() {
@@ -1361,7 +1300,6 @@
     wake($("kit"));
   }
 
-  /* ---------- game clock (HoloTime) ---------- */
   var SUN = '<circle cx="6" cy="6" r="2.4"/><path d="M6 .8v1.3M6 9.9v1.3M.8 6h1.3M9.9 6h1.3M2.3 2.3l.9.9M8.8 8.8l.9.9M2.3 9.7l.9-.9M8.8 3.2l.9-.9"/>';
   var MOON = '<path d="M8.6 1.6a4.6 4.6 0 1 0 1.8 7.2A4 4 0 0 1 8.6 1.6z"/>';
   var lastClock = "";
@@ -1395,7 +1333,6 @@
     renderClock();
   }
 
-  /* ---------- companion card (Companion Status + Visible Companion Affinity) ---------- */
   var CICON = {
     human: '<circle cx="12" cy="8.5" r="3.4"/><path d="M5.5 19.5c.8-3.8 3.4-5.8 6.5-5.8s5.7 2 6.5 5.8"/>',
     dog: '<path d="M7.6 6.5L5 9.8l2.3 1.6M16.4 6.5L19 9.8l-2.3 1.6"/><path d="M7.8 7.2c1.1-1.2 2.5-1.7 4.2-1.7s3.1.5 4.2 1.7l-.6 6.6c-.3 2.4-1.8 3.7-3.6 3.7s-3.3-1.3-3.6-3.7z"/><path d="M11 15h2l-1 1.1z"/><circle cx="10.2" cy="11" r=".5"/><circle cx="13.8" cy="11" r=".5"/>',
@@ -1416,7 +1353,6 @@
       if (a >= RANKS[i][0]) return RANKS[i][1];
     return "Hatred";
   }
-  /* Liga of my Companions can field up to 16; the row wraps and folds the rest into +N */
   var PORTRAITS = {
     piper: "piper",
     nick: "nick",
@@ -1433,9 +1369,6 @@
     hancock: "hancock",
     x6: "x6-88"
   };
-  /* Candidates in order: a base companion from PORTRAITS, then the whole name ("blood-rose", "f4-111"),
-     then each word of three or more letters ("gage" for Porter Gage). Add-ons just drop portraits/<name>.svg;
-     missing files fail quietly and the next candidate loads, ending at the type icon. */
   function portraitCandidates(c) {
     if (c.portrait) return [c.portrait];
     if (!LOCAL) return [];
@@ -1534,7 +1467,6 @@
       box.appendChild(more);
       more.textContent = "+" + (list.length - shown.length);
     } else if (more) more.remove();
-    /* companion compass dots come from the plugin's markers list, at their real bearings */
     renderCompass(true);
   }
 
@@ -1620,7 +1552,6 @@
     wake($("vitals"));
   }
 
-  /* ---------- quest tracker (Active Quest HUD) ---------- */
   var trItems = {};
 
   function setTracker(tr) {
@@ -1682,7 +1613,6 @@
     $("trMore").hidden = !others.length;
     box.classList.add("show");
   }
-  /* ---------- stealth (sneak / detection) ---------- */
   var EYES = {
     hidden: '<path d="M3 11c2.6 3 5.6 4.5 9 4.5s6.4-1.5 9-4.5"/><path d="M6.2 14.2L5 16.2M12 15.5V18M17.8 14.2L19 16.2"/>',
     caution: '<path d="M2.8 12c2.6 3.4 5.7 5 9.2 5s6.6-1.6 9.2-5"/><path d="M2.8 12h18.4"/><path class="fillc" d="M9.2 12a2.8 2.8 0 0 0 5.6 0z"/>',
@@ -1746,7 +1676,6 @@
     var b = $("b-crouch");
     if (b) b.setAttribute("aria-pressed", st.sneaking ? "true" : "false");
   }
-  /* the game's sneak attack multiplier for the equipped weapon and current target, from the plugin */
   function sneakText(mult) {
     var m = +mult;
     return m > 0 ? "Sneak attack ×" + (Math.round(m * 10) / 10) : "";
@@ -1760,7 +1689,6 @@
     renderStealth();
   }
 
-  /* ---------- HUD context: what shows where ---------- */
   var CTX_GROUPS = ["msg", "target", "feed", "tracker", "alert", "banner", "mines", "cross", "stealth", "subs", "compass", "party", "vitals", "effects", "kit"];
   var CTX_GROUP_LABEL = {
     msg: "Messages",
@@ -1779,7 +1707,6 @@
     effects: "Effects",
     kit: "Weapon"
   };
-  /* listed from highest priority down; anything not named in hide/dim is shown */
   var CTX = [{
       id: "hidden",
       label: "HUD toggled off",
@@ -1851,8 +1778,6 @@
       hide: []
     }
   ];
-  /* open game menus -> situation. Vanilla names are the game's own; mod menu names are taken from their
-     files and should be confirmed in game (PrismaDebugger can log open menus). */
   var MENU_CTX = {
     PipboyMenu: "menu",
     ContainerMenu: "menu",
@@ -1981,7 +1906,6 @@
         if (calmWake[g] || el.closest(".awake") || el.querySelector(".awake") ||
           (g === "vitals" && S.hpMax > 0 && S.hp / S.hpMax < .35)) r = "s";
       }
-      // Only the reticle is exempt; prompt, quick loot and the other cross-group widgets retain their rules.
       if ((el.hasAttribute("data-crosshair") || el.hasAttribute("data-hitmarker")) && cx.id === "ads" && S.ctx.thirdPerson &&
         !S.settings.hideThirdPersonAimCrosshair && S.ctx.rules.ads !== "hide") r = "s";
       if (el.hasAttribute("data-crosshair") && !S.settings.showCrosshair) r = "h";
@@ -2022,9 +1946,6 @@
     renderContext();
   }
 
-  /* ---------- karma (KARMA, Nexus 80425) ----------
-     alignment -2..2 from KARM_PlayerAlignmentValue (breakpoints +/-250 and +/-750); title is the mod's
-     level-dependent karma title. */
   var ALIGN = {
     "-2": "Very evil",
     "-1": "Evil",
@@ -2065,8 +1986,6 @@
     wake($("vitals"));
   }
 
-  /* ---------- reputation (REPUTATION, Nexus 79394) ----------
-     New Vegas style fame and infamy per faction; title is one of the mod's 12 (Idolized ... Vilified, Wild Child...). */
   var REP_GOOD = {
       "Idolized": 1,
       "Liked": 1,
@@ -2122,7 +2041,6 @@
     }
   }
 
-  /* ---------- tracked challenges (CHALLENGES, Nexus 76347) ---------- */
   S.challenges = [];
   var chEls = {};
 
@@ -2199,9 +2117,6 @@
     }, 2500);
   }
 
-  /* ---------- mines ----------
-     The plugin finds armed mines that are counting down at the player (what Mine Detector HUD detects) and sends
-     their screen position every frame while any is shown. Off-screen mines send a bearing relative to the camera. */
   S.mines = [];
   var mineEls = {},
     minePool = [],
@@ -2303,7 +2218,6 @@
     }
     var chip = $("mineChip");
     if (chip.className !== "w mchip") chip.className = "w mchip";
-    /* compass: one marker per mine that has an absolute bearing; repaint only when a marker or its readout changed */
     var ids = {},
       changed = false;
     list.forEach(function(m) {
@@ -2361,9 +2275,6 @@
     renderMines();
   }
 
-  /* ---------- settlement attacks ----------
-     SKK Settlement Attack System holds the attack until you arrive, then spawns 2-64 attackers.
-     States: pending (on the way), active (fighting), won, lost (vanilla: you didn't make it), ended (called off). */
   S.attack = null;
 
   function attackMarker(a) {
@@ -2395,7 +2306,6 @@
       el.className = "w salert";
       return;
     }
-    // A pending attack only gets the card once you're close (100 m); until then the compass marker carries it.
     var mk = S.markers.filter(function(x) {
         return x.id === "atk";
       })[0],
@@ -2519,7 +2429,6 @@
     renderAttack();
   }
 
-  /* ---------- survival ---------- */
   S.survival = {
     on: false,
     fatigue: 0,
@@ -2710,7 +2619,6 @@
     }, 90);
   }
 
-  /* ---------- active effects (chems, meds, drinks, addictions) ---------- */
   var FXI = {
     bolt: '<path class="ic" d="M24.5 12l-8 12h6l-2 8 8-12h-6z"/>',
     shield: '<path class="ic" d="M22 12.5l8 3v5.5c0 5-3.4 8.6-8 10.5-4.6-1.9-8-5.5-8-10.5v-5.5z"/><path class="ic" d="M18.5 22l2.5 2.5 4.5-5"/>',
@@ -2738,7 +2646,6 @@
   var CIRC_FX = 2 * Math.PI * 19;
   S.effects = [];
   var fxPaused = false;
-  /* game-time effects (illnesses, Well Rested) count down at the game's timescale and read in days/hours */
   function fmtGame(sec) {
     var h = Math.max(0, sec / 3600);
     if (h >= 24) return Math.floor(h / 24) + "d " + Math.floor(h % 24) + "h";
@@ -2865,8 +2772,6 @@
     $("fxJet").classList.toggle("on", hasEffect("jet"));
   }, 200);
 
-  /* ---------- single entry point for the F4SE plugin ---------- */
-  /* settings: mirrors Phosphor's MCM page; the plugin forwards the saved values in one message */
   S.settings = {
     showCrosshair: true,
     showHitMarkers: true,
@@ -2945,7 +2850,6 @@
     if (x.mutationNotices !== undefined) S.mutationFeed = x.mutationNotices === "feed";
     if (x.contextRules) Object.assign(S.ctx.rules, x.contextRules);
     if (x.idleOpacity !== undefined) stage.style.setProperty("--idle", clamp(+x.idleOpacity, .2, 1));
-    /* accessibility: text (ring captions cap at 130% to keep the vitals row clear of the compass) and compass icon size multipliers (MCM Look > Text size / Compass icon size) */
     if (x.textScale !== undefined) {
       S.settings.textScale = clamp(+x.textScale || 1, .8, 1.5);
       stage.style.setProperty("--ts", S.settings.textScale);
@@ -2993,7 +2897,6 @@
 
   function applyUpdate(data) {
     var d = typeof data === "string" ? JSON.parse(data) : (data || {});
-    /* in game the stage stays invisible until the first full snapshot, so preview sample values never show */
     if (d.snapshot || d.hp !== undefined) {
       if (stage.classList.contains("awaiting")) {
         calmSince = null;
@@ -3028,8 +2931,6 @@
       vit = true;
       pop($("k-rad"), "+" + d.radsGain + " RADS");
     }
-    /* in game the plugin sends xpGain together with the exact xp/level after the gain; the gain is then only
-       the "+N XP" pop and the bar animates to the real values. The levelUp message does the banner. */
     if (d.xpGain) addXP(+d.xpGain, (d.xp !== undefined || d.level !== undefined) ? {
       xp: d.xp,
       level: d.level
@@ -3056,7 +2957,6 @@
     if (d.perkKey !== undefined) S.perkKey = d.perkKey;
     if (d.levelUp) showLevelUp(d.levelUp.from, d.levelUp.to, d.levelUp.perks || (d.levelUp.to - d.levelUp.from), d.levelUp.skills || 0);
     if (d.heading !== undefined) S.heading = +d.heading;
-    // The game side owns the list it sends; the HUD keeps its own settlement-attack and legendary-drop markers.
     if (d.markers) S.markers = d.markers.concat(S.markers.filter(function(m) {
       return m.id === "atk" || String(m.id).indexOf("loot:") === 0;
     }));
@@ -3108,7 +3008,6 @@
     if (d.settings) applySettings(d.settings);
     if (d.notify) notify(d.notify.text, d.notify.sub, d.notify.kind, d.notify.ms, d.notify.icon);
     if (d.quest) quest(d.quest);
-    /* null hides: in game the plugin mirrors vanilla's own show/hide timing */
     if (d.message === null) {
       clearTimeout($("msg")._h);
       $("msg").classList.remove("show");
@@ -3198,7 +3097,6 @@
     state: S
   };
 
-  /* ---------- preview scene (hidden in game) ---------- */
   function paintScene() {
     var c = $("scene"),
       x = c.getContext("2d"),
@@ -3307,7 +3205,6 @@
     x.fillRect(0, 0, 1920, 1080);
   }
 
-  /* ---------- initial state ---------- */
   renderVitals();
   renderXP();
   renderAmmo();
@@ -3409,8 +3306,6 @@
     timescale: 20
   });
 
-  /* compass drift */
-  /* compass: slow look-around drift plus Turn buttons that ease the view */
   var baseTarget = 20,
     baseCur = 20,
     t0 = performance.now();
@@ -3432,7 +3327,6 @@
     })(t0);
   }
 
-  /* demo controls */
   var ITEMS = [
     ["Purified Water", "+1 · WT 1.0", "item"],
     ["Mutfruit", "+2 · WT 0.2", "item"],
@@ -3452,7 +3346,6 @@
     ii = 0,
     lastUser = 0;
 
-  /* demo quest log: drives the tracker, the compass markers and the banner together */
   var QS = {
     sig: {
       title: "Signal in the Static",
@@ -3667,7 +3560,6 @@
     return l[Math.floor(Math.random() * l.length)];
   }
 
-  /* preview stand-ins for the game screens */
   var MOCK_LABEL = {
     ads: "Game: aiming down iron sights",
     scope: "Game: scope view (Sniper Scope Overlay)",
@@ -3692,7 +3584,6 @@
   };
   window.__ctxMock(ctxActive());
 
-  /* demo durations are shortened so you can watch them run out */
   var FX_DEF = {
     stim: {
       name: "Stimpak",
@@ -3954,7 +3845,7 @@
         hitmark(kill);
         setTarget(t);
         if (!kill && t.legendary && t.mutateAt !== undefined && t.pct <= t.mutateAt) {
-          t.mutateAt = Math.random() < .45 ? t.pct * .5 : undefined; /* small chance it mutates again */
+          t.mutateAt = Math.random() < .45 ? t.pct * .5 : undefined;
           var pool = MUT_POOL.filter(function(m) {
             return !(t.mutations || []).some(function(x) {
               return x.name === m.name;
@@ -4258,7 +4149,6 @@
       wake($("compass"));
     },
     cycle: function() {
-      /* Cycler: next in its list. Vanilla: pick another throwable from favorites. Same result on the HUD. */
       var j = equipNext(S.explosive ? ei : EXPL.length - 1);
       if (j < 0) return;
       ei = j;
@@ -4802,7 +4692,6 @@
       b.textContent = "Power armor: " + (on ? "on" : "off");
     }
   };
-  /* sample mutation names in the spirit of the mod's lists; the plugin sends the real effect names */
   var MUT_POOL = [{
       name: "Ballistic hide",
       kind: "defense"
@@ -4841,7 +4730,7 @@
   ];
   var legDrops = 0,
     pendingDrop = null;
-  S.perkKey = "K"; /* sample: LevelUpMenuEx's hotkey is whatever you bind in its settings */
+  S.perkKey = "K";
   var KTITLE = {
     "-2": "Devil",
     "-1": "Marauder",
@@ -4908,7 +4797,6 @@
     ACT[b.dataset.act](b);
   });
 
-  /* gentle ambient activity while nobody is clicking */
   setInterval(function() {
     if (Date.now() - lastUser < 20000) return;
     var r = Math.random();
