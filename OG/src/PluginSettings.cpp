@@ -31,6 +31,7 @@ void SendSettings() {
                                             key ? key->code : 0, key ? key->modifiers : 0);
     }
     dropMarkers = settings.value("legendaryDropMarkers", true);
+    Phosphor::Mines::SetEnabled(settings.value("mineWarnings", true));
     if (settings.contains("contextRules") && settings["contextRules"].is_object())
         dialogueRule = settings["contextRules"].value("dialogue", std::string("recommended"));
     Send(Json{{"settings", settings}, {"perkKey", Phosphor::Mods::PerkMenuKey()}});

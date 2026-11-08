@@ -42,6 +42,7 @@ struct PluginOptions {
     bool engineQuests = true;
     bool engineProbe = false;
     bool messageLog = false;
+    bool perfLog = false;
 };
 
 extern API* api;
@@ -51,6 +52,8 @@ extern bool realMenuPaused, replayPaused, settingsDirty;
 extern bool liveStarted, liveShown;
 extern bool nativeHudActive, nativeRestorePending;
 extern std::atomic<bool> toggleRequested;
+extern std::size_t perfSends, perfBytes;
+extern double perfSendMs, perfSendMaxMs;
 extern std::atomic<unsigned> generation;
 extern Phosphor::Replay replay;
 extern PluginOptions options;

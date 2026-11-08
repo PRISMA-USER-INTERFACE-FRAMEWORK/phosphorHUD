@@ -73,7 +73,8 @@ One scheduler on the game thread, two rates, one message per tick:
 
 | Tier | Rate | Fields |
 |---|---|---|
-| Fast | ~30 Hz | `heading`, `target.pct`, `clip`, `mines` (only while non-empty), `stealth.level` (only while sneaking), `context.ads` |
+| Fast | ~30 Hz | `heading`, `target.pct`, `clip`, `stealth` and `context` (re-read the moment the player starts or stops sneaking or aiming down sights; `stealth.level` otherwise refreshes at the slow rate) |
+| Mines | every frame while shown | `mines` (only while non-empty): a separate game-thread task samples the camera each frame so the markers follow the view; idle polling stays at ~50 Hz |
 | Slow | ~4 Hz | vitals, `needs`, `survival`, `limbs`, `weight`, `party` hp/state, `markers` distances, `tracker` distance, `effects` resync (every ~5 s) |
 | Events | on fire | `notify`, `quest`, `xpGain`, `levelUp`, `subtitle`, `message`, `prompt`, `loot`, `target` (new target), `companionReact`, `legendaryLoot`, `targetMutated`, `illness`/`cure`, `settlementAttack`, `karma.change`, `reputation`, `challengeComplete`, `explosive`, `weapon`, `gear`, `context` (menu open/close), `paused` |
 

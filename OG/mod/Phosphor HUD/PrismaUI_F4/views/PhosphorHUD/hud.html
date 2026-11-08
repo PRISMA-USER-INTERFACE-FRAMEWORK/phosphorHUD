@@ -93,7 +93,7 @@
         <svg class="hit" id="hit" viewBox="0 0 32 32" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 5l6 6M27 5l-6 6M5 27l6-6M27 27l-6-6"/></svg>
       </div>
       </div><div class="cg" data-g="cross">
-      <div class="w sneakatk" id="sneakAtk">Sneak attack</div>
+      <div class="w sneakatk" id="sneakAtk"></div>
       <div class="w hint" id="hint"><span class="kbd">Hold V</span> Workbench</div>
 
       <!-- mines (replaces Mine Detector HUD's markers) -->
@@ -409,7 +409,7 @@ hudUpdate('{"location":"Diamond City","region":"Commonwealth","faction":"Diamond
 hudUpdate('{"challenges":[{"id":"hitdeck","name":"Hit the Deck","cur":31,"max":50}]}')
 hudUpdate('{"challengeComplete":{"id":"hitdeck","name":"Hit the Deck","reward":"Perk: Hit the Deck","xp":0}}')
 
-// mines: send ~10-20x a second while any mine is counting down at the player (what Mine Detector HUD detects).
+// mines: send once per frame while any mine is shown (what Mine Detector HUD detects), and a final [] when none is.
 // x/y are stage pixels (1920x1080) from projecting the mine's position; off-screen mines send onScreen:false and a
 // bearing relative to the camera (0 = straight ahead, 90 = right) instead. b = compass bearing for a compass marker.
 hudUpdate('{"mines":[{"id":"ff012a","name":"Frag Mine","x":905,"y":792,"dist":5,"left":2.1,"total":4.5,"disarm":true,"b":31}]}')

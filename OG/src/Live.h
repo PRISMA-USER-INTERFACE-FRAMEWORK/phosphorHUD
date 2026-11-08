@@ -31,6 +31,9 @@ Json ReadFast(Raw& raw);
 Json ReadVitals(Raw& raw);
 // Everything else Stage 1 sends: vitals, level, location, combat, weapon, grenade, context.
 Json ReadSlow(Raw& raw);
+Json ReadContext(Raw& raw);
+bool IsAds();
+bool IsSneaking();
 // Consumable effects on the player (food, drinks, chems, meds), one entry per item, longest timer wins.
 // `key` lists the item ids so the caller can tell when the set changes.
 // Effects whose total length is over maxSeconds are left out (0 = keep all); at most 10, soonest to end first.

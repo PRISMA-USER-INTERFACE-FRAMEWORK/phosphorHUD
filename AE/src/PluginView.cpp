@@ -6,6 +6,8 @@ bool domReady = false, dataReady = false, session = false, displaying = false;
 bool realMenuPaused = false, replayPaused = false, settingsDirty = true;
 std::atomic<bool> toggleRequested{false};
 std::atomic<unsigned> generation{0};
+std::size_t perfSends = 0, perfBytes = 0;
+double perfSendMs = 0, perfSendMaxMs = 0;
 Phosphor::Replay replay;
 
 namespace {
@@ -38,7 +40,15 @@ bool Queue(std::function<void()> task) {
 void Send(const Json& message) {
     if (!domReady || !ViewValid()) return;
     const auto serialized = message.dump(-1, ' ', false, Json::error_handler_t::replace);
-    api->InteropCall(g_view, "hudUpdate", serialized.c_str());
+    if (options.perfLog) {
+        const auto begin = Clock::now();
+        api->InteropCall(g_view, "hudUpdate", serialized.c_str());
+        const double ms = std::chrono::duration<double, std::milli>(Clock::now() - begin).count();
+        ++perfSends;
+        perfBytes += serialized.size();
+        perfSendMs += ms;
+        perfSendMaxMs = std::max(perfSendMaxMs, ms);
+    } else api->InteropCall(g_view, "hudUpdate", serialized.c_str());
     if (messageLog) messageLog->debug("{}", serialized);
 }
 
@@ -244,6 +254,7 @@ void HandleMessage(F4SE::MessagingInterface::Message* message) {
             if (const auto it = ini.find("bEngineQuestData"); it != ini.end()) options.engineQuests = it->second != 0;
             if (const auto it = ini.find("bEngineProbe"); it != ini.end()) options.engineProbe = it->second != 0;
             if (const auto it = ini.find("bMessageLog"); it != ini.end()) options.messageLog = it->second != 0;
+            if (const auto it = ini.find("bPerfLog"); it != ini.end()) options.perfLog = it->second != 0;
             spdlog::info("Options: live HUD {}, hide vanilla meters {} (widgets {}, text {}, crosshair {}, flashlight {}, keep mask {})",
                          options.live, options.hideVanilla, options.hideWidgets, options.hideText, options.hideCrosshair,
                          options.hideFlashlight, options.keepWidgetMask);

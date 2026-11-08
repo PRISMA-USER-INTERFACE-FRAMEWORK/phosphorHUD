@@ -591,7 +591,8 @@
       270: "W",
       315: "NW"
     };
-  var lastHdg = null;
+  var lastHdg = null,
+    lastHdgText = null;
 
   function norm(d) {
     return ((d % 360) + 360) % 360;
@@ -669,8 +670,15 @@
       var tracked = (questy || (type === "pin" && m.id === "player-waypoint")) && m.active !== false;
       var vis = ad <= 88 || tracked;
       var op = !vis ? 0 : ad <= 55 ? 1 : ad <= 88 ? 1 - (ad - 55) / 33 * .7 : .75;
-      el.style.left = (clamp(delta, -88, 88) * PX + 320).toFixed(1) + "px";
-      el.style.opacity = op;
+      var left = (clamp(delta, -88, 88) * PX + 320).toFixed(1) + "px";
+      if (el._left !== left) {
+        el._left = left;
+        el.style.left = left;
+      }
+      if (el._op !== op) {
+        el._op = op;
+        el.style.opacity = op;
+      }
       var cls = "mk " + type;
       if (questy && m.active === false) cls += " inactive";
       if (m.disc === false) cls += " undisc";
@@ -711,7 +719,11 @@
       }
       cf.className = "cfocus show " + ft;
     } else cf.className = "cfocus";
-    $("hdg").textContent = ("00" + Math.round(norm(h))).slice(-3) + "°";
+    var hdgText = ("00" + Math.round(norm(h))).slice(-3) + "°";
+    if (hdgText !== lastHdgText) {
+      lastHdgText = hdgText;
+      $("hdg").textContent = hdgText;
+    }
   }
 
   /* ---------- weapon, needs, limbs ---------- */
@@ -1724,9 +1736,9 @@
     $("stL").style.width = f;
     $("stR").style.width = f;
     var atk = $("sneakAtk"),
-      atkText = sneakText();
+      atkText = sneakText(st.mult);
     if (atk.textContent !== atkText) atk.textContent = atkText;
-    atk.classList.toggle("show", st.sneaking && state === "hidden" && !!S.target);
+    atk.classList.toggle("show", st.sneaking && state === "hidden" && !!S.target && !!atkText);
     if (S.target) {
       $("tLvl").textContent = "LVL " + (S.target.level || 1) + (st.sneaking && state === "hidden" ? " · Unaware" : "");
       renderMutations(S.target);
@@ -1735,9 +1747,9 @@
     if (b) b.setAttribute("aria-pressed", st.sneaking ? "true" : "false");
   }
   /* the game's sneak attack multiplier for the equipped weapon and current target, from the plugin */
-  function sneakText() {
-    var m = +S.stealth.mult;
-    return m > 0 ? "Sneak attack ×" + (Math.round(m * 10) / 10) : "Sneak attack";
+  function sneakText(mult) {
+    var m = +mult;
+    return m > 0 ? "Sneak attack ×" + (Math.round(m * 10) / 10) : "";
   }
 
   function setStealth(x) {
@@ -1985,7 +1997,7 @@
 
   function renderRulesTable() {
     var t = $("rulesTable");
-    if (!t) return;
+    if (!t || IN_GAME) return;
     var cur = S.ctxId,
       html = "<tr><th>Situation</th>" + CTX_GROUPS.map(function(g) {
         return "<th>" + CTX_GROUP_LABEL[g] + "</th>";
@@ -2189,69 +2201,112 @@
 
   /* ---------- mines ----------
      The plugin finds armed mines that are counting down at the player (what Mine Detector HUD detects) and sends
-     their screen position each frame. Off-screen mines send a bearing relative to the camera instead. */
+     their screen position every frame while any is shown. Off-screen mines send a bearing relative to the camera. */
   S.mines = [];
-  var mineEls = {};
+  var mineEls = {},
+    minePool = [],
+    arrowLive = [],
+    arrowPool = [];
+  var MINE_MAX = 8,
+    MINE_RX = 840,
+    MINE_RY = 440;
   var MINE_TRI = '<svg viewBox="0 0 44 44"><circle class="trk" cx="22" cy="22" r="18"/><circle class="val" cx="22" cy="22" r="18" pathLength="100" transform="rotate(-90 22 22)"/><path class="tri" d="M22 11.5l9.5 16.5h-19z"/><path class="ex" d="M22 17.5v5M22 25.2v.1"/></svg><small></small>';
+
+  function mineNode() {
+    var el = minePool.pop();
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "mn";
+      el.innerHTML = MINE_TRI;
+      el._val = el.querySelector(".val");
+      el._lbl = el.querySelector("small");
+    }
+    return el;
+  }
+
+  function mineArrow(dir, i, bearing) {
+    var a = arrowLive[i];
+    if (!a) {
+      a = arrowPool.pop() || document.createElement("i");
+      dir.appendChild(a);
+      arrowLive[i] = a;
+    }
+    var rad = bearing * Math.PI / 180,
+      tf = "translate3d(" + (Math.sin(rad) * MINE_RX).toFixed(0) + "px," + (-Math.cos(rad) * MINE_RY).toFixed(0) + "px,0) rotate(" + bearing.toFixed(0) + "deg)";
+    if (a._tf !== tf) {
+      a._tf = tf;
+      a.style.transform = tf;
+    }
+  }
 
   function renderMines() {
     var layer = $("mineLayer"),
       dir = $("mineDir"),
       keep = {},
-      nearest = null,
-      dirHtml = "";
-    S.mines.forEach(function(m) {
+      arrows = 0,
+      list = S.mines.length > MINE_MAX ? S.mines.slice(0, MINE_MAX) : S.mines;
+    list.forEach(function(m) {
       var frac = m.total ? clamp(m.left / m.total, 0, 1) : 1,
         hot = frac < 0.35;
-      if (!nearest || m.dist < nearest.dist) nearest = m;
       if (m.onScreen === false) {
-        dirHtml += '<i style="transform:rotate(' + (+m.bearing || 0).toFixed(1) + 'deg)"></i>';
+        mineArrow(dir, arrows++, +m.bearing || 0);
         return;
       }
       var el = mineEls[m.id];
       if (!el) {
-        el = mineEls[m.id] = document.createElement("div");
-        el.className = "mn";
-        el.innerHTML = MINE_TRI;
+        el = mineEls[m.id] = mineNode();
         layer.appendChild(el);
       }
       keep[m.id] = 1;
-      var sc = clamp(1.45 - m.dist / 35, 0.55, 1.45);
-      el.style.left = m.x.toFixed(1) + "px";
-      el.style.top = m.y.toFixed(1) + "px";
-      el.style.transform = "scale(" + sc.toFixed(2) + ")";
-      el.classList.toggle("hot", hot);
-      el.style.setProperty("--beep", (0.12 + 0.55 * frac).toFixed(2) + "s");
-      el.querySelector(".val").setAttribute("stroke-dasharray", (frac * 100).toFixed(1) + " 100");
-      el.querySelector("small").textContent = Math.round(m.dist) + " m";
+      var dist = +m.dist || 0,
+        r = Math.round(clamp(15 - dist * 0.3, 7, 13)),
+        tf = "translate3d(" + (+m.x || 0).toFixed(0) + "px," + (+m.y || 0).toFixed(0) + "px,0)",
+        beep = (0.12 + 0.55 * frac).toFixed(2) + "s",
+        dash = (frac * 100).toFixed(1) + " 100",
+        lbl = Math.round(dist) + " m";
+      if (el._r !== r) {
+        el._r = r;
+        el.style.setProperty("--r", r + "px");
+      }
+      if (el._tf !== tf) {
+        el._tf = tf;
+        el.style.transform = tf;
+      }
+      if (el._hot !== hot) {
+        el._hot = hot;
+        el.classList.toggle("hot", hot);
+      }
+      if (el._beep !== beep) {
+        el._beep = beep;
+        el.style.setProperty("--beep", beep);
+      }
+      if (el._dash !== dash) {
+        el._dash = dash;
+        el._val.setAttribute("stroke-dasharray", dash);
+      }
+      if (el._lblText !== lbl) {
+        el._lblText = lbl;
+        el._lbl.textContent = lbl;
+      }
     });
     Object.keys(mineEls).forEach(function(id) {
       if (!keep[id]) {
         mineEls[id].remove();
+        minePool.push(mineEls[id]);
         delete mineEls[id];
       }
     });
-    if (dir._h !== dirHtml) {
-      dir.innerHTML = dirHtml;
-      dir._h = dirHtml;
+    while (arrowLive.length > arrows) {
+      var gone = arrowLive.pop();
+      gone.remove();
+      arrowPool.push(gone);
     }
     var chip = $("mineChip");
-    /* The game's own prompt already names the mine with its real keys (Take / Equip), so the extra name chip stays
-       hidden; the marker on the mine carries the distance and the fuse. */
-    if (false && nearest) {
-      var hotN = nearest.total && nearest.left / nearest.total < 0.35;
-      chip.className = "w mchip show" + (hotN ? " hot" : "");
-      var html = '<svg viewBox="0 0 14 14"><path d="M7 1.5l5.5 10h-11z"/></svg>' + esc(nearest.name || "Mine") + " <b>" + Math.round(nearest.dist) + " m</b>" +
-        (nearest.left !== undefined ? " <b>" + Math.max(0, nearest.left).toFixed(1) + "s</b>" : "") +
-        (nearest.disarm ? '<span class="kbd">E</span> Disarm' : "");
-      if (chip._h !== html) {
-        chip.innerHTML = html;
-        chip._h = html;
-      }
-    } else chip.className = "w mchip";
-    /* compass: one marker per mine that has an absolute bearing */
-    var ids = {};
-    S.mines.forEach(function(m) {
+    if (chip.className !== "w mchip") chip.className = "w mchip";
+    /* compass: one marker per mine that has an absolute bearing; repaint only when a marker or its readout changed */
+    var ids = {},
+      changed = false;
+    list.forEach(function(m) {
       if (m.b === undefined || !S.settings.mineCompass) return;
       var id = "mine:" + m.id;
       ids[id] = 1;
@@ -2265,15 +2320,19 @@
           label: m.name || "Mine"
         };
         S.markers.push(mk);
+        changed = true;
       }
+      var meters = Math.round(+m.dist || 0);
+      if (mk.b !== m.b || mk._m !== meters) changed = true;
       mk.b = m.b;
       mk.dist = m.dist;
+      mk._m = meters;
     });
     var before = S.markers.length;
     S.markers = S.markers.filter(function(x) {
       return String(x.id).indexOf("mine:") !== 0 || ids[x.id];
     });
-    if (before !== S.markers.length || Object.keys(ids).length) renderCompass(true);
+    if (changed || before !== S.markers.length) renderCompass(true);
   }
 
   function mineBoom(m) {
@@ -2698,7 +2757,11 @@
     var el = e.el;
     var frac = e.duration > 0 ? clamp(e.remaining / e.duration, 0, 1) : 1;
     el._val.style.strokeDashoffset = CIRC_FX * (1 - frac);
-    el._time.textContent = e.duration > 0 ? (e.game ? fmtGame(e.remaining) : fmt(e.remaining)) : "∞";
+    var timeText = e.duration > 0 ? (e.game ? fmtGame(e.remaining) : fmt(e.remaining)) : "∞";
+    if (el._timeText !== timeText) {
+      el._timeText = timeText;
+      el._time.textContent = timeText;
+    }
     el.classList.toggle("ending", e.duration > 0 && e.remaining <= (e.game ? 3600 : 10));
   }
 
@@ -2909,12 +2972,23 @@
     renderCompass(true);
   }
 
+  var perf = {
+    n: 0,
+    ms: 0,
+    max: 0
+  };
+
   function hudUpdate(data) {
+    var t0 = performance.now();
     try {
       applyUpdate(data);
     } catch (e) {
       console.error("hudUpdate", e);
     }
+    var spent = performance.now() - t0;
+    perf.n++;
+    perf.ms += spent;
+    if (spent > perf.max) perf.max = spent;
   }
 
   function applyUpdate(data) {
@@ -3081,6 +3155,7 @@
   }
   window.hudUpdate = hudUpdate;
   window.hud = {
+    perf: perf,
     update: hudUpdate,
     notify: notify,
     quest: quest,
@@ -3871,8 +3946,9 @@
       });
       if (S.target && !S.target.dead) {
         var t = S.target;
-        t.pct = clamp(t.pct - (.18 + Math.random() * .16) * (hasEffect("psycho") ? 1.25 : 1) * (sneakHit ? (+S.stealth.mult || 2) : 1), 0, 1);
-        if (sneakHit) pop($("cross"), sneakText());
+        var hitMult = +S.stealth.mult || 2;
+        t.pct = clamp(t.pct - (.18 + Math.random() * .16) * (hasEffect("psycho") ? 1.25 : 1) * (sneakHit ? hitMult : 1), 0, 1);
+        if (sneakHit) pop($("cross"), sneakText(hitMult));
         var kill = t.pct === 0;
         if (kill) t.dead = true;
         hitmark(kill);
@@ -4353,7 +4429,8 @@
       var on = !S.stealth.sneaking;
       setStealth({
         sneaking: on,
-        level: on ? (S.combat ? 70 : 8) : 0
+        level: on ? (S.combat ? 70 : 8) : 0,
+        mult: on ? 2 : null
       });
     },
     noise: function() {
