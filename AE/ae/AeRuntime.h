@@ -8,7 +8,6 @@
 namespace RE {
 namespace Scaleform = ::Scaleform;
 using LIFE_STATE = ACTOR_LIFE_STATE;
-// OG's kSurvival means the modern survival mode (difficulty 6).
 enum class DIFFICULTY_LEVEL { kSurvival = static_cast<int>(DifficultyLevel::kTrueSurvival) };
 }
 
@@ -35,7 +34,6 @@ public:
 };
 }
 
-// Every call is inside PHOSPHOR_AE conditionals; OG does not compile this header.
 #define AE_GATE(key, ...) \
     if (!Phosphor::AE::Enabled(key)) return __VA_ARGS__; \
     Phosphor::AE::ReadScope aeReadScope{key}

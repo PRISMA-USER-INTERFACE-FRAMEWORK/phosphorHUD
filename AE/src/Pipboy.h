@@ -1,7 +1,4 @@
 #pragma once
-// Reads the game's own Pip-Boy data feed (the companion app server on 127.0.0.1:27000).
-// The game fills it with quests, objectives and map markers; this is what its own Pip-Boy shows.
-// Runs on a background thread; the game thread takes copies with Latest().
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -10,23 +7,23 @@
 namespace Phosphor::Pipboy {
 
 struct QuestMarker {
-    std::uint32_t pipId = 0;      // node id in the Pip-Boy database (stable while connected)
-    double x = 0, y = 0, z = 0;   // world units
+    std::uint32_t pipId = 0;
+    double x = 0, y = 0, z = 0;
     bool hasZ = false;
-    bool onDoor = false;          // the objective is behind this load door
+    bool onDoor = false;
     std::string name;
-    std::vector<std::uint32_t> quests;  // quest form ids this marker belongs to
+    std::vector<std::uint32_t> quests;
 };
 
 struct Location {
     std::uint32_t pipId = 0;
     double x = 0, y = 0;
     std::string name;
-    int type = -1;            // the Pip-Boy's map marker type number
+    int type = -1;
     bool discovered = false;
     bool visible = true;
-    bool workshop = false;    // a settlement (has WorkshopOwned)
-    std::uint32_t markerFormId = 0;  // the map marker reference ("LocationMarkerFormId")
+    bool workshop = false;
+    std::uint32_t markerFormId = 0;
 };
 
 struct Objective {
@@ -36,24 +33,24 @@ struct Objective {
 };
 
 struct Quest {
-    std::uint32_t formId = 0;     // 0 is the Miscellaneous group
+    std::uint32_t formId = 0;
     std::string text;
-    bool active = false;          // tracked in the Pip-Boy
-    std::vector<Objective> objectives;  // enabled objectives only, in Pip-Boy order
+    bool active = false;
+    std::vector<Objective> objectives;
 };
 
 struct Snapshot {
     bool connected = false;
-    std::uint64_t version = 0;    // bumps on every data update
+    std::uint64_t version = 0;
     bool hasPlayer = false;
-    double playerX = 0, playerY = 0;  // Map.World.Player (last exterior position)
+    double playerX = 0, playerY = 0;
     std::optional<CustomWaypoint> customWorld, customLocal;
     std::vector<QuestMarker> markers;
     std::vector<Location> locations;
     std::vector<Quest> quests;
 };
 
-void Start(const std::string& dumpPath);  // starts the reader thread (idempotent)
+void Start(const std::string& dumpPath);
 void Stop();
 Snapshot Latest();
 }

@@ -18,11 +18,6 @@
 #include <unordered_set>
 #include <variant>
 
-// Protocol (community documented, e.g. NimVek/pipboy PROTOCOL.md): TCP 27000, little-endian packets of
-// `uint32 size, uint8 channel, payload[size]`. Channel 0 keep-alive, 1 accepted, 2 refused (busy),
-// 3 data update. A data update is a run of entries `uint8 type, uint32 id, value`; the database is a flat
-// table of nodes and lists/objects refer to other nodes by id. Node 0 is the root object.
-
 namespace Phosphor::Pipboy {
 namespace {
 using List = std::vector<std::uint32_t>;
@@ -39,7 +34,6 @@ class Database {
 public:
     std::unordered_map<std::uint32_t, Value> nodes;
 
-    // Applies one data update. Returns false on a malformed packet.
     bool Apply(const std::uint8_t* p, std::size_t n) {
         std::size_t i = 0;
         auto need = [&](std::size_t k) { return i + k <= n; };
@@ -149,7 +143,6 @@ public:
 void Extract(const Database& db, Snapshot& out) {
     const auto* root = db.Obj(0);
     const auto map = db.ChildId(root, "Map");
-    // Custom pins are separate objects, not entries in World.Quests or World.Locations.
     const auto custom = [&](const char* space) {
         const auto* area = map ? db.Obj(db.ChildId(db.Obj(*map), space).value_or(UINT32_MAX)) : nullptr;
         const auto* point = db.Obj(db.ChildId(area, "Custom").value_or(UINT32_MAX));
@@ -178,7 +171,6 @@ void Extract(const Database& db, Snapshot& out) {
                 loc.type = static_cast<int>(Database::Num(db.Child(l, "type")).value_or(-1));
                 loc.discovered = Database::Flag(db.Child(l, "Discovered"));
                 loc.visible = !db.Child(l, "Visible") || Database::Flag(db.Child(l, "Visible"));
-                // Workshop fields may be present (false) on every location; a population entry or ownership marks a settlement.
                 loc.workshop = Database::Flag(db.Child(l, "WorkshopOwned")) || db.Child(l, "WorkshopPopulation") != nullptr;
                 loc.markerFormId = static_cast<std::uint32_t>(Database::Num(db.Child(l, "LocationMarkerFormId")).value_or(0));
                 out.locations.push_back(std::move(loc));
@@ -300,7 +292,6 @@ void RunFeed(std::stop_token stop) {
             }
             const auto since = std::chrono::steady_clock::now() - connectedAt;
             if (!dumped && !g_dumpPath.empty() && (since > std::chrono::seconds(20) || (db.nodes.size() > 2000 && since > std::chrono::seconds(4)))) {
-                // One look at the whole tree (minus the inventory) for finding fields later stages can use.
                 std::unordered_set<std::uint32_t> seen;
                 std::ofstream(g_dumpPath, std::ios::binary) << db.Dump(0, 0, seen).dump(1, ' ', false, Json::error_handler_t::replace);
                 spdlog::info("Pip-Boy feed: {} nodes; tree written to {}", db.nodes.size(), g_dumpPath);
@@ -321,9 +312,6 @@ void RunFeed(std::stop_token stop) {
     WSACleanup();
 }
 
-// The feed runs on its own thread, so an exception escaping it would end the whole game at once (std::terminate,
-// with no crash log). Anything thrown there (for example running out of memory on a large update) is logged and the
-// feed starts over instead.
 void Run(std::stop_token stop) {
     while (!stop.stop_requested()) {
         try {
@@ -351,7 +339,6 @@ void Start(const std::string& dumpPath) {
 #endif
     if (g_started.exchange(true)) return;
     g_dumpPath = dumpPath;
-    // Detached: joining a thread during DLL unload can deadlock on the loader lock.
     std::thread([token = g_stop.get_token()] { Run(token); }).detach();
 }
 void Stop() { g_stop.request_stop(); }

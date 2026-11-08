@@ -14,8 +14,6 @@ NATIVE = ROOT / "build/tests/phosphor-tests.exe"
 class NativeContractTests(unittest.TestCase):
     def test_native_validation_matches_canonical_schema(self):
         validator = jsonschema.Draft202012Validator(json.loads(SCHEMA.read_text(encoding="utf-8")))
-        # Covers the constraints used by this schema, including $defs references,
-        # oneOf, strict scalar types, Unicode length, nulls and nested arrays.
         cases = [
             {"markers": {}}, {"markers": [{"id": ""}]}, {"markers": [{"id": "q1", "dist": -1}]},
             {"markers": [{"id": "q1", "dist": 0}]}, {"paused": 1}, {"hp": "100"},

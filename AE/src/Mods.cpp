@@ -91,42 +91,32 @@ double Bearing(double dx, double dy) {
     return b < 0 ? b + 360 : b;
 }
 
-// --- forms, looked up in Resolve() ---
 struct Forms {
-    RE::ActorValueInfo* affinity = nullptr;       // vanilla CA_Affinity
-    RE::ActorValueInfo* followerState = nullptr;  // vanilla FollowerState (logged only)
-    RE::TESFaction* currentCompanion = nullptr;   // vanilla CurrentCompanionFaction
-    RE::TESFaction* ligaTeam = nullptr;           // Liga of my Companions: Team
-    RE::TESFaction* ligaHome = nullptr;           // Liga: sent home
-    // KARMA.esm
+    RE::ActorValueInfo* affinity = nullptr;
+    RE::ActorValueInfo* followerState = nullptr;
+    RE::TESFaction* currentCompanion = nullptr;
+    RE::TESFaction* ligaTeam = nullptr;
+    RE::TESFaction* ligaHome = nullptr;
     RE::ActorValueInfo* karma = nullptr;
-    std::array<RE::ActorValueInfo*, 5> karmaTitles{};  // very evil, evil, neutral, good, very good
-    // Warzone - Armor Plates System.esp (LuBuCake): the armor pool globals and the plate item
-    RE::TESGlobal* plateNow = nullptr;        // WZ_PlatesPlayer_Health (0x0F99): armor now
-    RE::TESGlobal* plateMax = nullptr;        // WZ_PlatesPlayer_MaxHealth (0x0F9A): the armor pool
-    RE::TESGlobal* platePer = nullptr;        // WZ_PlatesPlayer_HealthToAdd (0x0011): armor per plate
-    RE::TESObjectMISC* plateItem = nullptr;   // WZ_PlatesSystem_Plates (0x0005): the plates carried
-    // REPUTATION.esm
+    std::array<RE::ActorValueInfo*, 5> karmaTitles{};
+    RE::TESGlobal* plateNow = nullptr;
+    RE::TESGlobal* plateMax = nullptr;
+    RE::TESGlobal* platePer = nullptr;
+    RE::TESObjectMISC* plateItem = nullptr;
     std::vector<RE::ActorValueInfo*> repFame, repInfamy, repTitle;
     std::vector<RE::TESGlobal*> repShown;
     std::vector<std::string> repNames;
-    std::map<const RE::BGSLocation*, std::size_t> repLocations;  // location -> faction index
+    std::map<const RE::BGSLocation*, std::size_t> repLocations;
     struct RepQuest { RE::TESQuest* quest; std::size_t faction; const char* event; };
     std::vector<RepQuest> repQuests;
-    // CHALLENGES.esm
     RE::TESQuest* challengeQuest = nullptr;
-    // ImmersiveLegendaryMutations.esp
     const RE::TESFile* mutations = nullptr;
-    // animation scenes
     std::vector<RE::BGSKeyword*> sceneKeywords;
-    // survival adrenaline
     std::vector<RE::BGSPerk*> adrenaline;
     int adrenalinePerRank = 0;
 } forms;
 bool resolved = false;
 
-// --- death events (any thread) ---
-// Only ids cross threads: a copied TESDeathEvent holds NiPointers that would keep actors alive across a save load.
 struct DeathNote { std::uint32_t dying = 0; bool byPlayer = false; };
 EventInbox<DeathNote> deathEvents{256};
 int pendingKills = 0;
@@ -161,7 +151,6 @@ void DrainDeaths() {
     }
 }
 
-// --- per-session state ---
 struct RepSeen { float fame = 0, infamy = 0; bool shown = false; };
 std::map<const RE::TESQuest*, bool> repQuestRunning;
 std::vector<RepSeen> repSeen;
@@ -173,7 +162,7 @@ struct Drop {
     std::string id, item;
     std::vector<std::string> effects;
     double b = -1000;
-    long dist = -1;  // last position sent to the HUD
+    long dist = -1;
 };
 struct Corpse { std::uint32_t id = 0; Clock::time_point since; bool found = false; };
 std::vector<Corpse> corpses;
@@ -202,7 +191,6 @@ void Resolve() {
     }
 #endif
     forms.karma = Lookup<RE::ActorValueInfo>(0xF99, "KARMA.esm");
-    // Armor plates: all four must resolve or the HUD's armor core is never sent (the mod isn't loaded).
     constexpr const char* kPlatesEsp = "Warzone - Armor Plates System.esp";
     forms.plateNow = Lookup<RE::TESGlobal>(0xF99, kPlatesEsp);
     forms.plateMax = Lookup<RE::TESGlobal>(0xF9A, kPlatesEsp);
@@ -228,13 +216,11 @@ void Resolve() {
         forms.repInfamy.push_back(n);
         forms.repTitle.push_back(t);
         forms.repShown.push_back(s);
-        forms.repNames.push_back(Name(t));  // the tab AV's name is the faction's display name
+        forms.repNames.push_back(Name(t));
     }
 
-    // Which faction owns which locations: REP_LocTypeList_All (REPUTATION.esm 147) holds one location list per
-    // faction, in faction order.
     const auto lists = ListItems(Lookup<RE::BGSListForm>(0x147, "REPUTATION.esm"));
-    std::vector<std::size_t> kept;  // faction index in `forms` for each original index
+    std::vector<std::size_t> kept;
     {
         std::size_t k = 0;
         for (std::size_t i = 0; i < factions; ++i) {
@@ -252,7 +238,6 @@ void Resolve() {
             return RE::BSContainer::ForEachResult::kContinue;
         });
     }
-    // Hit squad and gift-giver quests, named after the faction's tab AV (REP_PBT_<Name>AV).
     struct QuestRow { std::uint32_t id; const char* faction; const char* event; };
     constexpr QuestRow kRepQuests[] = {
         {0x359, "BrotherhoodOfSteel", "hitSquad"}, {0x35D, "ChildrenOfAtom", "hitSquad"}, {0x360, "Covenant", "hitSquad"},
@@ -279,8 +264,8 @@ void Resolve() {
 
     forms.challengeQuest = Lookup<RE::TESQuest>(0x067, "CHALLENGES.esm");
     forms.mutations = Plugin("ImmersiveLegendaryMutations.esp");
-    if (auto* k = Lookup<RE::BGSKeyword>(0x1ECF, "NAF.esp")) forms.sceneKeywords.push_back(k);   // NAF_InScene
-    if (auto* k = Lookup<RE::BGSKeyword>(0x915A, "AAF.esm")) forms.sceneKeywords.push_back(k);   // Bridge_ActorBusy (NAF Bridge)
+    if (auto* k = Lookup<RE::BGSKeyword>(0x1ECF, "NAF.esp")) forms.sceneKeywords.push_back(k);
+    if (auto* k = Lookup<RE::BGSKeyword>(0x915A, "AAF.esm")) forms.sceneKeywords.push_back(k);
 
 #if defined(PHOSPHOR_AE)
     if (AE::Enabled("bSurvival"))
@@ -368,7 +353,6 @@ std::optional<float> Affinity(RE::Actor& actor) {
 #endif
     if (!forms.affinity) return std::nullopt;
     const float value = actor.GetActorValue(*forms.affinity);
-    // Vanilla companions carry the value; other followers (Liga recruits, settlers) read 0.
     if (value == 0.0F) return std::nullopt;
     return value;
 }
@@ -502,7 +486,6 @@ Json RepStatus(std::size_t i) {
     if (auto title = ModData::ReputationTitle(index)) out["title"] = *title;
     return out;
 }
-// Quest running: the QUEST_DATA "enabled" bit (bit 0), as TESQuest::IsRunning reads it.
 bool Running(const RE::TESQuest* quest) { return quest && (quest->data.flags & 0x1) != 0; }
 }
 
@@ -719,7 +702,6 @@ std::vector<Json> LegendaryLootEvents(bool markers) {
         pendingLegendaryDeaths.clear();
     }
     const double px = player->data.location.x, py = player->data.location.y;
-    // Legendary items are added to the body by script as it dies; give that a few seconds to show up.
     std::vector<Drop> still;
     for (auto& corpse : corpses) {
         auto* ref = RE::TESForm::GetFormByID<RE::TESObjectREFR>(corpse.id);
@@ -758,11 +740,10 @@ std::vector<Json> LegendaryLootEvents(bool markers) {
             }
         }
     }
-    // Drops no longer on their corpse were picked up (by the player, as a rule).
     for (const auto& d : drops) {
         if (std::any_of(still.begin(), still.end(), [&](const Drop& s) { return s.id == d.id; })) continue;
         auto* ref = RE::TESForm::GetFormByID<RE::TESObjectREFR>(d.corpse);
-        if (!ref || !ref->GetParentCell()) {  // unloaded: drop its marker quietly
+        if (!ref || !ref->GetParentCell()) {
             out.push_back(Json{{"markerRemove", "loot:" + d.id}});
             continue;
         }

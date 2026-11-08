@@ -21,7 +21,6 @@
 
 namespace Phosphor::Live {
 namespace {
-// Menus the HUD knows (MENU_CTX in hud.html). Anything else is left out of context.menus.
 constexpr const char* kKnownMenus[] = {
     "PipboyMenu", "ContainerMenu", "BarterMenu", "ExamineMenu", "TerminalMenu", "LockpickingMenu",
     "LevelUpMenu", "SleepWaitMenu", "PauseMenu", "Console", "LooksMenu", "BookMenu", "LoadingMenu",
@@ -29,7 +28,6 @@ constexpr const char* kKnownMenus[] = {
     "DialogueMenu", "ScopeMenu", "WorkshopMenu", "FavoritesMenu", "WheelMenu", "ScreenArcherMenu",
     "PhotoMenu", "NAFMenu", "NAFStudioMenu", "FalloutEmotions2Menu", "OCM_outfitChangeMenu",
     "AddItemMenu", "TextInputMenu"};
-// The ones that map to the HUD's "menu" situation, which also freezes its timers and clock.
 constexpr std::string_view kPausingMenus[] = {
     "PipboyMenu", "ContainerMenu", "BarterMenu", "ExamineMenu", "TerminalMenu", "LockpickingMenu",
     "LevelUpMenu", "SleepWaitMenu", "PauseMenu", "Console", "LooksMenu", "BookMenu", "LoadingMenu",
@@ -44,8 +42,6 @@ float Permanent(RE::Actor& actor, RE::ActorValueInfo* info) { return info ? acto
 int Round(float value) { return static_cast<int>(std::lround(value)); }
 double Round1(double value, double step) { return std::round(value / step) * step; }
 
-// TESObjectWEAP's IsThrownWeapon()/IsGunWeapon() test the type as bit flags, but WEAPON_TYPE is a
-// plain value (kGun 9, kGrenade 10, kMine 11 share bits), so a gun can read as a grenade. Compare values.
 RE::WEAPON_TYPE TypeOf(const RE::TESObjectWEAP& weapon) { return weapon.weaponData.type.get(); }
 bool IsThrown(const RE::TESObjectWEAP& weapon) {
     const auto type = TypeOf(weapon);
@@ -59,7 +55,7 @@ struct Equipped {
     RE::TESAmmo* ammo = nullptr;
     int clip = 0;
     int clipMax = 0;
-    RE::TESObjectWEAP* thrown = nullptr;  // grenade or mine in the throwable slot
+    RE::TESObjectWEAP* thrown = nullptr;
 };
 
 Equipped ReadEquipped(RE::Actor& actor) {
@@ -93,7 +89,7 @@ struct InventoryRead {
     int ammo = 0;
     int thrown = 0;
     std::string weaponName;
-    std::vector<std::string> legendary;  // legendary effects on the equipped weapon (LEO slots included)
+    std::vector<std::string> legendary;
 };
 
 InventoryRead ReadInventory(RE::PlayerCharacter& player, const Equipped& eq) {
@@ -106,7 +102,6 @@ InventoryRead ReadInventory(RE::PlayerCharacter& player, const Equipped& eq) {
         if (eq.ammo && item.object == eq.ammo) out.ammo += static_cast<int>(item.GetCount());
         if (eq.thrown && item.object == eq.thrown) out.thrown += static_cast<int>(item.GetCount());
         if (eq.weapon && item.object == eq.weapon && out.weaponName.empty()) {
-            // The equipped stack's display name carries renames and legendary prefixes.
             std::uint32_t id = 0;
             for (auto* stack = item.stackData.get(); stack; stack = stack->nextStack.get(), ++id) {
                 if (!stack->IsEquipped()) continue;
@@ -131,10 +126,9 @@ std::string CleanName(std::string name, bool cutPipes) {
         const auto end = name.find(close, start + 1);
         if (end == std::string::npos) { name.erase(0, start); break; }
         const auto rest = name.find_first_not_of(" \t", end + 1);
-        if (rest == std::string::npos) { name.erase(0, start); break; }  // the whole name is a tag: keep it
+        if (rest == std::string::npos) { name.erase(0, start); break; }
         name.erase(0, end + 1);
     }
-    // Trailing component lists from sorting mods ("Tin Can {{{Spring}}}").
     if (const auto brace = name.find("{{{"); brace != std::string::npos && brace > 0 && name.find("}}}", brace) != std::string::npos)
         name.resize(brace);
     while (!name.empty() && (name.back() == ' ' || name.back() == '\t')) name.pop_back();
@@ -142,7 +136,6 @@ std::string CleanName(std::string name, bool cutPipes) {
 }
 
 std::string Untranslate(std::string text) {
-    // Scaleform translation keys ("$TAKE", "$Take_All") reach us before the movie translates them.
     if (text.size() < 2 || text[0] != '$') return text;
     text.erase(0, 1);
     bool start = true;
@@ -156,7 +149,6 @@ std::string Untranslate(std::string text) {
 }
 
 std::string ToUtf8(std::string_view text) {
-    // Plugin strings are usually cp1252 (what xEdit and the CK write); valid UTF-8 passes through.
     if (text.empty()) return {};
     const int length = static_cast<int>(text.size());
     if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text.data(), length, nullptr, 0) > 0) return std::string(text);
@@ -173,10 +165,6 @@ double Heading() {
 #if defined(PHOSPHOR_AE)
     AE_GATE("bCompass", 0.0);
 #endif
-    // The compass follows the camera, like vanilla's. In first person that is the player's own facing. In third
-    // person, mods such as True Third Person turn the character independently of the camera, so there the heading
-    // comes from the camera: the w row of its world-to-camera matrix is its view direction (Mines::Project relies
-    // on the same row for depth). 0 faces north (+Y) and grows clockwise.
     auto* player = RE::PlayerCharacter::GetSingleton();
     double heading = player ? player->data.angle.z * 180.0 / std::numbers::pi : 0.0;
     auto* pc = RE::PlayerCamera::GetSingleton();
@@ -353,7 +341,6 @@ bool Contains(std::string_view text, std::string_view part) {
     }
     return false;
 }
-// Effect tray look for a consumable: kind (colour) and icon, from its flags, keywords and name.
 std::pair<const char*, const char*> Classify(const RE::AlchemyItem& item, std::string_view name) {
     constexpr std::uint32_t kFood = 0x2, kMedicine = 0x10000;
     const auto flags = item.data.flags;
@@ -394,7 +381,7 @@ Json ReadEffects(std::string& key, float maxSeconds) {
         if (effect->flags.any(Flag::kInactive, Flag::kDispelled, Flag::kWornOff)) continue;
         auto* item = effect->spell->As<RE::AlchemyItem>();
         if (!item || effect->duration <= 0) continue;
-        if (maxSeconds > 0 && effect->duration > maxSeconds) continue;  // "permanent" status items
+        if (maxSeconds > 0 && effect->duration > maxSeconds) continue;
         const float remaining = effect->duration - effect->elapsedSeconds;
         if (remaining <= 0) continue;
         auto it = std::find_if(groups.begin(), groups.end(), [&](const Group& g) { return g.item == item; });
@@ -418,15 +405,14 @@ Json ReadEffects(std::string& key, float maxSeconds) {
 }
 
 namespace {
-// Creation Kit map marker types -> the compass's icon set (nullptr: decide by name).
 const char* MarkerType(int type) {
     switch (type) {
-    case 0: case 6: case 14: return "cave";                                 // cave, metro, sewer/utility tunnels
+    case 0: case 6: case 14: return "cave";
     case 15: return "vault";
-    case 12: case 13: case 66: case 67: case 68: return "settlement";       // sanctuary, settlement, Nuka-World outposts
+    case 12: case 13: case 66: case 67: case 68: return "settlement";
     case 1: case 2: case 9: case 10: case 11: case 17: case 22: case 25: case 29: case 43: case 49:
-    case 51: case 54: case 55: case 56: case 58: return "city";             // towns, civic and city buildings
-    case 4: case 7: case 16: case 32: case 33: case 36: case 40: case 52: return "factory";  // industry, military, junk
+    case 51: case 54: case 55: case 56: case 58: return "city";
+    case 4: case 7: case 16: case 32: case 33: case 36: case 40: case 52: return "factory";
     case 3: case 5: case 8: case 18: case 19: case 20: case 21: case 23: case 24: case 26: case 27: case 28:
     case 30: case 31: case 34: case 35: case 37: case 38: case 39: case 41: case 42: case 44: case 45: case 46:
     case 47: case 48: case 50: case 53: case 57: case 59: case 60: case 61: case 62: case 63: case 64: case 65:
@@ -437,7 +423,6 @@ const char* MarkerType(int type) {
 }
 
 namespace {
-// Vanilla's compass shows a marker's up / down arrow beyond fQuestMarkerZDiffThreshold (250 units, about 3.6 m).
 double HeightThreshold() {
 #if defined(PHOSPHOR_AE)
     AE_GATE("bMarkerHeights", 250.0);
@@ -449,13 +434,11 @@ double HeightThreshold() {
     }
     return 250.0;
 }
-// Adds "dz" (meters, signed) when the height difference passes the vanilla threshold.
 void AddHeight(Json& marker, double dzUnits, double threshold) {
     if (std::abs(dzUnits) <= threshold) return;
     const long meters = std::lround(dzUnits / 70.0);
     marker["dz"] = meters != 0 ? meters : (dzUnits > 0 ? 1 : -1);
 }
-// Map marker heights by reference form ID; map markers are persistent references and never move.
 std::map<std::uint32_t, std::optional<double>> mapMarkerZ;
 std::optional<double> MapMarkerZ(std::uint32_t formId) {
 #if defined(PHOSPHOR_AE)
@@ -472,9 +455,6 @@ std::optional<double> MapMarkerZ(std::uint32_t formId) {
 }
 
 namespace {
-// Quest marker heights. The Pip-Boy feed's "Height" is 0 for most markers, so the height comes from the game
-// instead: the marker's X/Y are the target reference's own position (or its door's), so a loaded reference at that
-// spot gives its Z. Refreshed every ten seconds for markers inside the loaded area.
 struct MarkerZ { double x = 0, y = 0; std::optional<double> z; std::chrono::steady_clock::time_point tried{}; };
 std::map<std::uint32_t, MarkerZ> markerZ;
 std::chrono::steady_clock::time_point lastZScan{};
@@ -543,8 +523,6 @@ Json ReadQuests(const Pipboy::Snapshot& pip, double locationRangeMeters) {
     if (!player || !pip.connected) return out;
     auto* cell = player->GetParentCell();
     const bool interior = cell && cell->IsInterior();
-    // Interior coordinates are local to that cell; exterior coordinates belong to the worldspace.
-    // Keep only IDs, never engine references, across ticks or loading screens.
     const auto space = cell ? (interior || !cell->worldSpace ? cell->GetFormID() : cell->worldSpace->GetFormID()) : 0;
     if (space != markerSpace) {
         ResetCompass();
@@ -558,7 +536,6 @@ Json ReadQuests(const Pipboy::Snapshot& pip, double locationRangeMeters) {
 #endif
     const double zThreshold = HeightThreshold();
 
-    // CHALLENGES' "Tracked Challenges" quest has its own panel, so it never takes the quest tracker.
     if (auto pin = CustomWaypointMarker(interior ? pip.customLocal : pip.customWorld, px, py); !pin.is_null())
         out["markers"].push_back(std::move(pin));
     const auto challenges = Mods::ChallengeQuestId();
@@ -569,13 +546,10 @@ Json ReadQuests(const Pipboy::Snapshot& pip, double locationRangeMeters) {
         return false;
     };
 
-    // Markers are in world coordinates. Inside an interior the player's own coordinates belong to that
-    // cell, so only markers close enough to make sense there are kept (the rest are outside the building).
     double nearestTracked = -1;
     const Pipboy::Quest* tracked = nullptr;
     for (const auto& q : pip.quests) if (q.active && q.formId != 0 && q.formId != challenges) { tracked = &q; break; }
     std::vector<std::pair<std::uint32_t, std::pair<double, double>>> heightWanted;
-    // Several objectives routed through the same door are one marker ("Door · 3 objectives"), active if any is.
     std::vector<MarkerSpot> spots;
     for (const auto& m : pip.markers) spots.push_back({m.x, m.y, m.onDoor});
     const auto leaders = MergeDoorMarkers(spots);
@@ -593,7 +567,7 @@ Json ReadQuests(const Pipboy::Snapshot& pip, double locationRangeMeters) {
         if (dist > 40000) continue;
         if (tracked && std::find(m.quests.begin(), m.quests.end(), tracked->formId) != m.quests.end())
             if (nearestTracked < 0 || dist < nearestTracked) nearestTracked = dist;
-        if (leaders[i] != i) continue;  // drawn by its group's first marker
+        if (leaders[i] != i) continue;
         double b = std::atan2(dx, dy) * 180.0 / std::numbers::pi;
         if (b < 0) b += 360;
         char id[24];
@@ -601,20 +575,17 @@ Json ReadQuests(const Pipboy::Snapshot& pip, double locationRangeMeters) {
         Json marker{{"id", id}, {"t", m.onDoor ? "door" : "quest"}, {"b", Round1(b, 0.5)},
                     {"dist", std::lround(dist)}, {"label", DoorGroupLabel(m.name, groupSize[i])},
                     {"active", groupActive[i] != 0}};
-        // Engine markers (ids with the top bit set) carry the target's or door's own height.
         if ((m.pipId & 0x80000000u) && m.hasZ) {
 #if defined(PHOSPHOR_AE)
             if (AE::Enabled("bMarkerHeights"))
 #endif
             if (dist < 300) AddHeight(marker, m.z - pz, zThreshold);
         } else if (dist < 300) {
-            // Height: the HUD's ▲/▼, for markers whose spot is inside the loaded area.
             auto it = markerZ.find(m.pipId);
             const bool moved = it != markerZ.end() && (std::abs(it->second.x - m.x) > 4 || std::abs(it->second.y - m.y) > 4);
             const bool stale = it == markerZ.end() || moved ||
                                std::chrono::steady_clock::now() - it->second.tried > std::chrono::seconds(10);
             if (stale) heightWanted.push_back({m.pipId, {m.x, m.y}});
-            // Keep the last height during a scheduled refresh so the arrow does not blink off.
             if (it != markerZ.end() && !moved && it->second.z) AddHeight(marker, *it->second.z - pz, zThreshold);
         }
         out["markers"].push_back(std::move(marker));
@@ -625,7 +596,6 @@ Json ReadQuests(const Pipboy::Snapshot& pip, double locationRangeMeters) {
         ResolveMarkerHeights(heightWanted);
     }
 
-    // Map markers near the player, like the vanilla compass (exteriors only).
     if (!interior && locationRangeMeters > 0) {
         for (const auto& l : pip.locations) {
             if (!l.visible || l.name.empty()) continue;
@@ -634,8 +604,6 @@ Json ReadQuests(const Pipboy::Snapshot& pip, double locationRangeMeters) {
             if (dist > locationRangeMeters) continue;
             double b = std::atan2(dx, dy) * 180.0 / std::numbers::pi;
             if (b < 0) b += 360;
-            // Type numbers follow the Creation Kit's map marker list (0 Cave, 1 City, ... 15 Vault ...); settlements
-            // come from the workshop flag; unknown numbers fall back to the name. Logged once per type.
             static std::map<int, bool> typesLogged;
             if (l.type >= 0 && typesLogged.size() < 80 && typesLogged.emplace(l.type, true).second)
                 spdlog::info("Map marker type {}: {}", l.type, l.name);
@@ -691,7 +659,6 @@ Json ReadLoot(const std::function<std::string(const char*)>& keyFor, std::string
     const auto& d = stored.value();
     const auto container = d.containerRef.get();
     if (!container) return nullptr;
-    // The stored event may outlive the box: also require the container in reach and in front of the player.
     const double dx = container->data.location.x - player->data.location.x;
     const double dy = container->data.location.y - player->data.location.y;
     if (std::sqrt(dx * dx + dy * dy) > 450) return nullptr;
@@ -756,7 +723,6 @@ void LogCompassSettings() {
 #if defined(PHOSPHOR_AE)
     AE_GATE("bCompass", );
 #endif
-    // Diagnostic: which game and INI settings govern the vanilla compass (enemy marker distance in particular).
     static bool done = false;
     if (done) return;
     done = true;
@@ -790,10 +756,6 @@ Json ReadEnemies() {
 #endif
     if (!player || !lists) return out;
     const double px = player->data.location.x, py = player->data.location.y;
-    // Vanilla's enemy range: fPerceptionCompassBase + fPerceptionCompassMult x Perception, in game units (1576 + 256
-    // per point, so about 26 m at Perception 1 and 59 m at 10). Survival sets both to 0 (no enemy dots); when the
-    // player turns survival enemy markers on in MCM, the normal formula applies there too. Actors beyond the
-    // high-process radius are in the middle-high list, so both lists are read; an actor is never in both.
     double base = 1576.0, mult = 256.0;
     if (auto* gmst = RE::GameSettingCollection::GetSingleton()) {
         auto* b = gmst->GetSetting("fPerceptionCompassBase");
@@ -820,8 +782,6 @@ Json ReadEnemies() {
         const double dx = actor->data.location.x - px, dy = actor->data.location.y - py;
         const double dist = std::sqrt(dx * dx + dy * dy) / 70.0;
         if (dist > kEnemyMeters) continue;
-        // Like vanilla, only enemies fighting you: their combat target is you or one of your companions. Hostiles
-        // fighting settlers, other factions or each other stay off the compass.
         const auto target = actor->currentCombatTarget.get();
         if (!target) continue;
         if (target.get() != player && !Mods::IsCompanion(*target)) continue;
@@ -854,11 +814,10 @@ std::map<std::string, float> ReadIllnesses(float timescale) {
     for (auto& entry : list->data) {
         auto* effect = entry.get();
         if (!effect || !effect->spell || effect->flags.any(Flag::kInactive, Flag::kDispelled, Flag::kWornOff)) continue;
-        if (!effect->spell->As<RE::SpellItem>()) continue;  // illnesses are spells; consumables are on the tray
+        if (!effect->spell->As<RE::SpellItem>()) continue;
         const auto name = Name(effect->spell);
         for (const auto& [part, id] : kNames) {
             if (!Contains(name, part)) continue;
-            // Effect timers run in real seconds; the HUD counts illnesses down in game hours.
             const float left = effect->duration > 0 ? std::max(0.0F, effect->duration - effect->elapsedSeconds) * timescale / 3600.0F : -1.0F;
             auto it = out.find(id);
             if (it == out.end() || left > it->second) out[id] = left;
@@ -885,7 +844,6 @@ Json ReadParty(Json* allyMarkers) {
         const auto actor = handle.get();
         if (!actor || actor.get() == player || actor->IsDead(false)) continue;
         if (!Mods::IsCompanion(*actor)) continue;
-        // The reference's display name carries renames (Liga lets you rename companions); fall back to the base NPC.
         const char* display = actor->GetDisplayFullName();
         const auto name = CleanName(display && *display ? ToUtf8(display) : Name(actor->GetObjectReference()), false);
         if (name.empty()) continue;
@@ -896,7 +854,6 @@ Json ReadParty(Json* allyMarkers) {
                             life == RE::LIFE_STATE::kUnconscious;
         Json member{{"name", name}, {"hp", Round1(downed ? 0 : hp, 0.02)}, {"state", downed ? "downed" : "following"}};
         if (allyMarkers) {
-            // The compass dot sits at the companion's real bearing, measured like enemies' (0 = north, clockwise).
             const double dx = actor->data.location.x - player->data.location.x;
             const double dy = actor->data.location.y - player->data.location.y;
             double b = std::atan2(dx, dy) * 180.0 / std::numbers::pi;
@@ -920,7 +877,7 @@ Json ReadParty(Json* allyMarkers) {
 
 namespace {
 int NeedSlot(const char* need) { return need[0] == 'f' ? 0 : need[0] == 'w' ? 1 : 2; }
-std::atomic<int> messageStages[3] = {-1, -1, -1};  // from the game's own stage messages; -1 = none
+std::atomic<int> messageStages[3] = {-1, -1, -1};
 }
 
 bool NoteSurvivalMessage(const std::string& text) {
@@ -949,27 +906,23 @@ Json ReadSurvival() {
     const bool on = difficulty >= static_cast<int>(RE::DIFFICULTY_LEVEL::kSurvival);
     Json out{{"survival", Json{{"on", on}}}};
     if (!on) return out;
-    // Fatigue: the share of max AP lost to sleep deprivation (vanilla draws it red on the AP bar).
     if (auto* av = RE::ActorValue::GetSingleton(); av && av->fatigue) {
         const float apMax = std::max(1.0F, Permanent(*player, av->actionPoints));
-        // Preserve the fraction: rounding it to 1% can move the recoverable AP cap by multiple points.
         out["survival"]["fatigue"] = std::clamp(Value(*player, av->fatigue) / apMax, 0.0F, 0.9F);
     }
     if (auto adrenaline = Mods::ReadAdrenaline(); !adrenaline.is_null()) out["survival"]["adrenaline"] = std::move(adrenaline);
     int stages[3] = {0, 0, 0};
     bool found[3] = {false, false, false};
-    std::string seen;  // every non-consumable effect, for working out how this load order names its stages
+    std::string seen;
     if (auto* list = player->GetActiveEffectList()) {
         using Flag = RE::ActiveEffect::Flags;
         for (auto& entry : list->data) {
             auto* effect = entry.get();
             if (!effect || !effect->spell || effect->flags.any(Flag::kInactive, Flag::kDispelled, Flag::kWornOff)) continue;
             if (effect->spell->As<RE::AlchemyItem>()) continue;
-            // The stage can be named on the spell or on its magic effect.
             const auto spell = Name(effect->spell);
             auto* setting = effect->effect ? effect->effect->effectSetting : nullptr;
             const auto mgef = setting ? Name(setting) : std::string{};
-            // Survival's need stages carry no name in some setups; their description still says which stage it is.
             std::string desc;
             if (setting && setting->magicItemDescription.c_str()) desc = ToUtf8(setting->magicItemDescription.c_str());
             if (desc.starts_with("<ID=")) desc.clear();
@@ -985,7 +938,7 @@ Json ReadSurvival() {
                 }
                 seen += "; ";
             }
-            const auto shortDesc = desc.substr(0, 40);  // "Parched: -1 Agility ..." style descriptions name the stage first
+            const auto shortDesc = desc.substr(0, 40);
             for (const auto* name : {&spell, &mgef, &shortDesc}) {
                 if (name->empty() || name->size() > 48) continue;
                 for (const auto& s : kNeedStages) {
@@ -1001,7 +954,6 @@ Json ReadSurvival() {
     static bool avsLogged = false;
     if (!avsLogged) {
         avsLogged = true;
-        // Survival's needs may live in actor values; list the candidates and the player's values once.
         if (auto* data = RE::TESDataHandler::GetSingleton()) {
             int shown = 0;
             for (auto* info : data->GetFormArray<RE::ActorValueInfo>()) {
@@ -1018,7 +970,6 @@ Json ReadSurvival() {
     }
     static std::string seenLogged;
     if (seen != seenLogged) { spdlog::info("Survival effects on player: {}", seen.empty() ? "(none)" : seen); seenLogged = seen; }
-    // Fall back on the game's own stage messages for needs no effect names.
     for (int i = 0; i < 3; ++i) if (const int m = messageStages[i]; !found[i] && m >= 0) stages[i] = m;
     out["survival"]["stages"] = Json{{"food", stages[0]}, {"water", stages[1]}, {"rest", stages[2]}};
     out["needs"] = Json{{"food", Round1(1.0 - stages[0] / 5.0, 0.01)}, {"water", Round1(1.0 - stages[1] / 5.0, 0.01)},
@@ -1106,14 +1057,11 @@ Json ReadStealth(int* raw) {
     std::uint32_t los = 0;
     const int level = lists->RequestHighestDetectionLevelAgainstActor(player, los);
     if (raw) *raw = level;
-    // The 0.9.16 perk query faulted on crouch in game. Do not run it from the HUD tick.
-    // Explicit null clears any earlier preview/replay multiplier without changing detection.
     return Json{{"sneaking", true}, {"level", std::clamp(level, 0, 100)}, {"mult", nullptr}};
 }
 
 namespace {
 using GValue = RE::Scaleform::GFx::Value;
-// Available only inside CaptureNativeHud, while its UI task owns a strong HUDMenu reference.
 thread_local RE::Scaleform::GFx::Movie* activeHudMovie = nullptr;
 UiMailbox<NativeHudRequest, NativeHudSnapshot> nativeHud;
 std::atomic<bool> nativeHudLoading{true};
@@ -1154,7 +1102,6 @@ std::string Trim(std::string s) {
     if (a == std::string::npos) return {};
     return s.substr(a, s.find_last_not_of(' ') - a + 1);
 }
-// Every visible text under a display object, depth first.
 void Texts(GValue obj, std::vector<std::string>& out, int depth) {
     if (!obj.IsObject() || depth > 6 || !Shown(obj)) return;
     if (auto text = Trim(Member(obj, "text")); !text.empty()) out.push_back(text);
@@ -1171,7 +1118,6 @@ constexpr const char* kRollover = "root.CenterGroup_mc.RolloverWidget_mc";
 }
 
 namespace {
-// The vanilla HUD movie hidden as a whole (console "tm", cinematic fades): its root clip invisible or transparent.
 bool HudHidden() {
 #if defined(PHOSPHOR_AE)
     AE_GATE("bNativeHudText", false);
@@ -1226,16 +1172,9 @@ HudText ReadHudText(bool gamepad) {
             const auto color = static_cast<std::uint32_t>(Number(f, "textColor", 0xFFFFFF));
             out.crime = ((color >> 16) & 0xFF) > 0xB0 && ((color >> 8) & 0xFF) < 0x60 && (color & 0xFF) < 0x60;
         }
-        // Button hints. BSButtonHint only exposes getters (ButtonText, PCKey, ControllerButton, ButtonVisible);
-        // its ButtonHintData is write-only and the bar's data vector is private. So walk the bar's display list for
-        // visible hint clips, then fall back on the widget's own public ActivateButton / PlayHolotapeButton data.
         const auto add = [&](const GValue& h, const char* padMember) {
             GValue vis;
-            // BSButtonHintBar can clear a pooled hint's data before removing its clip. ButtonVisible
-            // checks for null data; ButtonText and PCKey do not. Fail closed before reading either.
             if (!h.IsObject() || !h.GetMember("ButtonVisible", &vis) || !vis.IsBoolean() || !vis.GetBoolean()) return;
-            // The hint's own text field holds the translated label ("$AlternativeActivationPrompts_Consume" ->
-            // "Consume"); fall back on the raw ButtonText when there is no field or it is still a key.
             std::string label;
             GValue field;
             if (h.GetMember("textField_tf", &field) && field.IsObject()) label = Trim(Member(field, "text"));
@@ -1244,7 +1183,7 @@ HudText ReadHudText(bool gamepad) {
             for (const auto& k : out.keys) if (k.second == label) return;
             std::string key = gamepad ? Member(h, padMember) : Member(h, "PCKey");
             if (gamepad && key.starts_with("Xenon_")) key = "gp:" + key.substr(6);
-            while (!key.empty() && (key.back() == ')' || key.back() == ' ')) key.pop_back();  // PCKey reads "F)"
+            while (!key.empty() && (key.back() == ')' || key.back() == ' ')) key.pop_back();
             out.keys.emplace_back(key, label);
         };
         GValue bar;
@@ -1254,7 +1193,6 @@ HudText ReadHudText(bool gamepad) {
                 for (int i = 0; i < n && i < 16; ++i) {
                     GValue hint, text;
                     if (!clip.Invoke("getChildAt", &hint, std::array<GValue, 1>{GValue(i)}) || !hint.IsObject() || !Shown(hint)) continue;
-                    // Identify hint clips by their public text field, never by invoking ButtonText.
                     if (hint.GetMember("textField_tf", &text) && text.IsObject()) add(hint, "ControllerButton");
                     else if (depth < 3) collect(hint, depth + 1);
                 }
@@ -1311,8 +1249,6 @@ Json ReadCrosshair() {
 #if defined(PHOSPHOR_AE)
     AE_GATE("bCrosshair", nullptr);
 #endif
-    // CrosshairBase keeps its radius private (_currentRadius; requestedRadius is write-only), but it places the four
-    // CrosshairTicks_mc clips (Left/Right/Up/Down) at that radius, and those are public timeline instances.
     auto* movie = HudMovie();
     GValue ticks, left, right, up, down;
     if (!Var(movie, kCrosshairTicks, ticks)) return nullptr;
@@ -1322,7 +1258,6 @@ Json ReadCrosshair() {
     if (ticks.GetMember("Up", &up) && up.IsObject()) uy = Number(up, "y", 0);
     if (ticks.GetMember("Down", &down) && down.IsObject()) dy = Number(down, "y", 0);
     const double radius = std::max(0.0, (rx - lx) / 2);
-    // HUDMenu.swf is 1280x720; the HUD stage is 1920x1080. Include the parents' scale on top.
     double scale = 1920.0 / 1280.0;
     for (const char* path : {"root.CenterGroup_mc", kCrosshair, kCrosshairBase, kCrosshairTicks}) {
         GValue clip;
@@ -1336,10 +1271,6 @@ Json ReadCrosshair() {
         logged = radius;
         ++lines;
     }
-    // When vanilla shows its reticle (logged 2026-10-19): with a gun drawn CrosshairBase_mc shows CrosshairTicks_mc;
-    // with no weapon, a holstered weapon or melee it swaps to CrosshairClips_mc, where only Dot_Dot (looking at
-    // something usable) and the *_Activate clips come and go; menus and the Pip-Boy set HUDCrosshair_mc.visible false.
-    // HUDCrosshair_mc's alpha is Phosphor's own hiding, so only its visible flag counts.
     bool crossVisible = true;
     if (GValue cross, vis; Var(movie, kCrosshair, cross) && cross.GetMember("visible", &vis) && vis.IsBoolean())
         crossVisible = vis.GetBoolean();
@@ -1355,8 +1286,6 @@ Json ReadCrosshair() {
 }
 
 namespace {
-// Vanilla's flashlight icon (HUDMenu RightMeters_mc.FlashLightWidget_mc): the game shows it while the Pip-Boy light
-// (or a mod light on that toggle) is on, so its visibility is the state. Shrunk rather than hidden, so it keeps updating.
 constexpr const char* kFlashlight = "root.RightMeters_mc.FlashLightWidget_mc";
 }
 
@@ -1370,10 +1299,6 @@ bool ReadFlashlight() {
     return v.GetMember("visible", &vis) && vis.IsBoolean() && vis.GetBoolean() && Number(v, "alpha", 1.0) > 0.05;
 }
 
-// Vanilla compass. AAF draws its wizard in a Sprite named "AAF_Surface" that it adds to CompassBar_mc (or to the
-// crosshair until its script sees a visible compass), so suppressing PrismaUI's HUDCompass widget or shrinking the
-// clip hid AAF's menu too (found 2026-10-18). The clip stays visible at full size; only the compass's own children
-// fade out, and any layer named "AAF_..." is left alone.
 constexpr const char* kCompass = "root.BottomCenterGroup_mc.CompassWidget_mc";
 bool KeepInCompass(const std::string& name) { return name.rfind("AAF_", 0) == 0; }
 void FadeCompassChildren(GValue& parent, bool hide, std::string& layout, int depth) {
@@ -1444,12 +1369,10 @@ void HideVanillaCrosshair(bool hide) {
 }
 
 NativeHudSnapshot CaptureNativeHud(const NativeHudRequest& request) {
-    // UI-thread-only ownership markers; identities are compared, never dereferenced or retained.
     static std::uintptr_t movieIdentity = 0;
     static NativeHudRequest appliedHiding;
     NativeHudSnapshot snapshot;
 #if defined(PHOSPHOR_AE)
-    // Compass hiding can run with every native HUD reader disabled.
     if (!request.capture && !request.hideCompass && !appliedHiding.hideText && !appliedHiding.hideCrosshair &&
         !appliedHiding.hideFlashlight && !appliedHiding.hideCompass) {
 #else
@@ -1463,12 +1386,11 @@ NativeHudSnapshot CaptureNativeHud(const NativeHudRequest& request) {
     if (!ui || nativeHudLoading.load()) return snapshot;
     for (const char* name : {"MainMenu", "LoadingMenu", "FaderMenu"})
         if (ui->GetMenuOpen(RE::BSFixedString(name))) return snapshot;
-    // Hold the menu and movie alive until every local GFx value has been destroyed.
     auto menu = ui->GetMenu(RE::BSFixedString("HUDMenu"));
     if (!menu || !menu->uiMovie) {
         movieIdentity = 0;
         appliedHiding = {};
-        snapshot.visibilityApplied = true; // No surviving movie needs restoration.
+        snapshot.visibilityApplied = true;
         return snapshot;
     }
     auto movie = menu->uiMovie;
@@ -1508,7 +1430,7 @@ void ScheduleNativeHud() {
         });
     } catch (...) { nativeHud.CancelQueue(); throw; }
 }
-} // UI-only Flash implementation
+}
 
 NativeHudSnapshot LatestNativeHud() { return nativeHud.Latest().value_or(NativeHudSnapshot{}); }
 void RequestNativeHud(NativeHudRequest request) {
@@ -1569,7 +1491,7 @@ void LogAeSelfCheck(const Json& snapshot, const Pipboy::Snapshot& pip) {
             if (d < distance) { distance = d; nearest = &loc; }
         }
         if (nearest) {
-            auto z = MapMarkerZ(nearest->markerFormId); // Honors bMarkerHeights before resolving any form.
+            auto z = MapMarkerZ(nearest->markerFormId);
             spdlog::info("AE self-check: nearest map location='{}' distance={} m dz={} m", nearest->name, distance,
                 z ? std::to_string((*z - pos.z) / 70.0) : "unavailable/disabled");
         } else spdlog::info("AE self-check: nearest map location unavailable");

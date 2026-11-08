@@ -5,7 +5,7 @@
 #include <sstream>
 int main(int argc, char** argv) {
     using namespace Phosphor::AE;
-    assert(argc == 2); // Pass the INI extracted from the runtime ZIP.
+    assert(argc == 2);
     Options options;
     for (auto key : kSwitches) assert(options.Enabled(key));
     assert(!options.Enabled("unknown"));

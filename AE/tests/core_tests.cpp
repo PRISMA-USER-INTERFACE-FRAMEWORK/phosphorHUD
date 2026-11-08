@@ -16,7 +16,6 @@ void Check(bool value, const char* name) {
     if (!value) { ++failures; std::cerr << "FAIL: " << name << '\n'; }
 }
 int main(int argc, char** argv) {
-    // Test-only bridge: exercise the real INI reader and settings conversion from Python.
     if (argc > 2 && std::string_view(argv[1]) == "--mcm-settings") {
         std::ifstream defaultsFile(argv[2]);
         const auto defaults = ReadMainIni(defaultsFile);
@@ -116,7 +115,6 @@ int main(int argc, char** argv) {
     Check(!ReadCustomWaypoint(std::numeric_limits<double>::infinity(), 1, true), "Invalid waypoint coordinates are ignored");
     Check(CustomWaypointMarker(waypoint, std::numeric_limits<double>::quiet_NaN(), 0).is_null(), "Invalid player position is ignored");
     {
-        // Four quests routed through one exit door, a second door 400 units away, and a quest marker on the same spot.
         const auto lead = MergeDoorMarkers({{640, 0, true}, {650, 10, true}, {640, 0, false}, {1040, 0, true}, {660, -20, true}, {645, 5, true}});
         Check(lead.size() == 6 && lead[0] == 0 && lead[1] == 0 && lead[4] == 0 && lead[5] == 0, "Door markers at one door merge into the first");
         Check(lead[2] == 2, "A quest marker that is not on a door never merges");

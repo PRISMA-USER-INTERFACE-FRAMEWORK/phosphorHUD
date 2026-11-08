@@ -11,7 +11,7 @@ flags=['/nologo','/std:c++latest','/EHsc','/permissive-','/bigobj','/Zc:enumType
 commands=['@echo off',f'call "{a.vcvars}" >nul','if errorlevel 1 exit /b %errorlevel%']
 objects=[]
 for name,sources,pch in [('shared',list((shared/'src').rglob('*.cpp')),shared/'src/REX/PCH.h'),('commonlib',list((lib/'src').rglob('*.cpp')),lib/'include/F4SE/Impl/PCH.h'),('plugin',[root/'src'/f'{n}.cpp' for n in ['Plugin','PluginSettings','PluginEvents','PluginView','PluginTest','Live','Mods','Mines','Pipboy','EngineQuests','EngineProbe','QuickLootFirst']]+[root/'ae/AeRuntime.cpp'],None)]:
- sources=[s for s in sources if s.stem.lower()!='pch'] # Upstream's PCH-only TU is replaced by the generated stub.
+ sources=[s for s in sources if s.stem.lower()!='pch']
  d=out/name;d.mkdir(exist_ok=True)
  assert len({s.stem for s in sources})==len(sources),'duplicate object basenames'
  component=[d/(s.stem+'.obj') for s in sources]
@@ -35,7 +35,6 @@ for name,sources,pch in [('shared',list((shared/'src').rglob('*.cpp')),shared/'s
  if name!='plugin':
   rsp=d/'archive.rsp';rsp.write_text(' '.join(['/NOLOGO',f'/OUT:"{d}/{name}.lib"']+[f'"{s}"' for s in component]))
   commands += [f'lib @"{rsp}"','if errorlevel 1 exit /b %errorlevel%']
-# Build the engine-independent core separately too; never consume an OG build artifact.
 core=out/'core.lib';core_dir=out/'core';core_dir.mkdir(exist_ok=True)
 rsp=core_dir/'compile.rsp';rsp.write_text(' '.join(flags+['/MP2','/c']+[f'"{root}/src/{n}.cpp"' for n in ['Core','ModData']]+[f'/Fo"{core_dir}/"']))
 commands += [f'cl @"{rsp}"','if errorlevel 1 exit /b %errorlevel%']

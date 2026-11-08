@@ -102,7 +102,6 @@ std::optional<NeedStage> ParseSurvivalMessage(std::string_view text) {
     std::string lower(text);
     std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     const auto has = [&](std::string_view part) { return lower.find(part) != std::string::npos; };
-    // Observed after drinking directly from world water: no new alchemy effect is required.
     if (Trim(lower) == "you are properly hydrated." || Trim(lower) == "you are properly hydrated")
         return NeedStage{"water", "properly hydrated", 0};
     if (Trim(lower) == "you are properly fed." || Trim(lower) == "you are properly fed")
@@ -157,10 +156,9 @@ Json MakeSettings(const Ini& defaults, const Ini& overrides, std::optional<int> 
     settings["showWeight"] = weights[get("iShowWeight", 0, 2)];
     settings["mutationNotices"] = mutations[get("iMutationNotices", 0, 2)];
     settings["idleOpacity"] = std::max(20, get("iIdleOpacity", 85, 100)) / 100.0;
-    // Accessibility: HUD text size 80-150%, compass icon size 80-200%, ring size 80-150% (MCM Look).
     settings["textScale"] = std::max(80, get("iTextScale", 100, 150)) / 100.0;
     settings["iconScale"] = std::max(80, get("iIconScale", 100, 200)) / 100.0;
-    settings["ringScale"] = std::max(80, get("iRingScale", 100, 150)) / 100.0;  // vital/effect rings, companion portraits
+    settings["ringScale"] = std::max(80, get("iRingScale", 100, 150)) / 100.0;
     return settings;
 }
 ReplayFile ReadReplay(std::istream& input, const Json& schemaJson) {
@@ -211,15 +209,12 @@ bool Replay::Active() const { return index_ < messages_.size(); }
 std::optional<Json> Replay::Next(Clock::time_point now) {
     if (!Active() || now < next_) return {};
     auto& message = messages_[index_++];
-    // The HUD stays invisible until its first snapshot, so lead-in lines (settings, reset)
-    // and that snapshot go out back to back; pacing starts after it.
     if (!primed_ && (message.contains("snapshot") || message.contains("hp"))) primed_ = true;
     next_ = primed_ ? now + std::chrono::seconds(1) : now;
     return message;
 }
 float XpForLevel(int level) {
     if (level <= 1) return 0.0F;
-    // Level L -> L+1 costs 75L + 125 XP (200 for level 2), so the total is (L - 1)(37.5L + 125).
     return (level - 1.0F) * (37.5F * level + 125.0F);
 }
 float XpFraction(int level, float experience) {
@@ -231,7 +226,6 @@ float XpFraction(int level, float experience) {
 Json ProgressEvents(int levelBefore, float xpBefore, int levelNow, float xpNow) {
     Json out = Json::object();
     if (levelBefore <= 0 || levelNow <= 0) return out;
-    // Gain measured on the running total, so a level-up in between still counts.
     const auto total = [](int level, float xp) { return xp >= XpForLevel(level) ? xp : XpForLevel(level) + xp; };
     const float gain = total(levelNow, xpNow) - total(levelBefore, xpBefore);
     if (gain >= 1.0F) out["xpGain"] = static_cast<int>(gain + 0.5F);

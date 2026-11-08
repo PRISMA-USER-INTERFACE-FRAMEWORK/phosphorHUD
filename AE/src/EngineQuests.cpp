@@ -50,9 +50,6 @@ std::string Lower(std::string text) {
     return text;
 }
 
-// Display name of one quest alias by name: a reference alias's current reference, or a location alias's location.
-// Read from the quest's alias list and maps; no engine text function is called (BGSQuestInstanceText::ParseString
-// corrupted game memory when called with a hand-built string on OG).
 std::string AliasName(RE::TESQuest* quest, const std::string& wanted) {
     const std::string key = Lower(wanted);
 #if defined(PHOSPHOR_AE)
@@ -99,7 +96,6 @@ std::string AliasName(RE::TESQuest* quest, const std::string& wanted) {
     return {};
 }
 
-// Fills <Alias=Name>, <Alias.Attribute=Name> and <Global=EditorID>; other tokens are left as they are.
 std::string Resolve(const std::string& raw, RE::TESQuest* quest) {
     if (raw.find('<') == std::string::npos || !quest) return raw;
     std::string out;
@@ -145,8 +141,6 @@ std::string QuestName(RE::TESQuest* quest, std::uint32_t instance) {
     return CachedText(quest, instance, std::string(RE::TESFullName::GetFullName(*quest)), quest);
 }
 
-// Names of settlement locations (keyword LocTypeWorkshopSettlement), read once from the location forms. Only data is
-// read: no virtual calls on references (calling TESObjectREFR::GetEditorLocation here crashed OG, 2026-10-20).
 const std::vector<std::string>& SettlementNames() {
     static std::vector<std::string> names;
     static bool built = false;
@@ -228,9 +222,9 @@ std::uint32_t MarkerId(std::uint32_t quest, std::uint32_t alias, std::uint32_t r
             h *= 16777619u;
         }
     }
-    return h | 0x80000000u;  // never collides with the feed's small node ids
+    return h | 0x80000000u;
 }
-}  // namespace
+}
 
 void Reset() {
     markerCache.clear();
@@ -257,11 +251,10 @@ Pipboy::Snapshot Read() {
     out.playerY = outside.y;
     const auto now = Clock::now();
     if (now - textCacheAt > std::chrono::seconds(3)) {
-        textCache.clear();  // alias fills change as quests advance
+        textCache.clear();
         textCacheAt = now;
     }
 
-    // Quests and objectives the Pip-Boy lists: displayed (1), completed and displayed (3), failed and displayed (5).
     struct Shown { QuestObjectiveM* objective; std::uint32_t instance; int state; std::size_t order; };
     std::vector<Shown> shown;
     std::size_t order = 0;
@@ -273,7 +266,7 @@ Pipboy::Snapshot Read() {
     }
     struct Group { Pipboy::Quest quest; std::size_t newest = 0; std::vector<std::pair<std::uint16_t, Pipboy::Objective>> objectives; };
     std::map<std::uint32_t, Group> groups;
-    std::unordered_map<const void*, std::string> openTargets;  // target -> text of the open objective it belongs to
+    std::unordered_map<const void*, std::string> openTargets;
     for (const auto& s : shown) {
         auto* m = s.objective;
         if (!Readable(m, sizeof(QuestObjectiveM))) continue;
@@ -308,7 +301,6 @@ Pipboy::Snapshot Read() {
     for (auto* g : ordered) out.quests.push_back(std::move(g->quest));
 
     Step("quests built");
-    // Compass targets of tracked quests, pointed at the first door when the target is in another space.
     std::vector<std::pair<RE::TESQuest*, QuestTargetArrayM*>> targets;
     {
         RE::BSAutoLock lock{player->questTargetLock};
@@ -327,7 +319,7 @@ Pipboy::Snapshot Read() {
         for (auto* t : list->targets) {
             if (!Readable(t, sizeof(QuestTargetM))) continue;
             const auto named = openTargets.find(t);
-            if (matchedAny && named == openTargets.end()) continue;  // a target of an objective the player cannot see
+            if (matchedAny && named == openTargets.end()) continue;
 #if defined(PHOSPHOR_AE)
             if (!ArrayReadable(t->target)) continue;
 #endif
@@ -382,7 +374,6 @@ Pipboy::Snapshot Read() {
     }
 
     Step("targets read");
-    // The player's custom map marker.
     if (auto pin = player->playerMapMarker.get()) {
         auto* pinCell = pin->GetParentCell();
         const CustomWaypoint waypoint{pin->data.location.x, pin->data.location.y};
@@ -390,11 +381,10 @@ Pipboy::Snapshot Read() {
         else out.customWorld = waypoint;
     }
 
-    // Map locations of the current (or last exterior) worldspace.
     RE::TESWorldSpace* world = !interior && cell ? cell->worldSpace : player->cachedWorldspace;
     const std::uint32_t space = world ? world->GetFormID() : 0;
     if (space != cachedSpace) { Step("scanning map markers"); ScanMarkers(world); Step("map markers scanned"); }
-    int flagCounts[4] = {0, 0, 0, 0};  // [discovered*2 + flag 0x01]
+    int flagCounts[4] = {0, 0, 0, 0};
     for (const auto& c : markerCache) {
         auto* ref = RE::TESForm::GetFormByID<RE::TESObjectREFR>(c.formId);
         if (!ref || ref->IsDisabled()) continue;
@@ -411,10 +401,6 @@ Pipboy::Snapshot Read() {
 #else
         location.discovered = (bytes[kMarkerFlags] & kMarkerDiscovered) != 0;
 #endif
-        // Every enabled, named marker is a compass candidate; Live keeps those within iLocationMarkerMeters and the HUD
-        // draws undiscovered ones hollow and grey (MCM "Show undiscovered locations on compass" hides them). 0.9.22
-        // required flag 0x01 here, but a user log (2026-10-22) showed nearby undiscovered places never carried it, so
-        // the flag is only logged per worldspace for diagnosis. Quest-gated markers stay hidden: they are disabled refs.
         location.visible = true;
 #if defined(PHOSPHOR_AE)
         const bool known = (MarkerFlags(bytes) & kMarkerVisible) != 0;
@@ -494,4 +480,4 @@ void Compare(const Pipboy::Snapshot& engine, const Pipboy::Snapshot& feed) {
                  runs, engine.quests.size(), feed.quests.size(), matched, feed.markers.size(), engine.markers.size(),
                  engine.locations.size(), feed.locations.size(), locMatched, locDiff, issues);
 }
-}  // namespace Phosphor::EngineQuests
+}

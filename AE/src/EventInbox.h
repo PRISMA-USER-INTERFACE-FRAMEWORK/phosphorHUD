@@ -5,7 +5,6 @@
 #include <vector>
 
 namespace Phosphor {
-// Event callbacks may run off-thread. Retain bounded payloads until the game thread takes them.
 template <class T> class EventInbox {
 public:
     struct Batch { std::vector<T> events; std::size_t dropped = 0; };

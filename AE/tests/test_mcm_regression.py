@@ -14,7 +14,6 @@ MOD = pathlib.Path(os.environ.get("PHOSPHOR_TEST_MOD", ROOT / "mod/Phosphor HUD"
 HUD = MOD / "PrismaUI_F4/views/PhosphorHUD/hud.html"
 MCM = MOD / "MCM/Config/PhosphorHUD"
 ALL_CONTROLS = [c for c in json.loads((MCM / "config.json").read_text(encoding="utf-8"))["content"] if "id" in c]
-# Plugin-side controls: they change game behavior, not the HUD page, and are checked separately below.
 PLUGIN_ONLY = {"bQuickLootFirst", "PerkChoicesKey"}
 CONTROLS = [c for c in ALL_CONTROLS if c["id"].split(":")[0] not in PLUGIN_ONLY]
 BOOLS = dict(zip(
@@ -100,8 +99,6 @@ class McmRegressionTests(unittest.TestCase):
         return self.page.locator("#locName").evaluate("e => {e.getAnimations().forEach(a => a.finish()); return getComputedStyle(e).opacity}")
 
     def other_hud(self):
-        # Compare every widget, including markers, limbs, effects and banners.
-        # Exclude only the intentionally changing arrival-name class.
         return self.page.locator("#stage").evaluate("""e => {
             const clone = e.cloneNode(true);
             clone.querySelector('#locName').classList.remove('arrival-hidden');
@@ -191,7 +188,6 @@ class McmRegressionTests(unittest.TestCase):
                     self.seed(settings)
                     self.page.clock.fast_forward(6000)
                     self.assertEqual(self.opacity(), "1")
-                    # Real MCM close sends the entire settings object, even if just one choice changed.
                     self.send({"settings": settings, "location": "Sanctuary Hills"})
                     self.page.clock.fast_forward(2600)
                     self.assertEqual(self.opacity(), "0", "Settings reload must not restart the timer")
