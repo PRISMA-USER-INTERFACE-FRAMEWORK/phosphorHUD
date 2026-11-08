@@ -3,8 +3,8 @@
 
 #if defined(PHOSPHOR_AE)
 #include "../ae/AeRuntime.h"
-#include "EngineLayout.h"
 #endif
+#include "EngineLayout.h"
 #include <F4SE/F4SE.h>
 #include <RE/Fallout.h>
 #include <Windows.h>
@@ -248,7 +248,7 @@ void Run(const Pipboy::Snapshot& pip, const char* why) {
     }
 
     // 3. Custom map marker.
-    if (auto marker = player->playerMapMarker.get()) spdlog::info("Engine probe: custom marker {}", RefLine(marker.get(), px, py));
+    if (auto marker = Phosphor::EngineLayout::PlayerMapMarker(*player).get()) spdlog::info("Engine probe: custom marker {}", RefLine(marker.get(), px, py));
     else spdlog::info("Engine probe: no custom marker");
 
     // 4. Map markers: the player's current list and the worldspace's persistent cell.

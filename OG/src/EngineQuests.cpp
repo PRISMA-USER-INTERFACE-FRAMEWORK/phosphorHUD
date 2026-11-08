@@ -383,7 +383,7 @@ Pipboy::Snapshot Read() {
 
     Step("targets read");
     // The player's custom map marker.
-    if (auto pin = player->playerMapMarker.get()) {
+    if (auto pin = Phosphor::EngineLayout::PlayerMapMarker(*player).get()) {
         auto* pinCell = pin->GetParentCell();
         const CustomWaypoint waypoint{pin->data.location.x, pin->data.location.y};
         if (pinCell && pinCell->IsInterior()) out.customLocal = waypoint;

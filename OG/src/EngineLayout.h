@@ -5,6 +5,7 @@
 #include <RE/Fallout.h>
 #include <Windows.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 
@@ -114,6 +115,59 @@ inline const std::uint8_t* MapMarkerBytes(RE::TESObjectREFR* ref) {
     const void* data = extra ? static_cast<const void*>(extra->mapMarkerData) : nullptr;
     return data && Readable(data, 0x18) ? static_cast<const std::uint8_t*>(data) : nullptr;
 }
+#if defined(PHOSPHOR_AE)
+inline RE::BSSpinLock& EquippedItemsLock(RE::MiddleHighProcessData& middleHigh) { return middleHigh.equippedItemsLock; }
+inline RE::BSTArray<RE::EquippedItem>& EquippedItems(RE::MiddleHighProcessData& middleHigh) { return middleHigh.equippedItems; }
+inline RE::BSTValueEventSource<RE::PlayerAutoAimActorEvent>& AutoAimActor(RE::PlayerCharacter& player) { return player.autoAimActor; }
+inline std::int8_t& PerkCount(RE::PlayerCharacter& player) { return player.perkCount; }
+inline RE::ObjectRefHandle& PlayerMapMarker(RE::PlayerCharacter& player) { return player.playerMapMarker; }
+#else
+inline constexpr std::size_t kMiddleHighEquippedLock = 0x280;
+inline constexpr std::size_t kMiddleHighEquippedItems = 0x288;
+inline constexpr std::size_t kPlayerAutoAimActor = 0xC50;
+inline constexpr std::size_t kPlayerPerkCount = 0xCF1;
+inline constexpr std::size_t kPlayerMapMarker = 0xBC4;
+
+template <class T>
+T& AtFlatPosition(void* base, std::size_t position) {
+    return *reinterpret_cast<T*>(static_cast<std::byte*>(base) + position);
+}
+inline RE::BSSpinLock& EquippedItemsLock(RE::MiddleHighProcessData& middleHigh) {
+    return AtFlatPosition<RE::BSSpinLock>(&middleHigh, kMiddleHighEquippedLock);
+}
+inline RE::BSTArray<RE::EquippedItem>& EquippedItems(RE::MiddleHighProcessData& middleHigh) {
+    return AtFlatPosition<RE::BSTArray<RE::EquippedItem>>(&middleHigh, kMiddleHighEquippedItems);
+}
+inline RE::BSTValueEventSource<RE::PlayerAutoAimActorEvent>& AutoAimActor(RE::PlayerCharacter& player) {
+    return AtFlatPosition<RE::BSTValueEventSource<RE::PlayerAutoAimActorEvent>>(&player, kPlayerAutoAimActor);
+}
+inline std::int8_t& PerkCount(RE::PlayerCharacter& player) { return AtFlatPosition<std::int8_t>(&player, kPlayerPerkCount); }
+inline RE::ObjectRefHandle& PlayerMapMarker(RE::PlayerCharacter& player) {
+    return AtFlatPosition<RE::ObjectRefHandle>(&player, kPlayerMapMarker);
+}
+// The flat offsets must match the 1.10.163 layout; a CommonLib pin that moves one fails the build here.
+#if defined(ENABLE_FALLOUT_VR)
+static_assert(offsetof(RE::MiddleHighProcessData, equippedItemsLock) == kMiddleHighEquippedLock + 0x8);
+static_assert(offsetof(RE::MiddleHighProcessData, equippedItems) == kMiddleHighEquippedItems + 0x8);
+static_assert(offsetof(RE::PlayerCharacter, autoAimActor) == kPlayerAutoAimActor + 0x470);
+static_assert(offsetof(RE::PlayerCharacter, perkCount) == kPlayerPerkCount + 0x470);
+static_assert(offsetof(RE::PlayerCharacter, playerMapMarker) == kPlayerMapMarker + 0x470);
+#else
+static_assert(offsetof(RE::MiddleHighProcessData, equippedItemsLock) == kMiddleHighEquippedLock);
+static_assert(offsetof(RE::MiddleHighProcessData, equippedItems) == kMiddleHighEquippedItems);
+static_assert(offsetof(RE::PlayerCharacter, autoAimActor) == kPlayerAutoAimActor);
+static_assert(offsetof(RE::PlayerCharacter, perkCount) == kPlayerPerkCount);
+static_assert(offsetof(RE::PlayerCharacter, playerMapMarker) == kPlayerMapMarker);
+#endif
+static_assert(offsetof(RE::PlayerCharacter, questTargetLock) == 0x630);
+static_assert(offsetof(RE::PlayerCharacter, questTargets) == 0x7F0);
+static_assert(offsetof(RE::PlayerCharacter, objectives) == 0x7D8);
+static_assert(offsetof(RE::PlayerCharacter, currentMapMarkers) == 0x738);
+static_assert(offsetof(RE::PlayerCharacter, cachedWorldspace) == 0x8B0);
+static_assert(offsetof(RE::PlayerCharacter, exteriorPosition) == 0x8B8);
+static_assert(offsetof(RE::Actor, currentProcess) == 0x300);
+static_assert(offsetof(RE::AIProcess, middleHigh) == 0x08);
+#endif
 }  // namespace Phosphor::EngineLayout
 #if defined(PHOSPHOR_AE)
 #include "../ae/EngineLayoutChecks.h"

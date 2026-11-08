@@ -1,3 +1,4 @@
+#include "EngineLayout.h"
 #include "Live.h"
 #include "Mods.h"
 #include "UiMailbox.h"
@@ -67,8 +68,8 @@ Equipped ReadEquipped(RE::Actor& actor) {
     auto* process = actor.currentProcess;
     auto* middleHigh = process ? process->middleHigh : nullptr;
     if (!middleHigh) return out;
-    RE::BSAutoLock lock{middleHigh->equippedItemsLock};
-    for (auto& equipped : middleHigh->equippedItems) {
+    RE::BSAutoLock lock{Phosphor::EngineLayout::EquippedItemsLock(*middleHigh)};
+    for (auto& equipped : Phosphor::EngineLayout::EquippedItems(*middleHigh)) {
         auto* weapon = equipped.item.object ? equipped.item.object->As<RE::TESObjectWEAP>() : nullptr;
         if (!weapon) continue;
         if (IsThrown(*weapon)) {
@@ -249,7 +250,7 @@ Json ReadSlow(Raw& raw) {
 
     raw.level = player->GetLevel();
     raw.experience = Value(*player, av->experience);
-    raw.perks = std::max<int>(0, player->perkCount);
+    raw.perks = std::max<int>(0, Phosphor::EngineLayout::PerkCount(*player));
     out["level"] = raw.level;
     out["xp"] = Round1(Phosphor::XpFraction(raw.level, raw.experience), 0.001);
     out["perkPoints"] = raw.perks;
@@ -1020,8 +1021,8 @@ Json ReadGear() {
     auto* middleHigh = process ? process->middleHigh : nullptr;
     std::uint32_t slots = 0;
     if (middleHigh) {
-        RE::BSAutoLock lock{middleHigh->equippedItemsLock};
-        for (auto& equipped : middleHigh->equippedItems) {
+        RE::BSAutoLock lock{Phosphor::EngineLayout::EquippedItemsLock(*middleHigh)};
+        for (auto& equipped : Phosphor::EngineLayout::EquippedItems(*middleHigh)) {
             auto* armor = equipped.item.object ? equipped.item.object->As<RE::TESObjectARMO>() : nullptr;
 #if defined(PHOSPHOR_AE)
             if (armor) slots |= armor->bipedModelData.bipedObjectSlots;
@@ -1075,8 +1076,9 @@ Json ReadTarget(std::uint32_t lastHitId, bool recentHit) {
     if (!player || !av) return nullptr;
     RE::NiPointer<RE::Actor> aimed;
     {
-        RE::BSAutoLock lock{player->autoAimActor.dataLock};
-        if (player->autoAimActor.optionalValue.has_value()) aimed = player->autoAimActor.optionalValue.value().get();
+        auto& autoAim = Phosphor::EngineLayout::AutoAimActor(*player);
+        RE::BSAutoLock lock{autoAim.dataLock};
+        if (autoAim.optionalValue.has_value()) aimed = autoAim.optionalValue.value().get();
     }
     using Bool = RE::Actor::BOOL_FLAGS;
     if (aimed && aimed.get() != player && !aimed->IsDead(false) && !Mods::IsCompanion(*aimed)) {
