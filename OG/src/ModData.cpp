@@ -18,12 +18,10 @@ std::optional<double> Number(const std::string& text) {
     } catch (...) {}
     return std::nullopt;
 }
-// KARMA's title table (its Pip-Boy tab StringArray; the title AVs hold the index).
 constexpr const char* kKarmaTitles[] = {
     "Kindhearted", "Drifter", "Delinquent", "Samaritan", "Scavenger", "Thief", "Honorable", "Sightseer",
     "Deciever", "Benevolent", "Opportunist", "Outlaw", "Peacekeeper", "Wanderer", "Defiler", "Righteous",
     "Adventurer", "Marauder", "Earth Angel", "Gray Stranger", "Abomination", "Messiah", "True Mortal", "Devil"};
-// REPUTATION's title table (its Pip-Boy tab StringArray; the per-faction tab AVs hold the index).
 constexpr const char* kRepTitles[] = {
     "Neutral", "Accepted", "Liked", "Idolized", "Shunned", "Mixed", "Smiling Troublemaker",
     "Good-Natured Rascal", "Hated", "Sneering Punk", "Unpredictable", "Dark Hero", "Vilified",

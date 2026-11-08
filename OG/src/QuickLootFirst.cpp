@@ -14,7 +14,6 @@
 #include <vector>
 
 #if defined(PHOSPHOR_AE)
-// The AE edition keeps the game's own behavior until this layout has been checked on AE.
 namespace Phosphor::QuickLootFirst {
 void DataReady() {}
 void Maintain() {}
@@ -24,21 +23,19 @@ void Update(bool) {}
 #else
 namespace Phosphor::QuickLootFirst {
 namespace {
-// BGSEntryPointPerkEntry (not described by CommonLibF4): byte entry point, byte function, byte condition-tab count,
-// then the function data, the per-tab condition lists and the owning perk. Every value is checked before use.
 constexpr std::size_t kEntryPointByte = 0x10, kTabCountByte = 0x12, kFunctionData = 0x18, kConditions = 0x20,
                       kOwnerPerk = 0x28, kEntrySize = 0x30;
-constexpr std::uint8_t kActivateEntryPoint = 0x0E;   // BGSEntryPoint::ENTRY_POINT::kActivate
-constexpr std::size_t kTargetTab = 1;                // Activate tabs: 0 perk owner, 1 target
-constexpr std::uint16_t kGetDead = 46, kGetGlobalValue = 74, kGetIsObjectType = 432;  // condition function indices
-constexpr std::uintptr_t kObjectTypeContainer = 3;   // GetIsObjectType: 3 = container (vanilla Dogmeat/Cait checks)
+constexpr std::uint8_t kActivateEntryPoint = 0x0E;
+constexpr std::size_t kTargetTab = 1;
+constexpr std::uint16_t kGetDead = 46, kGetGlobalValue = 74, kGetIsObjectType = 432;
+constexpr std::uintptr_t kObjectTypeContainer = 3;
 
-std::atomic<bool> ready{false};          // installed and calibrated: Update may close the gate
-bool dataLoaded = false, attempted = false;  // game thread only
+std::atomic<bool> ready{false};
+bool dataLoaded = false, attempted = false;
 std::atomic<bool> enabled{true};
 std::atomic<int> keyCode{0}, keyModifiers{0};
-RE::TESGlobal* gate = nullptr;           // 1 = perk choices allowed everywhere, 0 = not on containers/bodies
-RE::TESGlobal* dakPressed = nullptr;     // Dynamic Activation Key's "key is pressed" global, when installed
+RE::TESGlobal* gate = nullptr;
+RE::TESGlobal* dakPressed = nullptr;
 bool lastOpen = true;
 
 bool Readable(const void* pointer, std::size_t size) {
@@ -65,7 +62,6 @@ std::uint16_t FunctionOf(const RE::TESConditionItem* item) {
     std::memcpy(&id, &item->data.functionData.function, sizeof(id));
     return id;
 }
-// A condition list from the game: readable items with plausible function indices, at most 256 long.
 bool PlausibleList(const RE::TESConditionItem* item, int& getDeadSeen) {
     for (int n = 0; item; ++n, item = item->next) {
         if (n > 256 || !Readable(item, sizeof(RE::TESConditionItem)) || FunctionOf(item) >= 0x400) return false;
@@ -80,10 +76,8 @@ RE::TESConditionItem* MakeItem(std::uint16_t function, void* param, float value,
     item->data.value = value;
     item->data.condition = RE::ENUM_COMPARISON_CONDITION::kEqual;
     item->data.compareOr = orNext ? 1 : 0;
-    // object stays 0 (subject): on the target tab the subject is the activation target, like the mods' own GetDead.
     return item;
 }
-// (gate == 1 OR GetIsObjectType(container) == 0) AND (gate == 1 OR GetDead == 0), followed by `rest`.
 RE::TESConditionItem* MakeGateChain(RE::TESConditionItem* rest) {
     auto* notDead = MakeItem(kGetDead, nullptr, 0.0F, false);
     notDead->next = rest;
@@ -101,7 +95,7 @@ std::string Hex(const std::uint8_t* bytes, std::size_t size) {
     return text;
 }
 bool KeyDown(int code) { return code > 0 && (GetAsyncKeyState(code) & 0x8000) != 0; }
-}  // namespace
+}
 
 void Configure(bool on, int code, int modifiers) {
     const bool changed = enabled.load() != on || keyCode.load() != code || keyModifiers.load() != modifiers;
@@ -135,7 +129,6 @@ static void Install() {
     auto* factory = RE::ConcreteFormFactory<RE::TESGlobal>::GetFormFactory();
     if (!data || !player || !factory) { spdlog::warn("Quick loot first: game data unavailable; perk choices unchanged"); return; }
 
-    // 1. Check the perk-entry layout on every entry-point entry before touching any of them.
     const auto entryVtable = RE::VTABLE::BGSEntryPointPerkEntry[0].address();
     const auto choiceVtable = RE::VTABLE::BGSEntryPointFunctionDataActivateChoice[0].address();
     struct Target { std::uint8_t* entry; std::size_t tabs; };
@@ -175,7 +168,6 @@ static void Install() {
         return;
     }
 
-    // 2. Create the gate and check that the game's own GetGlobalValue sees it.
     gate = factory->Create();
     if (!gate) { spdlog::warn("Quick loot first: could not create the gate; perk choices unchanged"); return; }
     RE::TESConditionItem probe{};
@@ -198,7 +190,6 @@ static void Install() {
         return;
     }
 
-    // 3. Gate every Activate entry's target tab. The gate is open, so nothing changes until a key is bound.
     for (const auto& target : targets) {
         auto* lists = Read<RE::TESCondition*>(target.entry, kConditions);
         if (!lists) {
@@ -217,8 +208,8 @@ void DataReady() { dataLoaded = true; }
 
 void Maintain() {
     if (attempted || !dataLoaded || !enabled.load() || keyCode.load() <= 0) return;
-    attempted = true;  // one attempt per game session; a failed check leaves everything unchanged
+    attempted = true;
     Install();
 }
-}  // namespace Phosphor::QuickLootFirst
+}
 #endif

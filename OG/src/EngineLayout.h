@@ -1,7 +1,4 @@
 #pragma once
-// Engine structures that CommonLibF4-NG leaves opaque, mirrored from libxse/commonlibf4 (AE) and checked on OG
-// 1.10.163 with the engine probe (2026-10-20: quest targets, door paths, objectives, map marker data all matched
-// the Pip-Boy feed). Pointers coming from these mirrors are tested with Readable() before use.
 #include <RE/Fallout.h>
 #include <Windows.h>
 
@@ -11,60 +8,59 @@
 
 namespace Phosphor::EngineLayout {
 struct TeleportLinkM {
-    RE::TESObjectREFR* door;               // 00
-    RE::NiPoint3 doorTeleportLocation;     // 08
+    RE::TESObjectREFR* door;
+    RE::NiPoint3 doorTeleportLocation;
 };
 static_assert(sizeof(TeleportLinkM) == 0x18);
 struct SpaceNodeM {
-    bool worldspace;                       // 00
-    RE::TESWorldSpace* worldSpace;         // 08
-    RE::TESObjectCELL* interiorCell;       // 10
+    bool worldspace;
+    RE::TESWorldSpace* worldSpace;
+    RE::TESObjectCELL* interiorCell;
 };
 static_assert(sizeof(SpaceNodeM) == 0x18);
 struct TeleportPathM {
-    RE::BSTArray<SpaceNodeM> spaces;       // 00
-    RE::BSTArray<TeleportLinkM> doors;     // 18: first door is in the player's current space
-    RE::NiPoint3 start;                    // 30
-    RE::NiPoint3 end;                      // 3C: world position of the target when worldMapOnly
-    bool worldMapOnly;                     // 48
+    RE::BSTArray<SpaceNodeM> spaces;
+    RE::BSTArray<TeleportLinkM> doors;
+    RE::NiPoint3 start;
+    RE::NiPoint3 end;
+    bool worldMapOnly;
 };
 static_assert(sizeof(TeleportPathM) == 0x50);
 struct RefDataM {
-    TeleportPathM teleportPath;            // 00
-    RE::ObjectRefHandle reference;         // 50
-    void* pathMessageQueue;                // 58
-    bool forceRebuildQueued;               // 60
+    TeleportPathM teleportPath;
+    RE::ObjectRefHandle reference;
+    void* pathMessageQueue;
+    bool forceRebuildQueued;
 };
 struct QuestTargetM {
-    std::uint8_t flags;                    // 00
-    void* conditions;                      // 08
-    std::uint32_t targetAlias;             // 10
-    RE::BGSKeyword* keyword;               // 18
-    RE::BSTArray<RefDataM*> target;        // 20
+    std::uint8_t flags;
+    void* conditions;
+    std::uint32_t targetAlias;
+    RE::BGSKeyword* keyword;
+    RE::BSTArray<RefDataM*> target;
 };
 static_assert(sizeof(QuestTargetM) == 0x38);
 struct QuestTargetArrayM {
-    RE::BSTArray<QuestTargetM*> targets;   // 00
-    std::uint64_t nextRepath;              // 18
+    RE::BSTArray<QuestTargetM*> targets;
+    std::uint64_t nextRepath;
 };
 static_assert(sizeof(QuestTargetArrayM) == 0x20);
 struct QuestObjectiveM {
-    void* displayText;                     // 00 BGSLocalizedString: pool entry
-    RE::TESQuest* ownerQuest;              // 08
-    QuestTargetM** targets;                // 10
-    std::uint32_t numTargets;              // 18
-    std::uint16_t index;                   // 1C
-    bool initialized;                      // 1E
-    char state;                            // 1F
-    std::uint32_t flags;                   // 20
+    void* displayText;
+    RE::TESQuest* ownerQuest;
+    QuestTargetM** targets;
+    std::uint32_t numTargets;
+    std::uint16_t index;
+    bool initialized;
+    char state;
+    std::uint32_t flags;
 };
 static_assert(sizeof(QuestObjectiveM) == 0x28);
-// MapMarkerData: TESFullName at 00 (name entry at 08), then flags 10, originalFlags 11, type 12.
 constexpr std::size_t kMarkerNameEntry = 0x08, kMarkerFlags = 0x10, kMarkerType = 0x12;
-constexpr std::uint8_t kMarkerVisible = 0x01;      // "known" on the Pip-Boy map; not reliably set for nearby undiscovered places
-constexpr std::uint8_t kMarkerDiscovered = 0x02;   // shown as discovered on the Pip-Boy map
-constexpr std::uint16_t kQuestTracked = 0x0800;    // TESQuest::data.flags: tracked in the Pip-Boy
-constexpr std::int8_t kQuestTypeMisc = 6;          // TESQuest::data.questType: Miscellaneous
+constexpr std::uint8_t kMarkerVisible = 0x01;
+constexpr std::uint8_t kMarkerDiscovered = 0x02;
+constexpr std::uint16_t kQuestTracked = 0x0800;
+constexpr std::int8_t kQuestTypeMisc = 6;
 
 inline bool Readable(const void* p, std::size_t n) {
     if (!p || !n) return false;
@@ -80,10 +76,8 @@ inline bool Readable(const void* p, std::size_t n) {
     }
 }
 
-// Text of a string-pool entry (BSFixedString's storage), with readability checks.
 inline std::string PoolText(const void* entry) {
 #if defined(PHOSPHOR_AE)
-    // Bound shallow chains and validate the entire string, rather than only its first byte.
     auto* leaf = static_cast<const RE::BSStringPool::Entry*>(entry);
     for (unsigned depth = 0; depth < 64; ++depth) {
         if (!Readable(leaf, sizeof(*leaf))) return {};
@@ -145,7 +139,6 @@ inline std::int8_t& PerkCount(RE::PlayerCharacter& player) { return AtFlatPositi
 inline RE::ObjectRefHandle& PlayerMapMarker(RE::PlayerCharacter& player) {
     return AtFlatPosition<RE::ObjectRefHandle>(&player, kPlayerMapMarker);
 }
-// The flat offsets must match the 1.10.163 layout; a CommonLib pin that moves one fails the build here.
 #if defined(ENABLE_FALLOUT_VR)
 static_assert(offsetof(RE::MiddleHighProcessData, equippedItemsLock) == kMiddleHighEquippedLock + 0x8);
 static_assert(offsetof(RE::MiddleHighProcessData, equippedItems) == kMiddleHighEquippedItems + 0x8);
@@ -168,7 +161,7 @@ static_assert(offsetof(RE::PlayerCharacter, exteriorPosition) == 0x8B8);
 static_assert(offsetof(RE::Actor, currentProcess) == 0x300);
 static_assert(offsetof(RE::AIProcess, middleHigh) == 0x08);
 #endif
-}  // namespace Phosphor::EngineLayout
+}
 #if defined(PHOSPHOR_AE)
 #include "../ae/EngineLayoutChecks.h"
 #endif
