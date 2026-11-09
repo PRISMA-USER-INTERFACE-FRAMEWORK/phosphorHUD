@@ -360,6 +360,7 @@
   function openEditor() {
     if (S.open) return;
     if (!window.hudLayout || !$("stage")) { notifyClosed(); return; }
+    if (!hudLayout.canTranslate) { console.error("Phosphor HUD layout editor needs CSS translate and scale, which this renderer lacks"); notifyClosed(); return; }
     if (!S.built) { build(); S.built = true; }
     S.open = true;
     S.base = JSON.stringify(hudLayout.get());

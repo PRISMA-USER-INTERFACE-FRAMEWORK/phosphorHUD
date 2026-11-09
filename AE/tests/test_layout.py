@@ -220,6 +220,22 @@ class LayoutTests(unittest.TestCase):
         self.assertAlmostEqual(vitals["dx"], 100 / scale, delta=.5)
         self.assertAlmostEqual(vitals["dy"], 40 / scale, delta=.5)
 
+    def test_editor_refuses_to_open_when_the_renderer_lacks_css_translate(self):
+        """Catches an editor that opens on a renderer without CSS translate and scale, where every drag and scale is a silent no-op and the player is stuck in a dead overlay."""
+        page = self.browser.new_page(viewport={"width": 1920, "height": 1080})
+        logs = []
+        page.on("console", lambda message: logs.append(message.text) if message.type == "error" else None)
+        page.add_init_script("const supports = CSS.supports.bind(CSS); CSS.supports = (name, value) => name === 'translate' ? false : supports(name, value);")
+        page.route("https://**/*", lambda route: route.abort())
+        page.goto(HUD.as_uri(), wait_until="domcontentloaded")
+        page.wait_for_function("typeof window.hudLayout === 'object' && typeof window.hudEditorOpen === 'function'")
+        page.evaluate("() => { window.closedCount = 0; window.editorClosed = () => { window.closedCount += 1; }; window.hudEditorOpen(); }")
+        self.assertEqual(page.evaluate("window.closedCount"), 1, "The plugin is told to run EndEditor")
+        self.assertFalse(page.evaluate("window.hudEditor.isOpen()"))
+        self.assertEqual(page.locator("#hedOverlay.open").count(), 0)
+        self.assertTrue(any("translate" in text for text in logs), "A clear console error names the missing feature")
+        page.close()
+
 
 if __name__ == "__main__":
     unittest.main()

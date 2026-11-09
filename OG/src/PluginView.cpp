@@ -262,8 +262,8 @@ void DomReady(PrismaView readyView) noexcept {
 }
 
 void CreateView() {
-    if (!dataReady || ViewValid()) return;
     if (editorOpen) EndEditor();
+    if (!dataReady || ViewValid()) return;
     const auto now = Clock::now();
     if (now < nextViewAttempt) return;
     nextViewAttempt = now + std::chrono::seconds(1);

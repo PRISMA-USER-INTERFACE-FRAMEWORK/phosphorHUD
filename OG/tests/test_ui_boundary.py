@@ -38,7 +38,7 @@ class UiBoundaryTests(unittest.TestCase):
         plugin = (ROOT / "src/Plugin.cpp").read_text(encoding="utf-8")
         self.assertIn("editorOpen && (BlockingMenu() || !api->HasFocus(g_view))) CloseEditor()", plugin,
                       "A menu opening or focus being lost must close the editor")
-        for bound in (saveLayout, editorClosed, hudLayoutApply):
+        for bound in ('"saveLayout"', '"editorClosed"', '"hudLayoutApply"'):
             self.assertIn(bound, view, "The page and plugin must agree on " + bound)
 
 

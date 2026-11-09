@@ -26,7 +26,6 @@
     CAN_TRANSLATE = !!(window.CSS && CSS.supports && CSS.supports("translate", "1px")),
     layoutState = {},
     layoutListeners = [];
-  if (!CAN_TRANSLATE) console.warn("Phosphor HUD layout is limited: CSS translate is not supported here");
 
   function clamp(v, lo, hi) {
     return v < lo ? lo : v > hi ? hi : v;
@@ -67,8 +66,6 @@
         el.style.translate = e.dx || e.dy ? e.dx + "px " + e.dy + "px" : "";
         el.style.scale = e.s === 1 ? "" : String(e.s);
         el.style.transformOrigin = CENTRED[g.id] && e.s !== 1 ? "0 50%" : "";
-      } else if (!CENTRED[g.id] && (el.style.transform || getComputedStyle(el).transform === "none")) {
-        el.style.transform = e.dx || e.dy || e.s !== 1 ? "translate(" + e.dx + "px," + e.dy + "px) scale(" + e.s + ")" : "";
       }
       if (e.hidden) el.setAttribute("data-edit-hidden", "");
       else el.removeAttribute("data-edit-hidden");
@@ -134,6 +131,7 @@
 
   window.hudLayout = {
     groups: LAYOUT_GROUPS,
+    canTranslate: CAN_TRANSLATE,
     get: layoutGet,
     apply: layoutApply,
     setGroup: layoutSetGroup,
