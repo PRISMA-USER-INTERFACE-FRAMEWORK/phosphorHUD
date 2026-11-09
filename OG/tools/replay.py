@@ -20,7 +20,6 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 DEF_HUD = ROOT / "mod" / "Phosphor HUD" / "PrismaUI_F4" / "views" / "PhosphorHUD" / "hud.html"
 DEF_MSGS = ROOT / "examples" / "messages.jsonl"
 SCHEMA = ROOT / "schema" / "hud-messages.schema.json"
-DEPRECATED_IGNORED = {"gear"}
 
 
 def hud_fields(js):
@@ -58,7 +57,7 @@ async def main():
     schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
     problems = []
 
-    in_hud, in_schema = hud_fields(js), set(schema["properties"]) - DEPRECATED_IGNORED
+    in_hud, in_schema = hud_fields(js), set(schema["properties"])
     for f in sorted(in_hud - in_schema):
         problems.append(f"schema is missing a field hud.html reads: {f}")
     for f in sorted(in_schema - in_hud):

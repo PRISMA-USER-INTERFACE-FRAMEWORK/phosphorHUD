@@ -47,7 +47,6 @@ bool NoteSurvivalMessage(const std::string& text);
 void ClearSurvivalMessage(const char* need);
 std::array<int, 3> SurvivalMessageStages();
 void SetSurvivalMessageStages(const std::array<int, 3>& stages);
-Json ReadGear();
 Json ReadWeight();
 Json ReadTarget(std::uint32_t lastHitId, bool recentHit);
 Json ReadStealth(int* raw);

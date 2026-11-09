@@ -19,8 +19,7 @@ std::vector<std::size_t> MergeDoorMarkers(const std::vector<MarkerSpot>& spots);
 std::string DoorGroupLabel(const std::string& single, std::size_t count);
 Ini ReadMainIni(std::istream& input);
 int EffectHourLimit(const Ini& defaults, const Ini& overrides);
-Json MakeSettings(const Ini& defaults, const Ini& overrides,
-                  std::optional<int> conditionCharacter = std::nullopt);
+Json MakeSettings(const Ini& defaults, const Ini& overrides);
 struct LimbFractions { float head = 1, torso = 1, larm = 1, rarm = 1, lleg = 1, rleg = 1; };
 Json MakeLimbStatus(const LimbFractions& limbs, bool infected, const std::vector<std::string>& effectNames);
 bool QuickLootFirstEnabled(const Ini& defaults, const Ini& overrides);

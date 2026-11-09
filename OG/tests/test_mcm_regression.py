@@ -17,8 +17,8 @@ ALL_CONTROLS = [c for c in json.loads((MCM / "config.json").read_text(encoding="
 PLUGIN_ONLY = {"bQuickLootFirst", "PerkChoicesKey"}
 CONTROLS = [c for c in ALL_CONTROLS if c["id"].split(":")[0] not in PLUGIN_ONLY]
 BOOLS = dict(zip(
-    "bHideThirdPersonAimCrosshair bShowLevelBar bHideFullVitals bLocationOnArrival bHideHealthyFigure bShowArmorPieces bShowAdrenaline bNeedStageNames bHideSatisfiedNeeds bSurvivalEnemyMarkers bMineWarnings bMineCompass bKarmaReadout bLocalReputation bChallengeTracker bLegendaryDropMarkers bLevelUpBanner bPerkReminder iClockFormat".split(),
-    "hideThirdPersonAimCrosshair showLevelBar hideFullVitals locationOnArrival hideHealthyFigure armorPieces showAdrenaline needStageNames hideSatisfiedNeeds survivalEnemyMarkers mineWarnings mineCompass karmaReadout localReputation challengeTracker legendaryDropMarkers levelUpBanner perkReminder clock24".split()))
+    "bHideThirdPersonAimCrosshair bShowLevelBar bHideFullVitals bLocationOnArrival bHideHealthyFigure bShowAdrenaline bNeedStageNames bHideSatisfiedNeeds bSurvivalEnemyMarkers bMineWarnings bMineCompass bKarmaReadout bLocalReputation bChallengeTracker bLegendaryDropMarkers bLevelUpBanner bPerkReminder iClockFormat".split(),
+    "hideThirdPersonAimCrosshair showLevelBar hideFullVitals locationOnArrival hideHealthyFigure showAdrenaline needStageNames hideSatisfiedNeeds survivalEnemyMarkers mineWarnings mineCompass karmaReadout localReputation challengeTracker legendaryDropMarkers levelUpBanner perkReminder clock24".split()))
 CONTEXTS = dict(zip(
     "iCtxAds iCtxScope iCtxVats iCtxDialogue iCtxWheel iCtxWorkshop iCtxPowerArmor iCtxScene".split(),
     "ads scope vats dialogue wheel workshop powerarmor scene".split()))
@@ -26,8 +26,7 @@ BOOLS.update(bShowCrosshair="showCrosshair", bShowHitMarkers="showHitMarkers", b
              bShowArmorWheel="showArmorWheel", bShowUndiscovered="showUndiscovered")
 CALM = dict(zip("iCalmVitals iCalmCompass iCalmWeapon iCalmCompanions iCalmQuests iCalmEffects iCalmCrosshair".split(),
                 "vitals compass kit party tracker effects cross".split()))
-ENUMS = {"iLimbFigure": ("limbFigure", ["silhouette", "silhouette", "vaultboy", "vaultgirl"]),
-         "iTextReadability": ("textReadability", ["off", "subtle", "strong"]),
+ENUMS = {"iTextReadability": ("textReadability", ["off", "subtle", "strong"]),
          "iShowWeight": ("showWeight", ["near", "always", "never"]),
          "iMutationNotices": ("mutationNotices", ["bar", "feed", "off"])}
 ACTIVATE = {"ads": {"ads": True}, "scope": {"menus": ["ScopeMenu"]},
@@ -288,7 +287,7 @@ class McmRegressionTests(unittest.TestCase):
                     self.send({"settings": {"perkReminder": enabled, "karmaReadout": enabled,
                                "challengeTracker": enabled, "localReputation": enabled,
                                "showAdrenaline": enabled, "needStageNames": enabled,
-                               "hideHealthyFigure": enabled, "armorPieces": enabled,
+                               "hideHealthyFigure": enabled,
                                "survivalEnemyMarkers": enabled, "mineWarnings": enabled,
                                "mineCompass": enabled, "legendaryDropMarkers": enabled,
                                "levelUpBanner": enabled}})
@@ -302,7 +301,6 @@ class McmRegressionTests(unittest.TestCase):
                         self.assertEqual(self.page.locator(selector).is_visible(), enabled, selector)
                     self.assertEqual(self.page.evaluate("window.hud.state.figure.hideHealthy"), enabled)
                     self.assertEqual(self.page.locator(".limbs").evaluate("e => e.classList.contains('healthy')"), enabled)
-                    self.assertEqual(self.page.evaluate("window.hud.state.settings.armorPieces"), enabled)
                     self.assertEqual(self.page.locator("#mineLayer .mn").count(), int(enabled))
                     self.assertEqual(self.page.locator("#marks .enemy").count(), int(enabled))
                     self.assertEqual(self.page.evaluate("window.hud.state.markers.some(m => m.id === 'loot:drop-check')"), enabled)
