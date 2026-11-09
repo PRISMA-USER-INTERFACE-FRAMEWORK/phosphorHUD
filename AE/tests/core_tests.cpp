@@ -386,9 +386,9 @@ int main(int argc, char** argv) {
         Check(armored(slot(42) | slot(43) | slot(44) | slot(45)) ==
                   Json{{"larm", Json::array({"armor"})}, {"rarm", Json::array({"armor"})}, {"lleg", Json::array({"armor"})}, {"rleg", Json::array({"armor"})}},
               "Slots 42 to 45 land on left arm, right arm, left leg and right leg");
-        Check(armored(slot(41), {1.0F, 0.0F, 1.0F, 1.0F, 0.0F, 1.0F}, true, {"Bleeding"}) ==
+        Check(armored(slot(41) | slot(44), {1.0F, 0.0F, 1.0F, 1.0F, 0.0F, 1.0F}, true, {"Bleeding"}) ==
                   Json{{"torso", Json::array({"bleed", "broken", "infection", "armor"})}, {"lleg", Json::array({"broken", "armor"})}},
-              "Armor goes last on a zone so it never pushes a damage marker out of the HUD's three-marker cap, and a crippled armored limb stays broken");
+              "Armor goes last on a zone and a crippled armored limb keeps its broken token");
     }
     if (failures) { std::cerr << failures << " failures\n"; return 1; }
     std::cout << "All core tests passed\n";
