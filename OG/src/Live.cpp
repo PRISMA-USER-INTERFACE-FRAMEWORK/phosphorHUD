@@ -1017,32 +1017,6 @@ Json ReadSurvival() {
     return out;
 }
 
-Json ReadGear() {
-    auto* player = RE::PlayerCharacter::GetSingleton();
-    auto* process = player ? player->currentProcess : nullptr;
-    auto* middleHigh = process ? process->middleHigh : nullptr;
-    std::uint32_t slots = 0;
-#if !defined(PHOSPHOR_AE)
-    if (middleHigh && !Phosphor::EngineLayout::EquippedItemsPlausible(*middleHigh)) middleHigh = nullptr;
-#endif
-    if (middleHigh) {
-        RE::BSAutoLock lock{Phosphor::EngineLayout::EquippedItemsLock(*middleHigh)};
-        for (auto& equipped : Phosphor::EngineLayout::EquippedItems(*middleHigh)) {
-            auto* armor = equipped.item.object ? equipped.item.object->As<RE::TESObjectARMO>() : nullptr;
-#if defined(PHOSPHOR_AE)
-            if (armor) slots |= armor->bipedModelData.bipedObjectSlots;
-#else
-            if (armor) slots |= armor->RE::BGSBipedObjectForm::GetFilledSlots();
-#endif
-        }
-    }
-    const auto slot = [&](int biped) { return (slots & (1u << (biped - 30))) != 0; };
-    const bool clothed = slot(33) || slot(36) || slot(37) || slot(38) || slot(39) || slot(40);
-    return Json{{"clothed", clothed},
-                {"armor", Json{{"head", slot(30) || slot(46)}, {"torso", slot(41)}, {"larm", slot(42)},
-                               {"rarm", slot(43)}, {"lleg", slot(44)}, {"rleg", slot(45)}}}};
-}
-
 Json ReadWeight() {
     auto* player = RE::PlayerCharacter::GetSingleton();
     auto* av = RE::ActorValue::GetSingleton();

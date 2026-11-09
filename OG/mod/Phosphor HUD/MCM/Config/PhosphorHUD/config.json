@@ -176,34 +176,10 @@
       "type": "section"
     },
     {
-      "id": "iLimbFigure:Main",
-      "text": "Figure",
-      "type": "dropdown",
-      "help": "Auto uses the Character Type you picked in Condition Boy, so Phosphor matches it. Vault Boy and Vault Girl need the figures folder made from Condition Boy's files; without it Phosphor falls back to its silhouette.",
-      "valueOptions": {
-        "sourceType": "ModSettingInt",
-        "options": [
-          "Auto (match Condition Boy)",
-          "Phosphor silhouette",
-          "Vault Boy",
-          "Vault Girl"
-        ]
-      }
-    },
-    {
       "id": "bHideHealthyFigure:Main",
       "text": "Hide figure when uninjured",
       "type": "switcher",
       "help": "The figure appears as soon as a limb takes damage and stays lit while a limb is crippled.",
-      "valueOptions": {
-        "sourceType": "ModSettingBool"
-      }
-    },
-    {
-      "id": "bShowArmorPieces:Main",
-      "text": "Show armor pieces",
-      "type": "switcher",
-      "help": "Draw equipped armor pieces over the figure, like Condition Boy.",
       "valueOptions": {
         "sourceType": "ModSettingBool"
       }

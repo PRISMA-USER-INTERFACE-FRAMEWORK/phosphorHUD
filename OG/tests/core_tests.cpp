@@ -74,14 +74,12 @@ int main(int argc, char** argv) {
                                  {{"bMineWarnings", 1}, {"iCtxAds", 2}});
     Check(settings.value("mineWarnings", false) && settings.contains("contextRules") &&
           settings["contextRules"].value("ads", "") == "hide", "MCM overrides default file");
-    Check(settings.value("limbFigure", "") == "silhouette", "Auto without Condition Boy falls back");
-    Check(MakeSettings({}, {}, 1).value("limbFigure", "") == "vaultgirl", "Auto respects Condition Girl");
-    Check(MakeSettings({}, {{"iLimbFigure", 2}}, 1).value("limbFigure", "") == "vaultboy", "Explicit figure overrides Auto");
+    Check(!settings.contains("limbFigure") && !settings.contains("armorPieces"), "Settings no longer carry the retired figure keys");
     auto invalid = MakeSettings({{"iShowWeight", 1}, {"bMineWarnings", 0}},
                                 {{"iShowWeight", 99}, {"bMineWarnings", -1}});
     Check(invalid.value("showWeight", "") == "always" && !invalid.value("mineWarnings", true),
           "Out-of-range override preserves valid default");
-    Check(settings.size() == 35 && settings.value("idleOpacity", 0.0) == 0.85 && settings.value("survivalEnemyMarkers", true) == false &&
+    Check(settings.size() == 33 && settings.value("idleOpacity", 0.0) == 0.85 && settings.value("survivalEnemyMarkers", true) == false &&
           settings.value("showWeaponLegendary", false) == true && settings.value("showArmorWheel", false) == true,
           "All HUD settings supplied with safe defaults");
     Check(!MakeSettings({}, {}).value("hideThirdPersonAimCrosshair", true), "Third-person aim crosshair is visible by default");

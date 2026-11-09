@@ -111,15 +111,12 @@ std::optional<NeedStage> ParseSurvivalMessage(std::string_view text) {
     for (const auto& stage : kNeedStages) if (has(stage.name)) return stage;
     return std::nullopt;
 }
-Json MakeSettings(const Ini& defaults, const Ini& overrides, std::optional<int> character) {
+Json MakeSettings(const Ini& defaults, const Ini& overrides) {
     const auto get = [&](const char* key, int fallback, int max) { return Setting(defaults, overrides, key, fallback, max); };
-    const char* figures[] = {"silhouette", "silhouette", "vaultboy", "vaultgirl"};
-    const auto figure = get("iLimbFigure", 0, 3);
-    Json settings{{"limbFigure", figure == 0 && character && (*character == 0 || *character == 1)
-                                    ? (*character == 0 ? "vaultboy" : "vaultgirl") : figures[figure]}};
+    Json settings = Json::object();
     struct Boolean { const char* ini; const char* hud; int fallback; };
     constexpr Boolean booleans[] = {
-        {"bHideHealthyFigure", "hideHealthyFigure", 1}, {"bShowArmorPieces", "armorPieces", 1},
+        {"bHideHealthyFigure", "hideHealthyFigure", 1},
         {"bShowAdrenaline", "showAdrenaline", 1}, {"bNeedStageNames", "needStageNames", 1},
         {"bHideSatisfiedNeeds", "hideSatisfiedNeeds", 0},
         {"bHideFullVitals", "hideFullVitals", 0},

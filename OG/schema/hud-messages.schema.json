@@ -273,14 +273,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "limbFigure": {
-          "type": "string",
-          "description": "Deprecated, ignored by the HUD."
-        },
         "hideHealthyFigure": {
-          "type": "boolean"
-        },
-        "armorPieces": {
           "type": "boolean"
         },
         "contextRules": {
@@ -838,10 +831,6 @@
           "$ref": "#/$defs/limbStatusList"
         }
       }
-    },
-    "gear": {
-      "type": "object",
-      "description": "Deprecated, ignored by the HUD."
     },
     "effect": {
       "$ref": "#/$defs/effect"

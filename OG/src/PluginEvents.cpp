@@ -145,7 +145,6 @@ void ModFields(Json& current, const Phosphor::Pipboy::Snapshot& pip, int enemies
     if (Phosphor::Mods::HasArmorPlates()) current["armor"] = Phosphor::Mods::ReadArmorPlates();
     if (auto challenges = Phosphor::Mods::ReadChallenges(pip); !challenges.is_null()) current["challenges"] = std::move(challenges);
     current["settlementAttack"] = Phosphor::Mods::ReadAttack(pip, enemies);
-    current["gear"] = Phosphor::Live::ReadGear();
     Json status;
     const auto faction = Phosphor::Mods::LocalFaction(&status);
     if (!localFactionBaseline || faction != localFactionSeen) {
