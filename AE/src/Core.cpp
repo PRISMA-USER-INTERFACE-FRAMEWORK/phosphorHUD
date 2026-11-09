@@ -271,7 +271,7 @@ const char* BleedZone(std::string_view name) {
 }
 }
 
-Json MakeLimbStatus(const LimbFractions& limbs, bool infected, const std::vector<std::string>& effectNames) {
+Json MakeLimbStatus(const LimbFractions& limbs, bool infected, const std::vector<std::string>& effectNames, std::uint32_t armorSlots) {
     Json out = Json::object();
     const auto add = [&](const char* zone, const char* token) {
         auto& list = out[zone];
@@ -285,6 +285,11 @@ Json MakeLimbStatus(const LimbFractions& limbs, bool infected, const std::vector
     for (const auto& [zone, fraction] : zones)
         if (fraction <= 0) add(zone, "broken");
     if (infected) add("torso", "infection");
+    const auto worn = [&](int biped) { return (armorSlots & (1u << (biped - 30))) != 0; };
+    const std::pair<const char*, bool> armor[] = {{"head", worn(30) || worn(46)}, {"torso", worn(41)}, {"larm", worn(42)},
+                                                 {"rarm", worn(43)}, {"lleg", worn(44)}, {"rleg", worn(45)}};
+    for (const auto& [zone, on] : armor)
+        if (on) add(zone, "armor");
     return out;
 }
 

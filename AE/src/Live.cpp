@@ -852,6 +852,29 @@ std::map<std::string, float> ReadIllnesses(float timescale) {
     return out;
 }
 
+namespace {
+std::uint32_t ReadArmorSlots() {
+    auto* player = RE::PlayerCharacter::GetSingleton();
+    auto* process = player ? player->currentProcess : nullptr;
+    auto* middleHigh = process ? process->middleHigh : nullptr;
+    std::uint32_t slots = 0;
+#if !defined(PHOSPHOR_AE)
+    if (middleHigh && !Phosphor::EngineLayout::EquippedItemsPlausible(*middleHigh)) middleHigh = nullptr;
+#endif
+    if (!middleHigh) return slots;
+    RE::BSAutoLock lock{middleHigh->equippedItemsLock};
+    for (auto& equipped : middleHigh->equippedItems) {
+        auto* armor = equipped.item.object ? equipped.item.object->As<RE::TESObjectARMO>() : nullptr;
+#if defined(PHOSPHOR_AE)
+        if (armor) slots |= armor->bipedModelData.bipedObjectSlots;
+#else
+        if (armor) slots |= armor->RE::BGSBipedObjectForm::GetFilledSlots();
+#endif
+    }
+    return slots;
+}
+}
+
 Json ReadLimbStatus(const LimbFractions& limbs) {
     bool infectionVisible = true;
 #if defined(PHOSPHOR_AE)
@@ -863,7 +886,7 @@ Json ReadLimbStatus(const LimbFractions& limbs) {
         if (infectionVisible && Contains(name, kInfectKeyword)) infected = true;
         if (Contains(name, "bleed")) names.push_back(name);
     });
-    return MakeLimbStatus(limbs, infected, names);
+    return MakeLimbStatus(limbs, infected, names, ReadArmorSlots());
 }
 
 Json ReadParty(Json* allyMarkers) {

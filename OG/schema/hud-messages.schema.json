@@ -8,6 +8,7 @@
   "$defs": {
     "limbStatusList": {
       "type": "array",
+      "description": "Status tokens for one figure zone. bleed, broken and infection show as markers, at most three per zone. armor draws an armor piece on that zone of the figure and is not a marker; the plugin sends it for each zone with equipped armor.",
       "items": {
         "enum": [
           "bleed",
