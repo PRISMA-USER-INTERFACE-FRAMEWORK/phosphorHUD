@@ -4,6 +4,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@400;500;600&family=Saira+Semi+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="hud.css">
+<link rel="stylesheet" href="editor.css">
 </head><body>
 
 <div class="page">
@@ -24,12 +25,12 @@
       <div class="fx-jet" id="fxJet"></div>
       <div class="fx-hurt" id="fxHurt"></div>
 
-      <div class="cg" data-g="msg"><div class="w msg glass" id="msg">
+      <div class="cg" data-g="msg"><div class="w msg glass" id="msg" data-edit="msg">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v6M12 16.6v.1" stroke-linecap="round"/></svg>
         <div><em id="msgTitle">Tutorial</em><p id="msgText"></p></div>
       </div></div>
 
-      <div class="cg" data-g="target"><div class="w target" id="target">
+      <div class="cg" data-g="target"><div class="w target" id="target" data-edit="target">
         <div class="t-row">
           <span class="t-name"><svg id="tStar" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></svg><span id="tName">Raider</span></span>
           <span class="t-lvl" id="tLvl">LVL 14</span>
@@ -38,9 +39,9 @@
         <div class="t-muts" id="tMuts"></div>
       </div></div>
 
-      <div class="cg" data-g="feed"><ul class="w feed" id="feed"></ul></div>
+      <div class="cg" data-g="feed"><ul class="w feed" id="feed" data-edit="feed"></ul></div>
 
-      <div class="rcol" id="rcol">
+      <div class="rcol" id="rcol" data-edit="rcol">
       <div class="cg" data-g="tracker"><div class="w tracker" id="tracker">
         <div class="tr-title"><span id="trTitle"></span><svg viewBox="0 0 12 12"><path d="M6 .8L11.2 6 6 11.2.8 6z"/></svg></div>
         <ul class="tr-obj" id="trObj"></ul>
@@ -50,7 +51,7 @@
         <div class="ch-title">Challenges<svg viewBox="0 0 16 16"><circle cx="8" cy="10" r="4.2"/><path d="M5.2 1.5L8 5.8l2.8-4.3M8 8.2v1.6l1 .6"/></svg></div>
         <ul class="ch-list" id="chList"></ul>
       </div></div>
-      <div class="cg" data-g="alert"><div class="w salert" id="salert" role="status" aria-live="polite">
+      <div class="cg" data-g="alert"><div class="w salert" id="salert" data-edit="salert" role="status" aria-live="polite">
         <div class="sa-head"><span class="sa-eye" id="saEye">Under attack</span><svg class="sa-ico" viewBox="0 0 18 18"><path class="f" d="M4.5 8.5L9 4.5l4.5 4V15h-9z"/><path d="M2.5 9.5L9 3.5l6.5 6M4.5 8v7h9V8M7.8 15v-3.5h2.4V15"/></svg></div>
         <div class="sa-name" id="saName"></div>
         <div class="sa-meta" id="saMeta"></div>
@@ -60,7 +61,7 @@
       </div></div>
       </div>
 
-      <div class="cg" data-g="banner"><div class="w lvlup" id="lvlup" role="status" aria-live="polite">
+      <div class="cg" data-g="banner"><div class="w lvlup" id="lvlup" data-edit="lvlup" role="status" aria-live="polite">
         <div class="lu-ring">
           <svg viewBox="0 0 190 190"><circle class="tk" cx="95" cy="95" r="88"/><circle class="arc" cx="95" cy="95" r="95" stroke-dasharray="597" stroke-dashoffset="597"/></svg>
           <div class="lu-eye">Level up</div>
@@ -69,7 +70,7 @@
         <div class="lu-sub" id="luSub"></div>
         <div class="lu-hint" id="luHint" hidden><span class="kbd" id="luKey">K</span><span>Open the perk menu</span></div>
       </div></div>
-      <div class="cg" data-g="banner"><div class="w qbanner" id="quest">
+      <div class="cg" data-g="banner"><div class="w qbanner" id="quest" data-edit="quest">
         <div class="q-eye" id="qEye">Quest completed</div>
         <div class="q-title" id="qTitle"></div>
         <div class="q-rule"></div>
@@ -85,7 +86,7 @@
       </div>
       </div><div class="cg" data-g="cross">
       <div class="w sneakatk" id="sneakAtk"></div>
-      <div class="w hint" id="hint"><span class="kbd">Hold V</span> Workbench</div>
+      <div class="w hint" id="hint" data-edit="hint"><span class="kbd">Hold V</span> Workbench</div>
 
       <div class="cg" data-g="mines">
         <div class="w minelayer" id="mineLayer"></div>
@@ -93,14 +94,14 @@
         <div class="w mchip" id="mineChip"></div>
       </div>
 
-      <div class="w loot glass" id="loot">
+      <div class="w loot glass" id="loot" data-edit="loot">
         <div class="l-head"><b id="lName">Wooden Crate</b><small id="lWt">WT 3.5</small></div>
         <ul class="l-list" id="lList"></ul>
         <div class="l-keys" id="lKeys"><span><span class="kbd">E</span> Take</span><span><span class="kbd">R</span> Take all</span><span><span class="kbd">Tab</span> Transfer</span></div>
       </div></div>
 
-      <div class="w vitals" id="vitals" data-dim>
-        <div data-g="party" class="cgi party" id="party" hidden></div>
+      <div class="w vitals" id="vitals" data-dim data-edit="vitals">
+        <div data-g="party" class="cgi party" id="party" data-edit="party" hidden></div>
         <div data-g="vitals" class="cgi loc">
           <div class="lmeta"><span id="locSub">Commonwealth</span><span class="lsep" id="clockSep">·</span><span class="clock" id="clock"><svg viewBox="0 0 12 12" id="clockIco"></svg><span id="clockTxt"></span></span><span class="lsep" id="repSep" hidden>·</span><span class="lrep" id="lrep" hidden><svg viewBox="0 0 12 12"><path d="M6 .8l1.6 3.3 3.6.5-2.6 2.5.6 3.6L6 9l-3.2 1.7.6-3.6L.8 4.6l3.6-.5z"/></svg><span id="lrepTxt"></span></span></div>
           <span class="lname" id="locName">Sanctuary Hills</span>
@@ -124,12 +125,12 @@
         </div>
       </div>
 
-      <div class="cg" data-g="stealth"><div class="w stealth" id="stealth" role="status" aria-live="polite">
+      <div class="cg" data-g="stealth"><div class="w stealth" id="stealth" data-edit="stealth" role="status" aria-live="polite">
         <span class="st-label" id="stLabel">Hidden</span>
         <div class="st-row"><span class="st-bar l"><i id="stL"></i></span><svg class="st-eye" id="stEye" viewBox="0 0 24 24"></svg><span class="st-bar r"><i id="stR"></i></span></div>
       </div></div>
-      <div class="cg" data-g="subs"><div class="w subs" id="subs"><b id="subWho"></b><p id="subLine"></p></div></div>
-      <div class="cg" data-g="compass"><div class="w compass" id="compass" data-dim>
+      <div class="cg" data-g="subs"><div class="w subs" id="subs" data-edit="subs"><b id="subWho"></b><p id="subLine"></p></div></div>
+      <div class="cg" data-g="compass"><div class="w compass" id="compass" data-dim data-edit="compass">
         <div class="cbar"><div id="ticks"></div></div>
         <div id="marks"></div>
         <div class="needle"></div>
@@ -137,7 +138,7 @@
         <div class="cfocus" id="cfocus"></div>
       </div></div>
 
-      <div class="w kit" id="kit">
+      <div class="w kit" id="kit" data-edit="kit">
         <div data-g="effects" class="cgi effects" id="effects" aria-label="Active effects"></div>
         <div class="cgi" data-g="kit"><div class="kit-row" data-dim>
           <div class="limbs" id="limbs" role="group" aria-label="Limb condition">
@@ -437,4 +438,6 @@ hudUpdate('{"paused":true}')       // freeze timers while menus are open
 </div>
 
 <script src="hud.js"></script>
+<script src="layout.js"></script>
+<script src="editor.js"></script>
 </body></html>

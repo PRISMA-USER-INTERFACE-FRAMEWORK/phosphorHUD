@@ -14,7 +14,7 @@ MOD = pathlib.Path(os.environ.get("PHOSPHOR_TEST_MOD", ROOT / "mod/Phosphor HUD"
 HUD = MOD / "PrismaUI_F4/views/PhosphorHUD/hud.html"
 MCM = MOD / "MCM/Config/PhosphorHUD"
 ALL_CONTROLS = [c for c in json.loads((MCM / "config.json").read_text(encoding="utf-8"))["content"] if "id" in c]
-PLUGIN_ONLY = {"bQuickLootFirst", "PerkChoicesKey"}
+PLUGIN_ONLY = {"bQuickLootFirst", "PerkChoicesKey", "EditorKey"}
 CONTROLS = [c for c in ALL_CONTROLS if c["id"].split(":")[0] not in PLUGIN_ONLY]
 BOOLS = dict(zip(
     "bHideThirdPersonAimCrosshair bShowLevelBar bHideFullVitals bLocationOnArrival bHideHealthyFigure bShowAdrenaline bNeedStageNames bHideSatisfiedNeeds bSurvivalEnemyMarkers bMineWarnings bMineCompass bKarmaReadout bLocalReputation bChallengeTracker bLegendaryDropMarkers bLevelUpBanner bPerkReminder iClockFormat".split(),
@@ -153,8 +153,17 @@ class McmRegressionTests(unittest.TestCase):
             self.assertEqual(result["settings"], self.defaults, "The switch never changes the HUD page")
         binds = json.loads((MCM / "keybinds.json").read_text(encoding="utf-8"))
         self.assertEqual(binds["modName"], "PhosphorHUD")
-        self.assertEqual([b["id"] for b in binds["keybinds"]], ["PerkChoicesKey"])
+        self.assertEqual([b["id"] for b in binds["keybinds"]], ["PerkChoicesKey", "EditorKey"])
         self.assertNotIn("PerkChoicesKey", (MCM / "settings.ini").read_text(encoding="utf-8"), "No default key: the player picks it")
+
+    def test_layout_editor_key_is_an_unbound_hotkey_wired_to_keybinds(self):
+        """Catches an editor key that ships bound by default, or is declared in the MCM page without a Keybinds.json entry (the key would then never reach the plugin)."""
+        editor = next(c for c in ALL_CONTROLS if c["id"] == "EditorKey")
+        self.assertEqual(editor["type"], "hotkey")
+        bind = next(b for b in json.loads((MCM / "keybinds.json").read_text(encoding="utf-8"))["keybinds"] if b["id"] == "EditorKey")
+        self.assertEqual(bind["action"]["function"], "EditorKey")
+        self.assertNotIn("EditorKey", (MCM / "settings.ini").read_text(encoding="utf-8"), "MCM keeps hotkeys in Keybinds.json, so there is no ini default")
+        self.assertNotIn("EditorKey", native({})["settings"], "The key never reaches the HUD page; the plugin polls it")
 
     def test_calm_defaults_and_each_native_rule_in_browser(self):
         self.assertTrue(self.defaults["showCrosshair"])

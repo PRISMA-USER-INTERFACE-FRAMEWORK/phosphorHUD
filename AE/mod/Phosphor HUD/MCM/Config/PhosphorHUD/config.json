@@ -525,6 +525,23 @@
       }
     },
     {
+      "text": "HUD layout",
+      "type": "section"
+    },
+    {
+      "text": "Move, scale and hide the HUD groups in place while you play. Press the key below to open the layout editor; Done or Escape saves and closes it, Cancel closes without saving. Nothing happens until you pick a key.",
+      "type": "text"
+    },
+    {
+      "id": "EditorKey",
+      "text": "HUD layout editor key",
+      "type": "hotkey",
+      "help": "Press this key in game to open the HUD layout editor, and again to close it. No key is set by default. The layout is saved to Documents/My Games/Fallout4/PhosphorHUD/layout.json.",
+      "valueOptions": {
+        "allowModifierKeys": true
+      }
+    },
+    {
       "text": "Karma, reputation and challenges",
       "type": "section"
     },

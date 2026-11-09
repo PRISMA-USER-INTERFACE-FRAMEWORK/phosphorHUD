@@ -1267,6 +1267,17 @@ class HudTests(unittest.TestCase):
             self.assertIn("#lb-%s" % zone, css)
         self.assertIn(".lb.crip i{animation:none!important}", css)
 
+    def test_layout_hide_survives_context_changes_and_page_loads_editor_assets_in_order(self):
+        """Catches renderContext fighting a layout-hidden group (the player hides the compass, then a scope or menu change brings it back), and hud.html dropping or reordering the layout and editor scripts."""
+        self.page.evaluate("() => window.hudLayout.setGroup('compass', {hidden: true})")
+        for context in ({"ads": True}, {"ads": False}, {"menus": ["PipboyMenu"]}, {"menus": []}):
+            self.send({"context": context})
+            self.assertEqual(self.page.locator("#compass").evaluate("e => getComputedStyle(e).display"), "none", context)
+        html = HUD.read_text(encoding="utf-8")
+        order = [html.index(tag) for tag in ('<script src="hud.js">', '<script src="layout.js">', '<script src="editor.js">')]
+        self.assertEqual(order, sorted(order))
+        self.assertIn('<link rel="stylesheet" href="editor.css">', html)
+
 
 if __name__ == "__main__":
     unittest.main()

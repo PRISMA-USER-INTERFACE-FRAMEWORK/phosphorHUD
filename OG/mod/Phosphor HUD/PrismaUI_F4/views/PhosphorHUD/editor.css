@@ -1,0 +1,52 @@
+.hed-overlay{position:absolute;left:0;top:0;width:1920px;height:1080px;z-index:500;display:none;pointer-events:none;user-select:none}
+.hed-overlay.open{display:block;pointer-events:auto}
+.hed-box{position:absolute;box-sizing:border-box;border:1px dashed var(--pip-soft);background:rgba(147,232,164,.04);cursor:move}
+.hed-box:hover{border-color:var(--pip)}
+.hed-box.sel{border:1px solid var(--pip);background:rgba(147,232,164,.1)}
+.hed-box.off{border-color:var(--amber);border-style:dotted}
+.hed-label{position:absolute;left:-1px;top:-19px;padding:2px 6px;font:600 10px/1.2 var(--f-label);letter-spacing:.1em;text-transform:uppercase;color:#06100a;background:var(--pip);white-space:nowrap;pointer-events:none;text-shadow:none}
+.hed-box.off .hed-label{background:var(--amber)}
+.hed-pos{position:absolute;left:0;bottom:-17px;font:11px/1 var(--f-mono);color:var(--ink);white-space:nowrap;pointer-events:none;text-shadow:0 0 3px #000}
+.hed-h{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;background:var(--pip);border:1px solid #06100a;cursor:nwse-resize;opacity:0}
+.hed-box:hover .hed-h,.hed-box.sel .hed-h{opacity:1}
+
+.hed-root{display:none;position:fixed;left:0;top:0;right:0;bottom:0;z-index:1000;pointer-events:none;font:12px var(--f-label);color:var(--ink);text-shadow:none}
+.hed-root.open{display:block}
+.hed-bar,.hed-align,.hed-panel{pointer-events:auto}
+.hed-bar,.hed-align{position:absolute;left:0;right:0;display:flex;align-items:center;gap:6px;padding:0 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.hed-bar{top:0;height:40px}
+.hed-align{top:40px;height:32px;gap:4px;background:rgba(17,25,21,.92)}
+.hed-panel{position:absolute;right:0;top:72px;bottom:0;width:250px;display:flex;flex-direction:column;background:var(--panel);border-left:1px solid var(--line);overflow:hidden}
+.hed-brand{font:600 14px/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--ink);margin-right:4px;white-space:nowrap}
+.hed-brand span{color:var(--pip)}
+.hed-hint{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hed-spacer{flex:1}
+.hed-al-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.hed-ph{flex:none;font:600 11px/1 var(--f-label);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:10px 12px 8px;border-top:1px solid var(--line)}
+.hed-ph:first-child{border-top:0}
+.hed-pb{flex:none;padding:6px 10px 10px}
+.hed-list{flex:1 1 auto;min-height:0;overflow-y:auto}
+.hed-row{display:flex;align-items:center;gap:8px;padding:4px 6px;border:1px solid transparent;cursor:pointer}
+.hed-row:hover{background:rgba(205,255,214,.05)}
+.hed-row.sel{border-color:var(--pip-soft);background:rgba(147,232,164,.1);color:var(--pip)}
+.hed-row.hed-child{padding-left:22px}
+.hed-row input{margin:0}
+.hed-name{font:600 12px var(--f-label);color:var(--ink);margin-bottom:6px;min-height:14px}
+.hed-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.hed-field label{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.hed-field input{width:100%}
+
+.hed-root button{height:26px;padding:0 10px;background:transparent;border:1px solid var(--line);border-radius:3px;color:var(--ink);font:500 12px var(--f-label);cursor:pointer}
+.hed-root button:hover:not(:disabled){border-color:var(--pip-soft);color:var(--pip)}
+.hed-root button:disabled{opacity:.35;cursor:default}
+.hed-root button.pri{background:var(--pip);border-color:var(--pip);color:#06100a;font-weight:600}
+.hed-root button.pri:hover:not(:disabled){color:#06100a}
+.hed-align button{height:22px;padding:0 8px;font-size:11px;color:var(--muted)}
+.hed-root select,.hed-root input{height:26px;padding:0 6px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:3px;color:var(--ink);font:12px var(--f-mono);outline:none}
+.hed-root select{cursor:pointer}
+.hed-root input:focus,.hed-root select:focus{border-color:var(--pip)}
+.hed-root input:disabled{opacity:.4}
+.hed-root input[type=checkbox]{height:14px;width:14px;padding:0}
+.hed-root.left .hed-panel{right:auto;left:0;border-left:0;border-right:1px solid var(--line)}
+.stage.editing.awaiting{opacity:1}
+.stage.editing .cg,.stage.editing .cgi{opacity:1!important}
