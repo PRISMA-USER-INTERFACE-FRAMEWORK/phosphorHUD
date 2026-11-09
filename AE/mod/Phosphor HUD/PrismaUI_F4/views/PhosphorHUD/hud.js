@@ -883,98 +883,6 @@
     return figTmp;
   }
 
-  function armorPoly(c, pts) {
-    c.beginPath();
-    pts.forEach(function(p, i) {
-      if (i) c.lineTo(p[0], p[1]);
-      else c.moveTo(p[0], p[1]);
-    });
-    c.closePath();
-    c.fill();
-    c.stroke();
-  }
-
-  function armorLine(c, x1, y1, x2, y2) {
-    c.beginPath();
-    c.moveTo(x1, y1);
-    c.lineTo(x2, y2);
-    c.stroke();
-  }
-
-  function armorOval(c, x, y, rx, ry) {
-    c.save();
-    c.translate(x, y);
-    c.scale(rx, ry);
-    c.beginPath();
-    c.arc(0, 0, 1, 0, Math.PI * 2);
-    c.restore();
-    c.fill();
-    c.stroke();
-  }
-  var ARMOR_DRAW = {
-    head: function(c) {
-      c.beginPath();
-      c.moveTo(70, 28);
-      c.bezierCurveTo(70, 10, 78, 2, 89.5, 2);
-      c.bezierCurveTo(101, 2, 109, 10, 109, 28);
-      c.quadraticCurveTo(89.5, 33, 70, 28);
-      c.closePath();
-      c.fill();
-      c.stroke();
-      armorLine(c, 79, 22, 100, 22);
-    },
-    torso: function(c) {
-      armorPoly(c, [[71, 57], [108, 57], [111, 72], [114, 90], [116, 104], [113, 120], [112, 138], [104, 148], [89.5, 153], [75, 148], [67, 138], [66, 120], [63, 104], [65, 90], [68, 72]]);
-      armorLine(c, 89.5, 57, 89.5, 150);
-      armorLine(c, 78, 49, 76, 70);
-      armorLine(c, 101, 49, 103, 70);
-    },
-    rarm: function(c) {
-      armorPoly(c, [[44, 58], [60, 60], [59, 80], [55, 96], [28, 84], [36, 66]]);
-      armorPoly(c, [[8, 133], [34, 138], [34, 154], [8, 149]]);
-    },
-    lleg: function(c) {
-      armorOval(c, 111, 196, 15, 10);
-      armorPoly(c, [[104, 214], [127, 214], [130, 240], [132, 264], [133, 288], [124, 288], [119, 264], [113, 240]]);
-    }
-  };
-  var ARMOR_MIRROR = {
-    larm: ["rarm", 178],
-    rleg: ["lleg", 176]
-  };
-
-  function armorOn(part) {
-    var list = S.limbStatus[part];
-    return Array.isArray(list) && list.indexOf("armor") >= 0;
-  }
-
-  function drawArmor(ctx, W, H) {
-    FIG_PARTS.forEach(function(part) {
-      var img = figImgs[part];
-      if (!img || !armorOn(part)) return;
-      var m = ARMOR_MIRROR[part];
-      figTmp.width = W;
-      figTmp.height = H;
-      var c = figTmp.getContext("2d");
-      c.scale(W / 180, H / 330);
-      c.lineWidth = 4.5;
-      c.lineJoin = "round";
-      c.lineCap = "round";
-      c.strokeStyle = "rgba(230,230,230,0.85)";
-      c.fillStyle = "rgba(230,230,230,0.18)";
-      if (m) {
-        c.translate(m[1], 0);
-        c.scale(-1, 1);
-      }
-      ARMOR_DRAW[m ? m[0] : part](c);
-      c.setTransform(1, 0, 0, 1, 0, 0);
-      c.globalCompositeOperation = "destination-in";
-      c.drawImage(img, 0, 0, W, H);
-      ctx.globalAlpha = 1;
-      ctx.drawImage(figTmp, 0, 0);
-    });
-  }
-
   function drawFigure() {
     var cv = $("limbCv");
     if (!cv) return;
@@ -1006,7 +914,6 @@
       ctx.drawImage(tint, 0, top, W, H - top, 0, top, W, H - top);
     });
     ctx.globalAlpha = 1;
-    drawArmor(ctx, W, H);
   }
   loadFigure();
   setInterval(function() {
