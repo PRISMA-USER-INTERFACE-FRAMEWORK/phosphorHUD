@@ -17,7 +17,7 @@
 {"explosive":{"name":"Plasma Grenade","short":"PLSM","count":2}}
 {"explosive":null}
 {"flashlight":true}
-{"limbs":{"head":1,"torso":0.6,"larm":0.2,"rarm":1,"lleg":0,"rleg":0.9},"limbStatus":{"lleg":["bleed","broken"],"torso":["infection"]}}
+{"limbs":{"head":1,"torso":0.6,"larm":0.2,"rarm":1,"lleg":0,"rleg":0.9},"limbStatus":{"head":["armor"],"torso":["infection","armor"],"larm":["armor"],"rarm":["armor"],"lleg":["bleed","broken","armor"],"rleg":["armor"]}}
 {"limbs":{"head":1,"torso":1,"larm":1,"rarm":1,"lleg":1,"rleg":1},"limbStatus":{}}
 {"limbStatus":{"torso":["infection","armor"]}}
 {"effect":{"id":"psycho","name":"Psycho","kind":"chem","icon":"bolt","duration":480,"remaining":480}}

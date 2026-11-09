@@ -311,7 +311,7 @@ prisma-&gt;InteropCall(view, "hudUpdate", R"({"snapshot":true,"hp":212,"hpMax":3
 // after a save loads send {"reset":true} and then a fresh snapshot.
 // limbs: each condition value / 100 (PerceptionCondition, EnduranceCondition, Left/RightAttackCondition,
 // Left/RightMobilityCondition). 0 = crippled. The figure hides when every limb is healthy.
-// limbStatus (optional, send with limbs; absent or empty clears the markers): zone -> tokens bleed, broken, infection, armor (at most 3 markers show per zone, in that order). The plugin sends bleed, broken (limb at 0) and infection; it does not send armor.
+// limbStatus (optional, send with limbs; absent or empty clears the markers and the armor): zone -> tokens bleed, broken, infection, armor. bleed, broken and infection show as markers (at most 3 per zone, in that order). armor is not a marker: it draws a helmet (head), chest plate (torso), arm guard (larm, rarm) or leg guard (lleg, rleg) on that zone of the figure. The plugin sends armor for each zone with an equipped armor piece.
 hudUpdate('{"limbs":{"rleg":0.3,"torso":0.6},"limbStatus":{"rleg":["bleed","broken"],"torso":["infection"]}}')
 
 // events: fire once

@@ -547,7 +547,6 @@ body{font-family:var(--f-label)}
 .lsi.bleed{fill:#ff5a40}
 .lsi.broken{fill:none;stroke:#f2c46a;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .lsi.infection{fill:#b6e04a;stroke:#b6e04a;stroke-width:1.2;stroke-linecap:round}
-.lsi.armor{fill:none;stroke:#86e6ea;stroke-width:1.2;stroke-linejoin:round}
 .lb{position:absolute;width:28px;--bc:#93e8a4}
 .lb b{display:block;font-family:var(--f-mono);font-weight:500;font-size:calc(9px*(.5 + .5*var(--ts,1)));line-height:1.1;letter-spacing:.06em;color:var(--muted)}
 .lb i{display:block;height:4px;border:1px solid var(--pip-soft);background:rgba(0,0,0,.4)}
