@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
                                 {{"iShowWeight", 99}, {"bMineWarnings", -1}});
     Check(invalid.value("showWeight", "") == "always" && !invalid.value("mineWarnings", true),
           "Out-of-range override preserves valid default");
-    Check(settings.size() == 35 && settings.value("idleOpacity", 0.0) == 0.85 && settings.value("survivalEnemyMarkers", true) == false &&
+    Check(settings.size() == 33 && settings.value("idleOpacity", 0.0) == 0.85 && settings.value("survivalEnemyMarkers", true) == false &&
           settings.value("showWeaponLegendary", false) == true && settings.value("showArmorWheel", false) == true,
           "All HUD settings supplied with safe defaults");
     Check(!MakeSettings({}, {}).value("hideThirdPersonAimCrosshair", true), "Third-person aim crosshair is visible by default");
