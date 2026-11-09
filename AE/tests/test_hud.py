@@ -1079,7 +1079,7 @@ class HudTests(unittest.TestCase):
         """Catches the Vault Boy / Vault Girl canvas, its figure/gear data keys or its settings control coming back."""
         views = HUD.parent
         text = (views / "hud.js").read_text(encoding="utf-8") + (views / "hud.html").read_text(encoding="utf-8")
-        for token in ("vaultboy", "vaultgirl", "Vault Boy", "Vault Girl", "limbFigure", "setFigure", "setGear", "b-fig-", "d.figure", "d.gear"):
+        for token in ("vaultboy", "vaultgirl", "Vault Boy", "Vault Girl", "limbFigure", "armorPieces", "setFigure", "setGear", "b-fig-", "d.figure", "d.gear"):
             self.assertNotIn(token, text)
         self.assertEqual(self.page.evaluate("Object.keys(window.hud.state.figure)"), ["hideHealthy"])
 

@@ -2884,7 +2884,6 @@
     mineCompass: true,
     legendaryDropMarkers: true,
     showWeaponLegendary: true,
-    armorPieces: true,
     hideSatisfiedNeeds: false,
     hideFullVitals: false,
     locationOnArrival: false,
