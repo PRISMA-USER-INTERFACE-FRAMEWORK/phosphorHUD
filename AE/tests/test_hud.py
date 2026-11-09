@@ -1134,24 +1134,17 @@ class HudTests(unittest.TestCase):
         self.send({"reset": True})
         self.assertEqual(glyphs(), none, "reset clears the markers")
 
-    def test_armor_is_drawn_on_the_figure_zones_it_names_and_keeps_the_damage_tint(self):
-        """Catches armor that never draws, spills onto zones the host did not name, draws as a marker, or replaces a crippled limb's tint."""
+    def test_armor_draws_nothing_on_the_figure_and_a_crippled_armored_limb_keeps_its_tint(self):
+        """Catches armor painted onto the figure, or an armored crippled limb losing its crippled tint."""
         self.spy_limb_draws()
         limbs = {"head": 1, "torso": 0.6, "larm": 1, "rarm": 1, "lleg": 1, "rleg": 1}
-        box = self.page.locator("#limbCv").bounding_box()
-        zones = ((0, 15), (16, 52), (70, 105))
-        shot = lambda: [self.page.screenshot(clip={"x": box["x"], "y": box["y"] + top, "width": box["width"], "height": bottom - top})
-                        for top, bottom in zones]
+        figure = lambda: self.page.locator("#limbCv").screenshot()
         self.send({"snapshot": True, "limbs": limbs, "limbStatus": {}})
         self.page.wait_for_timeout(1000)
-        bare = shot()
-        self.send({"snapshot": True, "limbs": limbs, "limbStatus": {"head": ["armor"], "torso": ["armor"]}})
+        bare = figure()
+        self.send({"snapshot": True, "limbs": limbs, "limbStatus": {"head": ["armor"], "torso": ["armor"], "rarm": ["armor"]}})
         self.page.wait_for_timeout(1000)
-        worn = shot()
-        self.assertNotEqual(bare[0], worn[0], "A helmet is drawn on the head zone")
-        self.assertNotEqual(bare[1], worn[1], "A chest plate is drawn on the torso zone")
-        self.assertEqual(bare[2], worn[2], "Zones the host did not name stay untouched")
-        self.assertEqual(self.page.locator(".lstat .lsi").count(), 0, "Armor is not a marker")
+        self.assertEqual(figure(), bare, "An armor token in limbStatus draws nothing on the figure")
         self.page.evaluate("window.__fills = []")
         self.send({"snapshot": True, "limbs": dict(limbs, rarm=0), "limbStatus": {"rarm": ["broken", "armor"]}})
         self.assertIn("#ff5a40", self.page.evaluate("window.__fills"), "An armored crippled limb still draws its crippled tint")
@@ -1268,7 +1261,7 @@ class HudTests(unittest.TestCase):
             self.assertIn('class="lsi %s"' % glyph, js)
             self.assertIn(".lsi.%s{" % glyph, css)
         self.assertNotIn("lsi armor", js + css)
-        self.assertIn("drawArmor(ctx, W, H)", js)
+        self.assertNotIn("drawArmor", js)
         for zone in ("head", "torso", "rarm", "larm", "rleg", "lleg"):
             self.assertIn("#ls-%s{" % zone, css)
             self.assertIn("#lb-%s" % zone, css)
