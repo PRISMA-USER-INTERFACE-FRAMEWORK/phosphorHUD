@@ -534,7 +534,7 @@ body{font-family:var(--f-label)}
 .kit-row{display:flex;align-items:flex-end;gap:28px}
 .limbs{position:relative;flex:none;width:120px;height:128px;transition:opacity .5s,width .5s,margin .5s}
 .limbs.healthy{opacity:0;width:0;margin-right:-28px}
-.lfig{position:absolute;left:30px;top:0;width:60px;height:110px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.85))}
+.lfig{position:absolute;left:30px;top:0;width:60px;height:110px}
 .lfig canvas{display:block;width:60px;height:110px}
 .lstat{position:absolute;display:flex;gap:1px;transform:translate(-50%,-50%);pointer-events:none}
 #ls-head{left:30px;top:8px}
