@@ -372,6 +372,18 @@ int main(int argc, char** argv) {
               "Limb words match whole words, and a side without a limb falls back to the torso");
         Check(status({}, false, {"Legendary Armor Bonus", "Weakness"}) == Json::object(), "Effects without bleed in the name add nothing");
         Check(status({}, true, {}) == Json{{"torso", Json::array({"infection"})}}, "Infection goes on the torso");
+        struct EffectCase { const char* name; bool bleed; bool infection; const char* zone; };
+        const EffectCase effectCases[] = {
+            {"Bleeding", true, false, "torso"}, {"Bleed: Left Leg", true, false, "lleg"}, {"Right Arm Bleeding", true, false, "rarm"},
+            {"Sepsis", false, true, nullptr}, {"Infection (right arm)", false, true, nullptr}, {"Infected Wound", false, true, nullptr},
+            {"Bleeding Infection", true, true, "torso"}, {"Weakness", false, false, nullptr}, {"Legendary Armor Bonus", false, false, nullptr}};
+        for (const auto& c : effectCases) {
+            const auto match = MatchLimbEffect(c.name);
+            const bool ok = match.bleed == c.bleed && match.infection == c.infection &&
+                            (c.zone ? match.zone && std::string_view(match.zone) == c.zone : !match.zone);
+            if (!ok) std::cerr << "Case: " << c.name << '\n';
+            Check(ok, "Effect names classify as bleed with a whole-word zone, and sepsis or infect as infection");
+        }
         Check(status({1.0F, 0.0F, 1.0F, 1.0F, 1.0F, 1.0F}, true, {"Bleeding"}) == Json{{"torso", Json::array({"bleed", "broken", "infection"})}},
               "Tokens stack on one zone in the order the HUD draws them");
         const auto slot = [](int biped) { return 1u << (biped - 30); };

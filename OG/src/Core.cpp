@@ -271,6 +271,14 @@ const char* BleedZone(std::string_view name) {
 }
 }
 
+LimbEffect MatchLimbEffect(std::string_view name) {
+    LimbEffect out;
+    out.bleed = HasText(name, "bleed");
+    out.infection = HasText(name, "infect") || HasText(name, "sepsis");
+    if (out.bleed) out.zone = BleedZone(name);
+    return out;
+}
+
 Json MakeLimbStatus(const LimbFractions& limbs, bool infected, const std::vector<std::string>& effectNames, std::uint32_t armorSlots) {
     Json out = Json::object();
     const auto add = [&](const char* zone, const char* token) {
@@ -279,7 +287,7 @@ Json MakeLimbStatus(const LimbFractions& limbs, bool infected, const std::vector
         if (std::find(list.begin(), list.end(), Json(token)) == list.end()) list.push_back(token);
     };
     for (const auto& name : effectNames)
-        if (HasText(name, "bleed")) add(BleedZone(name), "bleed");
+        if (const auto match = MatchLimbEffect(name); match.bleed) add(match.zone, "bleed");
     const std::pair<const char*, float> zones[] = {{"head", limbs.head}, {"torso", limbs.torso}, {"larm", limbs.larm},
                                                   {"rarm", limbs.rarm}, {"lleg", limbs.lleg}, {"rleg", limbs.rleg}};
     for (const auto& [zone, fraction] : zones)

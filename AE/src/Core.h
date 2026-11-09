@@ -22,6 +22,8 @@ Ini ReadMainIni(std::istream& input);
 int EffectHourLimit(const Ini& defaults, const Ini& overrides);
 Json MakeSettings(const Ini& defaults, const Ini& overrides);
 struct LimbFractions { float head = 1, torso = 1, larm = 1, rarm = 1, lleg = 1, rleg = 1; };
+struct LimbEffect { bool bleed = false; bool infection = false; const char* zone = nullptr; };
+LimbEffect MatchLimbEffect(std::string_view name);
 Json MakeLimbStatus(const LimbFractions& limbs, bool infected, const std::vector<std::string>& effectNames, std::uint32_t armorSlots = 0);
 bool QuickLootFirstEnabled(const Ini& defaults, const Ini& overrides);
 bool KeepGameSubtitles(bool dialogueOpen, std::string_view dialogueRule);

@@ -818,7 +818,7 @@ namespace {
 constexpr std::string_view kInfectKeyword = "infect";
 
 template <class Visit>
-void ForEachActiveSpell(Visit&& visit) {
+void ForEachActiveEffect(Visit&& visit) {
     auto* player = RE::PlayerCharacter::GetSingleton();
     auto* list = player ? player->GetActiveEffectList() : nullptr;
     if (!list) return;
@@ -826,8 +826,9 @@ void ForEachActiveSpell(Visit&& visit) {
     for (auto& entry : list->data) {
         auto* effect = entry.get();
         if (!effect || !effect->spell || effect->flags.any(Flag::kInactive, Flag::kDispelled, Flag::kWornOff)) continue;
-        if (!effect->spell->As<RE::SpellItem>()) continue;
-        visit(*effect, Name(effect->spell));
+        if (!effect->spell->As<RE::SpellItem>() && !effect->spell->As<RE::AlchemyItem>() && !effect->spell->As<RE::EnchantmentItem>()) continue;
+        auto* setting = effect->effect ? effect->effect->effectSetting : nullptr;
+        visit(*effect, Name(effect->spell), setting ? Name(setting) : std::string{});
     }
 }
 }
@@ -840,7 +841,8 @@ std::map<std::string, float> ReadIllnesses(float timescale) {
     constexpr std::pair<std::string_view, const char*> kNames[] = {
         {kInfectKeyword, "infection"}, {"parasit", "parasites"}, {"insomni", "insomnia"},
         {"letharg", "lethargy"}, {"weak", "weakness"}, {"fatigue", "fatigue"}};
-    ForEachActiveSpell([&](const RE::ActiveEffect& effect, const std::string& name) {
+    ForEachActiveEffect([&](const RE::ActiveEffect& effect, const std::string& name, const std::string&) {
+        if (!effect.spell->As<RE::SpellItem>()) return;
         for (const auto& [part, id] : kNames) {
             if (!Contains(name, part)) continue;
             const float left = effect.duration > 0 ? std::max(0.0F, effect.duration - effect.elapsedSeconds) * timescale / 3600.0F : -1.0F;
@@ -882,9 +884,12 @@ Json ReadLimbStatus(const LimbFractions& limbs) {
 #endif
     bool infected = false;
     std::vector<std::string> names;
-    ForEachActiveSpell([&](const RE::ActiveEffect&, const std::string& name) {
-        if (infectionVisible && Contains(name, kInfectKeyword)) infected = true;
-        if (Contains(name, "bleed")) names.push_back(name);
+    ForEachActiveEffect([&](const RE::ActiveEffect&, const std::string& name, const std::string& baseName) {
+        for (const auto* text : {&name, &baseName}) {
+            const auto match = MatchLimbEffect(*text);
+            if (infectionVisible && match.infection) infected = true;
+            if (match.bleed) names.push_back(*text);
+        }
     });
     return MakeLimbStatus(limbs, infected, names, ReadArmorSlots());
 }
