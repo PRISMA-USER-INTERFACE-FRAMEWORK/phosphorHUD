@@ -1254,7 +1254,7 @@ class HudTests(unittest.TestCase):
         self.assertRegex(js, r"function healPulse\(k\)[\s\S]*?\}, 350\)")
         self.assertIn("function measureBox(", js)
         self.assertIn('"figures/" + part + ".png"', js)
-        self.assertIn("img.onerror = done", js)
+        self.assertIn("img.onerror = function()", js)
         self.assertIn("if (!img) return;", js)
         self.assertIn('var LIMB_STATUS = ["bleed", "broken", "infection"]', js)
         for glyph in ("bleed", "broken", "infection"):
