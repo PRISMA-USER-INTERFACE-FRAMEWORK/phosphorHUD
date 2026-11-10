@@ -88,13 +88,13 @@ class LayoutTests(unittest.TestCase):
         self.assertEqual(self.page.evaluate("document.querySelectorAll('[data-edit]').length"), len(counts), "No data-edit element is missing from the group list")
 
     def test_layout_offset_is_stage_relative_at_any_resolution_and_aspect(self):
-        """Catches layout offsets drifting with the window size: the saved layout.json must place a group the same stage distance from its default at every resolution and aspect ratio."""
+        """Catches layout offsets drifting with the window size: the saved layout.json must place a group the same stage distance from its default at every resolution and aspect ratio. The kit is anchored to the bottom right and its content reflows while the page loads, so its right and bottom edges are measured, never the left and top."""
         for width, height in ((1920, 1080), (1280, 720), (3840, 2160), (2560, 1080), (1000, 1000)):
             with self.subTest(size=(width, height)):
                 self.page.set_viewport_size({"width": width, "height": height})
                 self.page.wait_for_function(FIT)
                 self.page.evaluate("() => window.hudLayout.reset()")
-                probe = "() => { const r = document.getElementById('kit').getBoundingClientRect(), k = document.getElementById('stage').getBoundingClientRect().width / 1920; return {x: r.left, y: r.top, k}; }"
+                probe = "() => { const r = document.getElementById('kit').getBoundingClientRect(), k = document.getElementById('stage').getBoundingClientRect().width / 1920; return {x: r.right, y: r.bottom, k}; }"
                 before = self.page.evaluate(probe)
                 self.page.evaluate("() => window.hudLayout.setGroup('kit', {dx: -120, dy: -60})")
                 after = self.page.evaluate(probe)
