@@ -820,7 +820,8 @@
     figTmp = document.createElement("canvas"),
     limbFlash = {},
     limbPulse = {},
-    blinkOn = true;
+    blinkOn = true,
+    figChecked = false;
 
   function measureBox(img, W, H) {
     try {
@@ -859,7 +860,10 @@
         figBox[part] = (cv && measureBox(img, cv.width, cv.height)) || FIG_BOX[part];
         done();
       };
-      img.onerror = done;
+      img.onerror = function() {
+        console.error("[figure] failed to load " + part);
+        done();
+      };
       img.src = "figures/" + part + ".png";
     });
   }
@@ -914,6 +918,16 @@
       ctx.drawImage(tint, 0, top, W, H - top, 0, top, W, H - top);
     });
     ctx.globalAlpha = 1;
+    if (!figChecked && Object.keys(figImgs).length) {
+      figChecked = true;
+      try {
+        var px = ctx.getImageData(0, 0, W, H).data, any = false;
+        for (var i = 3; i < px.length && !any; i += 4) any = px[i] > 0;
+        if (!any) console.error("[figure] canvas is empty after drawing " + Object.keys(figImgs).length + " zones");
+      } catch (e) {
+        console.error("[figure] canvas read failed: " + e);
+      }
+    }
   }
   loadFigure();
   setInterval(function() {
